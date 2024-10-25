@@ -40,10 +40,30 @@ export class AppService {
     return this.curlconverterPromise;
   }
 
+  isVersionGreater(v1: string, v2: string) {
+    if (v1 && v2) {
+      const v1Parts = v1?.split(".")?.map(Number);
+      const v2Parts = v2?.split(".")?.map(Number);
+
+      for (let i = 0; i < Math.max(v1Parts?.length, v2Parts?.length); i++) {
+        const v1Part = v1Parts[i] || 0; // default to 0 if part is missing
+        const v2Part = v2Parts[i] || 0;
+
+        if (v1Part > v2Part) return true;
+        if (v1Part < v2Part) return false;
+      }
+    }
+
+    return false; // versions are equal
+  }
+
   getUpdaterDetails(currentVersion: string): UpdaterJsonResponsePayload {
     if (
       this.config.get("updater.updateAvailable") === "true" &&
-      currentVersion < this.config.get("updater.appVersion")
+      this.isVersionGreater(
+        this.config.get("updater.appVersion"),
+        currentVersion,
+      )
     ) {
       const updatorJson = {
         version: this.config.get("updater.appVersion"),
