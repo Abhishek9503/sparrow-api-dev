@@ -94,13 +94,17 @@ export class HubSpotService {
     } catch (error) {
       console.error("Error creating contact in HubSpot:", error);
       const client = this.insightsService.getClient();
-      client.trackException({
-        exception: error,
-        properties: {
-          status: "Failed",
-          message: "Hubspot Service Failed",
-        },
-      });
+      if (client) {
+        client.trackException({
+          exception: error,
+          properties: {
+            status: "Failed",
+            message: "Hubspot Service Failed",
+          },
+        });
+      } else {
+        console.error("Application Insights client is not initialized.");
+      }
     }
   }
 }

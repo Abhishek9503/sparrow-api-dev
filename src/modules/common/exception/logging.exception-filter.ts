@@ -29,15 +29,22 @@ export class LoggingExceptionsFilter implements ExceptionFilter {
       error.stack = exception.stack;
       // Log exception to Application Insights
       const client = this.insightsService.getClient();
-      client.trackException({
-        exception: error,
-        properties: {
-          method: req.method,
-          url: req.url,
-          status,
-        },
-      });
-
+      if (client) {
+        try {
+          client?.trackException({
+            exception: error,
+            properties: {
+              method: req.method,
+              url: req.url,
+              status,
+            },
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        console.error("Application Insights client is not initialized.");
+      }
       return response.status(status).send({
         statusCode: status,
         message: exception.message,

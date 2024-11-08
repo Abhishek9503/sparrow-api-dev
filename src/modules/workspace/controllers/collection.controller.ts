@@ -28,6 +28,7 @@ import { WorkspaceService } from "../services/workspace.service";
 import {
   BranchChangeDto,
   CollectionRequestDto,
+  CollectionSocketIODto,
   CollectionWebSocketDto,
   FolderPayload,
 } from "../payloads/collectionRequest.payload";
@@ -521,6 +522,106 @@ export class collectionController {
     );
     const responseData = new ApiResponseService(
       "Postman Collection Imported",
+      HttpStatusCode.OK,
+      collection,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to add a new Socket.IO instance. This can be either an individual
+   * Socket.IO instance or a folder-based Socket.IO, and it will be stored in the collection.
+   *
+   * @param socketioDto The DTO containing the details of the socketio to be added.
+   * @param res The response object.
+   * @returns The response containing the status and the added socketio object.
+   */
+  @Post("socketio")
+  @ApiOperation({
+    summary: "Add a Socket.IO",
+    description:
+      "This will add a socketio which will be individual socketio or folder based socketio in collection",
+  })
+  @ApiResponse({ status: 200, description: "Socket.IO Updated Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to Update a socketio" })
+  async addSocketIO(
+    @Body() socketioDto: Partial<CollectionSocketIODto>,
+    @Res() res: FastifyReply,
+  ) {
+    const socketioObj = await this.collectionRequestService.addSocketIO(
+      socketioDto,
+    );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      socketioObj,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to update an existing Socket.IO instance in the collection.
+   * This can be used for both individual and folder-based Socket.IO instances.
+   *
+   * @param socketioId The ID of the socketio to be updated.
+   * @param socketioDto The DTO containing the updated details of the socketio.
+   * @param res The response object.
+   * @returns The response containing the status and the updated socketio object.
+   */
+  @Put("socketio/:socketioId")
+  @ApiOperation({
+    summary: "Update a Socket.IO",
+    description:
+      "This will update a socketio which will be individual socketio or folder based socketio in collection",
+  })
+  @ApiResponse({ status: 200, description: "Socket.IO saved Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to save socketio" })
+  async updateSocketIO(
+    @Param("socketioId") socketioId: string,
+    @Body() socketioDto: Partial<CollectionSocketIODto>,
+    @Res() res: FastifyReply,
+  ) {
+    const socketio = await this.collectionRequestService.updateSocketIO(
+      socketioId,
+      socketioDto,
+    );
+
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      socketio,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to delete a specific Socket.IO instance from a collection.
+   * Supports both individual and folder-based Socket.IO deletions.
+   *
+   * @param socketioId The ID of the socketio to be deleted.
+   * @param socketioDto The DTO containing the details of the socketio to be deleted.
+   * @param res The response object.
+   * @returns The response containing the status and the updated collection.
+   */
+  @Delete("socketio/:socketioId")
+  @ApiOperation({
+    summary: "Delete a Socket.IO",
+    description:
+      "This will delete a socketio which will be individual socketio or folder based socketio in collection",
+  })
+  @ApiResponse({ status: 200, description: "Socket.IO Deleted Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to delete socketio" })
+  async deleteSocketIO(
+    @Param("socketioId") socketioId: string,
+    @Body() socketioDto: Partial<CollectionSocketIODto>,
+    @Res() res: FastifyReply,
+  ) {
+    await this.collectionRequestService.deleteSocketIO(socketioId, socketioDto);
+    const collection = await this.collectionService.getCollection(
+      socketioDto.collectionId,
+    );
+    const responseData = new ApiResponseService(
+      "Success",
       HttpStatusCode.OK,
       collection,
     );

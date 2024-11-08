@@ -26,6 +26,7 @@ export enum ItemTypeEnum {
   FOLDER = "FOLDER",
   REQUEST = "REQUEST",
   WEBSOCKET = "WEBSOCKET",
+  SOCKETIO = "SOCKETIO",
 }
 
 export enum BodyModeEnum {
@@ -78,6 +79,13 @@ export enum WebSocketBodyModeEnum {
   "text/html" = "text/html",
 }
 
+export enum SocketIOBodyModeEnum {
+  "none" = "none",
+  "application/json" = "application/json",
+  "application/xml" = "application/xml",
+  "text/plain" = "text/plain",
+  "text/html" = "text/html",
+}
 export class QueryParams {
   @IsString()
   @IsNotEmpty()
@@ -124,6 +132,34 @@ export class Params {
   @ApiProperty()
   @IsNotEmpty()
   schema: SchemaObject;
+}
+
+/**
+ * Data Transfer Object representing an Event configuration.
+ * This includes the event name and whether it is listening or not.
+ */
+export class Events {
+  /**
+   * Name of the event.
+   *
+   * @example "aiSupport"
+   */
+  @ApiProperty({ description: "Name of the event", example: "aiSupport" })
+  @IsString()
+  @IsNotEmpty()
+  event: string;
+
+  /**
+   * Indicates if the event listener is active.
+   *
+   * @example true
+   */
+  @ApiProperty({
+    description: "Flag indicating if the event should listen",
+    example: true,
+  })
+  @IsBoolean()
+  listen: boolean;
 }
 
 export class RequestMetaData {
@@ -257,23 +293,90 @@ export class WebSocketMetaData {
     },
   })
   @IsArray()
-  @Type(() => Params)
+  @Type(() => KeyValue)
   @ValidateNested({ each: true })
   @IsOptional()
-  queryParams?: Params[];
+  queryParams?: KeyValue[];
 
   @ApiProperty({
-    type: [Params],
+    type: [KeyValue],
     example: {
       name: "headers",
       description: "headers for websocket",
     },
   })
   @IsArray()
-  @Type(() => Params)
+  @Type(() => KeyValue)
   @ValidateNested({ each: true })
   @IsOptional()
-  headers?: Params[];
+  headers?: KeyValue[];
+}
+
+/**
+ * Data Transfer Object representing the metadata for a Socket.IO connection.
+ */
+export class SocketIOMetaData {
+  @ApiProperty({ example: "/pet" })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiProperty({ example: "message" })
+  @IsString()
+  @IsOptional()
+  message?: string;
+
+  @ApiProperty({ example: "eventName" })
+  @IsString()
+  @IsOptional()
+  eventName?: string;
+
+  @ApiProperty({
+    enum: ["application/json", "application/xml", "text/plain", "text/html"],
+  })
+  @IsEnum({ SocketIOBodyModeEnum })
+  @IsString()
+  @IsOptional()
+  selectedSocketIOBodyType?: SocketIOBodyModeEnum;
+
+  @ApiProperty({
+    example: {
+      key: "key",
+      value: "value",
+      checked: true,
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  queryParams?: KeyValue[];
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      key: "key",
+      value: "value",
+      checked: true,
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  headers?: KeyValue[];
+
+  @ApiProperty({
+    example: {
+      event: "event name",
+      listen: true,
+    },
+  })
+  @IsArray()
+  @Type(() => Events)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  events?: Events[];
 }
 
 export class CollectionItem {
@@ -292,7 +395,7 @@ export class CollectionItem {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ enum: ["FOLDER", "REQUEST", "WEBSOCKET"] })
+  @ApiProperty({ enum: ["FOLDER", "REQUEST", "WEBSOCKET", "SOCKETIO"] })
   @IsEnum(ItemTypeEnum)
   @IsString()
   @IsNotEmpty()
@@ -328,6 +431,11 @@ export class CollectionItem {
   @IsOptional()
   @Type(() => WebSocketMetaData)
   websocket?: WebSocketMetaData;
+
+  @ApiProperty({ type: SocketIOMetaData })
+  @IsOptional()
+  @Type(() => SocketIOMetaData)
+  socketio?: SocketIOMetaData;
 
   @IsOptional()
   @IsBoolean()

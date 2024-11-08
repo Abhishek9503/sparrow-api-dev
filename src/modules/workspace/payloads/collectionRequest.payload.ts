@@ -15,10 +15,12 @@ import { SchemaObject } from "@src/modules/common/models/openapi303.model";
 import { ApiProperty } from "@nestjs/swagger";
 import {
   BodyModeEnum,
+  Events,
   ItemTypeEnum,
   RequestMetaData,
   SourceTypeEnum,
 } from "@src/modules/common/models/collection.model";
+import { KeyValue } from "@src/modules/common/models/collection.rxdb.model";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
@@ -181,32 +183,97 @@ export class CollectionWebSocketMetaData {
   message?: string;
 
   @ApiProperty({
-    type: [Params],
+    type: [KeyValue],
     example: {
-      name: "search",
-      description: "The search term to filter results",
-      required: false,
-      schema: {},
+      key: "key",
+      value: "value",
+      checked: true,
     },
   })
   @IsArray()
-  @Type(() => Params)
+  @Type(() => KeyValue)
   @ValidateNested({ each: true })
   @IsOptional()
-  queryParams?: Params[];
+  queryParams?: KeyValue[];
 
   @ApiProperty({
-    type: [Params],
+    type: [KeyValue],
     example: {
-      name: "headers",
-      description: "headers for websocket",
+      key: "key",
+      value: "value",
+      checked: true,
     },
   })
   @IsArray()
-  @Type(() => Params)
+  @Type(() => KeyValue)
   @ValidateNested({ each: true })
   @IsOptional()
-  headers?: Params[];
+  headers?: KeyValue[];
+}
+
+/**
+ * Data Transfer Object representing the metadata for a Socket.IO within a collection.
+ */
+export class CollectionSocketIOMetaData {
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty({ example: "/pet/{petId}/uploadImage" })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiProperty({ example: "message" })
+  @IsString()
+  @IsOptional()
+  message?: string;
+
+  @ApiProperty({ example: "eventName" })
+  @IsString()
+  @IsOptional()
+  eventName?: string;
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      key: "key",
+      value: "value",
+      checked: true,
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  queryParams?: KeyValue[];
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      key: "key",
+      value: "value",
+      checked: true,
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  headers?: KeyValue[];
+
+  @ApiProperty({
+    example: {
+      event: "event name",
+      listen: true,
+    },
+  })
+  @IsArray()
+  @Type(() => Events)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  events?: Events[];
 }
 
 export class CollectionRequestItem {
@@ -253,6 +320,11 @@ export class CollectionRequestItem {
   @IsOptional()
   @Type(() => CollectionWebSocketMetaData)
   websocket?: CollectionWebSocketMetaData;
+
+  @ApiProperty({ type: CollectionSocketIOMetaData })
+  @IsOptional()
+  @Type(() => CollectionSocketIOMetaData)
+  socketio?: CollectionSocketIOMetaData;
 }
 
 export class CollectionRequest {
@@ -338,6 +410,42 @@ export class CollectionRequestDto {
  * Data Transfer Object representing a WebSocket in a collection.
  */
 export class CollectionWebSocketDto {
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  collectionId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  workspaceId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsOptional()
+  folderId?: string;
+
+  @ApiProperty({ enum: ["SPEC", "USER"] })
+  @IsEnum(SourceTypeEnum)
+  @IsOptional()
+  @IsString()
+  source?: SourceTypeEnum;
+
+  @ApiProperty()
+  @Type(() => CollectionRequestItem)
+  @ValidateNested({ each: true })
+  items?: CollectionRequestItem;
+
+  @ApiProperty({ example: "main" })
+  @IsString()
+  @IsOptional()
+  currentBranch?: string;
+}
+
+/**
+ * Data Transfer Object representing a Socket.IO in a collection.
+ */
+export class CollectionSocketIODto {
   @ApiProperty({ example: "6538e910aa77d958912371f5" })
   @IsString()
   @IsNotEmpty()

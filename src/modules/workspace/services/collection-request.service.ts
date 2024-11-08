@@ -10,6 +10,7 @@ import { ContextService } from "@src/modules/common/services/context.service";
 import {
   CollectionRequestDto,
   CollectionRequestItem,
+  CollectionSocketIODto,
   CollectionWebSocketDto,
   DeleteFolderDto,
   FolderDto,
@@ -578,7 +579,9 @@ export class CollectionRequestService {
     const collectionData = await this.collectionReposistory.getCollection(
       websocket.collectionId,
     );
-    const updateMessage = `WebSocket "${websocket?.items?.name}" is updated under "${collectionData.name}" collection`;
+    const updateMessage = `WebSocket "${
+      websocket?.items?.name ?? websocket?.items?.items?.name
+    }" is updated under "${collectionData.name}" collection`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
@@ -626,6 +629,165 @@ export class CollectionRequestService {
         message: updateMessage,
         type: UpdatesType.WEBSOCKET,
         workspaceId: websocketDto.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Adds a new Socket.IO to the collection.
+   * This method handles both individual SocketIO and folder-based SocketIO.
+   *
+   * @param socketio - The SocketIO details to be added.
+   * @returns The added SocketIO item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async addSocketIO(
+    socketio: Partial<CollectionSocketIODto>,
+  ): Promise<CollectionItem> {
+    const user = await this.contextService.get("user");
+    await this.workspaceService.IsWorkspaceAdminOrEditor(socketio.workspaceId);
+    await this.checkPermission(socketio.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(socketio.collectionId);
+    const uuid = uuidv4();
+    const collection = await this.collectionReposistory.getCollection(
+      socketio.collectionId,
+    );
+    const socketioObj: CollectionItem = {
+      id: uuid,
+      name: socketio.items.name,
+      type: socketio.items.type,
+      description: socketio.items.description,
+      source: socketio.source ?? SourceTypeEnum.USER,
+      isDeleted: false,
+      createdBy: user?.name,
+      updatedBy: user?.name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateMessage = ``;
+    if (socketio.items.type === ItemTypeEnum.SOCKETIO) {
+      socketioObj.socketio = socketio.items.socketio;
+      await this.collectionReposistory.addSocketIO(
+        socketio.collectionId,
+        socketioObj,
+        noOfRequests,
+      );
+      updateMessage = `New Socket.IO "${socketio.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.SOCKETIO,
+          workspaceId: socketio.workspaceId,
+        }),
+      });
+      return socketioObj;
+    } else {
+      socketioObj.items = [
+        {
+          id: uuidv4(),
+          name: socketio.items.items.name,
+          type: socketio.items.items.type,
+          description: socketio.items.items.description,
+          socketio: { ...socketio.items.items.socketio },
+          source: SourceTypeEnum.USER,
+          createdBy: user?.name,
+          updatedBy: user?.name,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      await this.collectionReposistory.addSocketIOInFolder(
+        socketio.collectionId,
+        socketioObj,
+        noOfRequests,
+        socketio?.folderId,
+      );
+      updateMessage = `New Socket.IO "${socketio.items.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.SOCKETIO,
+          workspaceId: socketio.workspaceId,
+        }),
+      });
+      return socketioObj.items[0];
+    }
+  }
+
+  /**
+   * Updates an existing Socket.IO in the collection.
+   *
+   * @param socketioId - The ID of the Socket.IO to be updated.
+   * @param socketio - The updated Socket.IO details.
+   * @returns The updated Socket.IO item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async updateSocketIO(
+    socketioId: string,
+    socketio: Partial<CollectionSocketIODto>,
+  ): Promise<CollectionRequestItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(socketio.workspaceId);
+    const user = await this.contextService.get("user");
+    await this.checkPermission(socketio.workspaceId, user._id);
+    const collection = await this.collectionReposistory.updateSocketIO(
+      socketio.collectionId,
+      socketioId,
+      socketio,
+    );
+    const collectionData = await this.collectionReposistory.getCollection(
+      socketio.collectionId,
+    );
+    const updateMessage = `Socket.IO "${
+      socketio?.items?.name ?? socketio?.items?.items?.name
+    }" is updated under "${collectionData.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        type: UpdatesType.SOCKETIO,
+        workspaceId: socketio.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Deletes an existing Socket.IO from the collection.
+   *
+   * @param socketioId - The ID of the Socket.IO to be deleted.
+   * @param socketioDto - The Socket.IO details including collection ID and folder ID (if applicable).
+   * @returns The result of the update operation.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async deleteSocketIO(
+    socketioId: string,
+    socketioDto: Partial<CollectionSocketIODto>,
+  ): Promise<UpdateResult<Collection>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      socketioDto.workspaceId,
+    );
+    const user = await this.contextService.get("user");
+    await this.checkPermission(socketioDto.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(socketioDto.collectionId);
+    const collectionData = await this.collectionReposistory.getCollection(
+      socketioDto.collectionId,
+    );
+    const socketioData = await this.findItemById(
+      collectionData.items,
+      socketioId,
+    );
+    const collection = await this.collectionReposistory.deleteSocketIO(
+      socketioDto.collectionId,
+      socketioId,
+      noOfRequests,
+      socketioDto?.folderId,
+    );
+    const updateMessage = `Socket.IO "${socketioData?.name}" is deleted from "${collectionData?.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        type: UpdatesType.SOCKETIO,
+        workspaceId: socketioDto.workspaceId,
       }),
     });
     return collection;

@@ -7,4 +7,5 @@ export enum UpdatesType {
   ENVIRONMENT = "environment",
   TESTFLOW = "testflow",
   WEBSOCKET = "websocket",
+  SOCKETIO = "socketio",
 }

@@ -22,19 +22,26 @@ export class InsightsService {
    */
   constructor(private configService: ConfigService) {
     // Ensure Application Insights is initialized only once
+    const azureInsightsConnectionString = this.configService.get(
+      "azure.insightsConnectionString",
+    );
     if (!this.client) {
-      appInsights
-        .setup(this.configService.get("azure.insightsConnectionString"))
-        .setAutoDependencyCorrelation(true)
-        .setAutoCollectRequests(true)
-        .setAutoCollectPerformance(true, true)
-        .setAutoCollectExceptions(true)
-        .setAutoCollectDependencies(true)
-        .setAutoCollectConsole(true)
-        .setUseDiskRetryCaching(true)
-        .setSendLiveMetrics(true)
-        .start();
-      this.client = appInsights.defaultClient;
+      try {
+        appInsights
+          .setup(azureInsightsConnectionString)
+          .setAutoDependencyCorrelation(true)
+          .setAutoCollectRequests(true)
+          .setAutoCollectPerformance(true, true)
+          .setAutoCollectExceptions(true)
+          .setAutoCollectDependencies(true)
+          .setAutoCollectConsole(true)
+          .setUseDiskRetryCaching(true)
+          .setSendLiveMetrics(true)
+          .start();
+        this.client = appInsights.defaultClient;
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 

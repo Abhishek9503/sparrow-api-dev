@@ -51,7 +51,10 @@ import { ChatbotStatsService } from "./services/chatbot-stats.service";
 import { TestflowService } from "./services/testflow.service";
 
 // ---- Gateway
-import { AiAssistantGateway } from "./controllers/ai-assistant.gateway";
+import {
+  AiAssistantGateway,
+  DummyGateway,
+} from "./controllers/ai-assistant.gateway";
 
 /**
  * Workspace Module provides all necessary services, handlers, repositories,
@@ -88,6 +91,7 @@ import { AiAssistantGateway } from "./controllers/ai-assistant.gateway";
     ChatbotStatsService,
     ChatbotStatsRepository,
     AiAssistantGateway,
+    DummyGateway,
     TeamUpdatedHandler,
     TestflowService,
     TestflowRepository,

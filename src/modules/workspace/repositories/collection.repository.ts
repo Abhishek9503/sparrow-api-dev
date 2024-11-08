@@ -20,6 +20,7 @@ import {
 import {
   CollectionRequestDto,
   CollectionRequestItem,
+  CollectionSocketIODto,
   CollectionWebSocketDto,
 } from "../payloads/collectionRequest.payload";
 import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
@@ -499,6 +500,210 @@ export class CollectionRepository {
             $pull: {
               items: {
                 id: websocketId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+        );
+    }
+  }
+
+  /**
+   * Adds a Socket.IO item to the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param socketio - The Socket.IO item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @returns A promise that resolves to the result of the update operation.
+   */
+  async addSocketIO(
+    collectionId: string,
+    socketio: CollectionItem,
+    noOfRequests: number,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const data = await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .updateOne(
+        { _id },
+        {
+          $push: {
+            items: socketio,
+          },
+          $set: {
+            totalRequests: noOfRequests + 1,
+          },
+        },
+      );
+    return data;
+  }
+
+  /**
+   * Adds a Socket.IO item to a specific folder within the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param socketio - The Socket.IO item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - The ID of the folder.
+   * @returns A promise that resolves to the result of the update operation.
+   * @throws BadRequestException if the folder does not exist.
+   */
+  async addSocketIOInFolder(
+    collectionId: string,
+    socketio: CollectionItem,
+    noOfRequests: number,
+    folderId: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const collection = await this.getCollection(collectionId);
+    const isFolderExists = collection.items.some((item) => {
+      return item.id === folderId;
+    });
+    if (isFolderExists) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.name": socketio.name },
+          {
+            $push: { "items.$.items": socketio.items[0] },
+            $set: {
+              totalRequests: noOfRequests + 1,
+            },
+          },
+        );
+    } else {
+      throw new BadRequestException("Folder Not Found.");
+    }
+  }
+
+  /**
+   * Updates a Socket.IO item in the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param socketioId - The ID of the Socket.IO item to be updated.
+   * @param socketio - The updated Socket.IO item.
+   * @returns A promise that resolves to the updated Socket.IO item.
+   */
+  async updateSocketIO(
+    collectionId: string,
+    socketioId: string,
+    socketio: Partial<CollectionSocketIODto>,
+  ): Promise<CollectionRequestItem> {
+    const _id = new ObjectId(collectionId);
+    const defaultParams = {
+      updatedAt: new Date(),
+      updatedBy: this.contextService.get("user").name,
+    };
+    if (socketio.items.type === ItemTypeEnum.SOCKETIO) {
+      socketio.items = { ...socketio.items, ...defaultParams };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.id": socketioId },
+          {
+            $set: {
+              "items.$": socketio.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+        );
+      return { ...data, ...socketio.items, id: socketioId };
+    } else {
+      socketio.items.items = {
+        ...socketio.items.items,
+        ...defaultParams,
+      };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": socketio.folderId,
+            "items.items.id": socketioId,
+          },
+          {
+            $set: {
+              "items.$[i].items.$[j]": socketio.items.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+          {
+            arrayFilters: [
+              { "i.id": socketio.folderId },
+              { "j.id": socketioId },
+            ],
+          },
+        );
+      return { ...data, ...socketio.items.items, id: socketioId };
+    }
+  }
+
+  /**
+   * Deletes a Socket.IO item from the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param socketioId - The ID of the Socket.IO item to be deleted.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - (Optional) The ID of the folder containing the Socket.IO item.
+   * @returns A promise that resolves to the result of the delete operation.
+   */
+  async deleteSocketIO(
+    collectionId: string,
+    socketioId: string,
+    noOfRequests: number,
+    folderId?: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    if (folderId) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+          },
+          {
+            $pull: {
+              "items.$[i].items": {
+                id: socketioId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+          {
+            arrayFilters: [{ "i.id": folderId }],
+          },
+        );
+    } else {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id },
+          {
+            $pull: {
+              items: {
+                id: socketioId,
               },
             },
             $set: {

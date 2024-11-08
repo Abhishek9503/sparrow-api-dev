@@ -65,7 +65,11 @@ export class AiAssistantService {
     this.monthlyTokenLimit = this.configService.get("ai.monthlyTokenLimit");
 
     // Initialize the AzureOpenAI client
-    this.assistantsClient = this.getClient();
+    try {
+      this.assistantsClient = this.getClient();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   /**
@@ -115,7 +119,7 @@ export class AiAssistantService {
     if (
       stat?.tokenStats &&
       stat.tokenStats?.yearMonth === currentYearMonth &&
-      stat.tokenStats.tokenUsage > this.monthlyTokenLimit
+      stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
     ) {
       throw new BadRequestException("Limit reached");
     }
@@ -150,7 +154,7 @@ export class AiAssistantService {
         currentThreadId,
         {
           assistant_id: assistantId,
-          max_completion_tokens: this.maxTokens,
+          max_completion_tokens: this.maxTokens || 0,
         },
         { pollIntervalMs: 500 },
       );
@@ -245,7 +249,7 @@ export class AiAssistantService {
       currentThreadId,
       {
         assistant_id: assistantId,
-        max_completion_tokens: this.maxTokens,
+        max_completion_tokens: this.maxTokens || 0,
       },
     );
     let total_tokens = 0;
