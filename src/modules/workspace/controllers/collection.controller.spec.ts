@@ -108,4 +108,58 @@ describe("collectionController - addSocketIO", () => {
       }),
     );
   });
+
+  /**
+   * Test case for the addGraphQL method of the collectionController.
+   * It checks if the method returns a 200 status and the added GraphQL object on success.
+   */
+  it("should return 200 and the added graphql object on success", async () => {
+    const mockGraphqlDto = {
+      collectionId: "67320ae0fccb654a7bac69c8",
+      workspaceId: "67320ad4fccb654a7bac69c6",
+      items: {
+        name: "New GRAPHQL",
+        type: ItemTypeEnum.GRAPHQL,
+        description: "GraphQL integration",
+        graphql: {
+          url: "https://api.example.com/graphql",
+        },
+      },
+    };
+    const mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    };
+    const mockAddedGraphQL = {
+      name: "New GRAPHQL",
+      type: ItemTypeEnum.GRAPHQL,
+      description: "GraphQL integration",
+      source: SourceTypeEnum.USER,
+      isDeleted: false,
+      createdBy: "astitvaone",
+      updatedBy: "astitvaone",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      graphql: {
+        url: "https://api.example.com/graphql",
+      },
+    };
+
+    jest
+      .spyOn(collectionRequestService, "addGraphQL")
+      .mockResolvedValue(mockAddedGraphQL);
+
+    await controller.addGraphQL(
+      mockGraphqlDto,
+      mockResponse as unknown as FastifyReply,
+    );
+
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatusCode.Ok);
+    expect(mockResponse.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        httpStatusCode: HttpStatusCode.Ok,
+        data: mockAddedGraphQL,
+      }),
+    );
+  });
 });

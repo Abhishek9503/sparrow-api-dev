@@ -27,6 +27,7 @@ export enum ItemTypeEnum {
   REQUEST = "REQUEST",
   WEBSOCKET = "WEBSOCKET",
   SOCKETIO = "SOCKETIO",
+  GRAPHQL = "GRAPHQL",
 }
 
 export enum BodyModeEnum {
@@ -379,6 +380,52 @@ export class SocketIOMetaData {
   events?: Events[];
 }
 
+/**
+ * Data Transfer Object representing the metadata for a GraphQL connection.
+ */
+export class GraphQLMetaData {
+  @ApiProperty({ example: "/pet" })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiProperty({ example: "query" })
+  @IsString()
+  @IsOptional()
+  query?: string;
+
+  @ApiProperty({ example: "schema of query" })
+  @IsString()
+  @IsOptional()
+  schema?: string;
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      key: "key",
+      value: "value",
+      checked: true,
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  headers?: KeyValue[];
+
+  @ApiProperty({
+    type: [Auth],
+    example: {
+      bearerToken: "Bearer xyz",
+    },
+  })
+  @IsArray()
+  @Type(() => Auth)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  auth?: Auth;
+}
+
 export class CollectionItem {
   @ApiProperty({ example: "64f878a0293b1e4415866493" })
   @IsOptional()
@@ -395,7 +442,9 @@ export class CollectionItem {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ enum: ["FOLDER", "REQUEST", "WEBSOCKET", "SOCKETIO"] })
+  @ApiProperty({
+    enum: ["FOLDER", "REQUEST", "WEBSOCKET", "SOCKETIO", "GRAPHQL"],
+  })
   @IsEnum(ItemTypeEnum)
   @IsString()
   @IsNotEmpty()
@@ -436,6 +485,11 @@ export class CollectionItem {
   @IsOptional()
   @Type(() => SocketIOMetaData)
   socketio?: SocketIOMetaData;
+
+  @ApiProperty({ type: GraphQLMetaData })
+  @IsOptional()
+  @Type(() => GraphQLMetaData)
+  graphql?: GraphQLMetaData;
 
   @IsOptional()
   @IsBoolean()

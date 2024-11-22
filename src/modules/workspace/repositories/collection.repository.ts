@@ -18,6 +18,7 @@ import {
   ItemTypeEnum,
 } from "@src/modules/common/models/collection.model";
 import {
+  CollectionGraphQLDto,
   CollectionRequestDto,
   CollectionRequestItem,
   CollectionSocketIODto,
@@ -704,6 +705,207 @@ export class CollectionRepository {
             $pull: {
               items: {
                 id: socketioId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+        );
+    }
+  }
+
+  /**
+   * Adds a GraphQL item to the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param graphql - The GraphQL item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @returns A promise that resolves to the result of the update operation.
+   */
+  async addGraphQL(
+    collectionId: string,
+    graphql: CollectionItem,
+    noOfRequests: number,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const data = await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .updateOne(
+        { _id },
+        {
+          $push: {
+            items: graphql,
+          },
+          $set: {
+            totalRequests: noOfRequests + 1,
+          },
+        },
+      );
+    return data;
+  }
+
+  /**
+   * Adds a GraphQL item to a specific folder within the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param graphql - The GraphQL item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - The ID of the folder.
+   * @returns A promise that resolves to the result of the update operation.
+   * @throws BadRequestException if the folder does not exist.
+   */
+  async addGraphQLInFolder(
+    collectionId: string,
+    graphql: CollectionItem,
+    noOfRequests: number,
+    folderId: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const collection = await this.getCollection(collectionId);
+    const isFolderExists = collection.items.some((item) => {
+      return item.id === folderId;
+    });
+    if (isFolderExists) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.name": graphql.name },
+          {
+            $push: { "items.$.items": graphql.items[0] },
+            $set: {
+              totalRequests: noOfRequests + 1,
+            },
+          },
+        );
+    } else {
+      throw new BadRequestException("Folder Not Found.");
+    }
+  }
+
+  /**
+   * Updates a GraphQL item in the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param graphqlId - The ID of the GraphQL item to be updated.
+   * @param graphql - The updated GraphQL item.
+   * @returns A promise that resolves to the updated GraphQL item.
+   */
+  async updateGraphQL(
+    collectionId: string,
+    graphqlId: string,
+    graphql: Partial<CollectionGraphQLDto>,
+  ): Promise<CollectionRequestItem> {
+    const _id = new ObjectId(collectionId);
+    const defaultParams = {
+      updatedAt: new Date(),
+      updatedBy: this.contextService.get("user").name,
+    };
+    if (graphql.items.type === ItemTypeEnum.GRAPHQL) {
+      graphql.items = { ...graphql.items, ...defaultParams };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.id": graphqlId },
+          {
+            $set: {
+              "items.$": graphql.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+        );
+      return { ...data, ...graphql.items, id: graphqlId };
+    } else {
+      graphql.items.items = {
+        ...graphql.items.items,
+        ...defaultParams,
+      };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": graphql.folderId,
+            "items.items.id": graphqlId,
+          },
+          {
+            $set: {
+              "items.$[i].items.$[j]": graphql.items.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+          {
+            arrayFilters: [{ "i.id": graphql.folderId }, { "j.id": graphqlId }],
+          },
+        );
+      return { ...data, ...graphql.items.items, id: graphqlId };
+    }
+  }
+
+  /**
+   * Deletes a GraphQL item from the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param graphqlId - The ID of the GraphQL item to be deleted.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - (Optional) The ID of the folder containing the GraphQL item.
+   * @returns A promise that resolves to the result of the delete operation.
+   */
+  async deleteGraphQL(
+    collectionId: string,
+    graphqlId: string,
+    noOfRequests: number,
+    folderId?: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    if (folderId) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+          },
+          {
+            $pull: {
+              "items.$[i].items": {
+                id: graphqlId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: this.contextService.get("user")._id,
+                name: this.contextService.get("user").name,
+              },
+            },
+          },
+          {
+            arrayFilters: [{ "i.id": folderId }],
+          },
+        );
+    } else {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id },
+          {
+            $pull: {
+              items: {
+                id: graphqlId,
               },
             },
             $set: {

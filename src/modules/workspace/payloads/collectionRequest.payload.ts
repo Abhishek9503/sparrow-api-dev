@@ -20,29 +20,12 @@ import {
   RequestMetaData,
   SourceTypeEnum,
 } from "@src/modules/common/models/collection.model";
-import { KeyValue } from "@src/modules/common/models/collection.rxdb.model";
+import {
+  Auth,
+  KeyValue,
+} from "@src/modules/common/models/collection.rxdb.model";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-
-enum ApiKeyParamTypeEnum {
-  HEADER = "Header",
-  Query = "Query Parameter",
-}
-class Auth {
-  apiKey?: ApiKey;
-  bearerToken?: string;
-  basicAuth?: BasicAuth;
-}
-
-class ApiKey {
-  authKey?: string;
-  authValue?: string;
-  addTo: ApiKeyParamTypeEnum;
-}
-class BasicAuth {
-  username?: string;
-  password?: string;
-}
 
 export class CollectionRequestBody {
   @ApiProperty({ example: "application/json" })
@@ -276,6 +259,57 @@ export class CollectionSocketIOMetaData {
   events?: Events[];
 }
 
+/**
+ * Data Transfer Object representing the metadata for a GraphQL within a collection.
+ */
+export class CollectionGraphQLMetaData {
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty({ example: "/pet" })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiProperty({ example: "query" })
+  @IsString()
+  @IsOptional()
+  query?: string;
+
+  @ApiProperty({ example: "schema of query" })
+  @IsString()
+  @IsOptional()
+  schema?: string;
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      key: "key",
+      value: "value",
+      checked: true,
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  headers?: KeyValue[];
+
+  @ApiProperty({
+    type: [Auth],
+    example: {
+      bearerToken: "Bearer xyz",
+    },
+  })
+  @IsArray()
+  @Type(() => Auth)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  auth?: Auth;
+}
+
 export class CollectionRequestItem {
   @ApiProperty({ example: "e25a5332-7b80-48f3-8e4f-6e229bcedd43" })
   @IsOptional()
@@ -325,6 +359,11 @@ export class CollectionRequestItem {
   @IsOptional()
   @Type(() => CollectionSocketIOMetaData)
   socketio?: CollectionSocketIOMetaData;
+
+  @ApiProperty({ type: CollectionGraphQLMetaData })
+  @IsOptional()
+  @Type(() => CollectionGraphQLMetaData)
+  graphql?: CollectionGraphQLMetaData;
 }
 
 export class CollectionRequest {
@@ -446,6 +485,42 @@ export class CollectionWebSocketDto {
  * Data Transfer Object representing a Socket.IO in a collection.
  */
 export class CollectionSocketIODto {
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  collectionId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  workspaceId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsOptional()
+  folderId?: string;
+
+  @ApiProperty({ enum: ["SPEC", "USER"] })
+  @IsEnum(SourceTypeEnum)
+  @IsOptional()
+  @IsString()
+  source?: SourceTypeEnum;
+
+  @ApiProperty()
+  @Type(() => CollectionRequestItem)
+  @ValidateNested({ each: true })
+  items?: CollectionRequestItem;
+
+  @ApiProperty({ example: "main" })
+  @IsString()
+  @IsOptional()
+  currentBranch?: string;
+}
+
+/**
+ * Data Transfer Object representing a GraphQL in a collection.
+ */
+export class CollectionGraphQLDto {
   @ApiProperty({ example: "6538e910aa77d958912371f5" })
   @IsString()
   @IsNotEmpty()

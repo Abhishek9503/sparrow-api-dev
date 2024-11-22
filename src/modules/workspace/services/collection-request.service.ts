@@ -8,6 +8,7 @@ import { WorkspaceRepository } from "../repositories/workspace.repository";
 import { ObjectId, UpdateResult } from "mongodb";
 import { ContextService } from "@src/modules/common/services/context.service";
 import {
+  CollectionGraphQLDto,
   CollectionRequestDto,
   CollectionRequestItem,
   CollectionSocketIODto,
@@ -465,7 +466,12 @@ export class CollectionRequestService {
     let noOfRequests = 0;
     if (data.items.length > 0) {
       data.items.map((item) => {
-        if (item.type === ItemTypeEnum.REQUEST) {
+        if (
+          item.type === ItemTypeEnum.REQUEST ||
+          item.type === ItemTypeEnum.WEBSOCKET ||
+          item.type === ItemTypeEnum.SOCKETIO ||
+          item.type === ItemTypeEnum.GRAPHQL
+        ) {
           noOfRequests = noOfRequests + 1;
         } else if (item.type === ItemTypeEnum.FOLDER) {
           noOfRequests = noOfRequests + item.items.length;
@@ -788,6 +794,165 @@ export class CollectionRequestService {
         message: updateMessage,
         type: UpdatesType.SOCKETIO,
         workspaceId: socketioDto.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Adds a new GraphQL to the collection.
+   * This method handles both individual GraphQL and folder-based GraphQL.
+   *
+   * @param graphql - The GraphQL details to be added.
+   * @returns The added GraphQL item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async addGraphQL(
+    graphql: Partial<CollectionGraphQLDto>,
+  ): Promise<CollectionItem> {
+    const user = await this.contextService.get("user");
+    await this.workspaceService.IsWorkspaceAdminOrEditor(graphql.workspaceId);
+    await this.checkPermission(graphql.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(graphql.collectionId);
+    const uuid = uuidv4();
+    const collection = await this.collectionReposistory.getCollection(
+      graphql.collectionId,
+    );
+    const graphqlObj: CollectionItem = {
+      id: uuid,
+      name: graphql.items.name,
+      type: graphql.items.type,
+      description: graphql.items.description,
+      source: graphql.source ?? SourceTypeEnum.USER,
+      isDeleted: false,
+      createdBy: user?.name,
+      updatedBy: user?.name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateMessage = ``;
+    if (graphql.items.type === ItemTypeEnum.GRAPHQL) {
+      graphqlObj.graphql = graphql.items.graphql;
+      await this.collectionReposistory.addGraphQL(
+        graphql.collectionId,
+        graphqlObj,
+        noOfRequests,
+      );
+      updateMessage = `New GraphQL "${graphql.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.GRAPHQL,
+          workspaceId: graphql.workspaceId,
+        }),
+      });
+      return graphqlObj;
+    } else {
+      graphqlObj.items = [
+        {
+          id: uuidv4(),
+          name: graphql.items.items.name,
+          type: graphql.items.items.type,
+          description: graphql.items.items.description,
+          graphql: { ...graphql.items.items.graphql },
+          source: SourceTypeEnum.USER,
+          createdBy: user?.name,
+          updatedBy: user?.name,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      await this.collectionReposistory.addGraphQLInFolder(
+        graphql.collectionId,
+        graphqlObj,
+        noOfRequests,
+        graphql?.folderId,
+      );
+      updateMessage = `New GraphQL "${graphql.items.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.GRAPHQL,
+          workspaceId: graphql.workspaceId,
+        }),
+      });
+      return graphqlObj.items[0];
+    }
+  }
+
+  /**
+   * Updates an existing GraphQL in the collection.
+   *
+   * @param graphqlId - The ID of the GraphQL to be updated.
+   * @param graphql - The updated GraphQL details.
+   * @returns The updated GraphQL item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async updateGraphQL(
+    graphqlId: string,
+    graphql: Partial<CollectionGraphQLDto>,
+  ): Promise<CollectionRequestItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(graphql.workspaceId);
+    const user = await this.contextService.get("user");
+    await this.checkPermission(graphql.workspaceId, user._id);
+    const collection = await this.collectionReposistory.updateGraphQL(
+      graphql.collectionId,
+      graphqlId,
+      graphql,
+    );
+    const collectionData = await this.collectionReposistory.getCollection(
+      graphql.collectionId,
+    );
+    const updateMessage = `GraphQL "${
+      graphql?.items?.name ?? graphql?.items?.items?.name
+    }" is updated under "${collectionData.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        type: UpdatesType.GRAPHQL,
+        workspaceId: graphql.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Deletes an existing GraphQL from the collection.
+   *
+   * @param graphqlId - The ID of the GraphQL to be deleted.
+   * @param graphqlDto - The GraphQL details including collection ID and folder ID (if applicable).
+   * @returns The result of the update operation.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async deleteGraphQL(
+    graphqlId: string,
+    graphqlDto: Partial<CollectionGraphQLDto>,
+  ): Promise<UpdateResult<Collection>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      graphqlDto.workspaceId,
+    );
+    const user = await this.contextService.get("user");
+    await this.checkPermission(graphqlDto.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(graphqlDto.collectionId);
+    const collectionData = await this.collectionReposistory.getCollection(
+      graphqlDto.collectionId,
+    );
+    const graphqlData = await this.findItemById(
+      collectionData.items,
+      graphqlId,
+    );
+    const collection = await this.collectionReposistory.deleteGraphQL(
+      graphqlDto.collectionId,
+      graphqlId,
+      noOfRequests,
+      graphqlDto?.folderId,
+    );
+    const updateMessage = `GraphQL "${graphqlData?.name}" is deleted from "${collectionData?.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        type: UpdatesType.GRAPHQL,
+        workspaceId: graphqlDto.workspaceId,
       }),
     });
     return collection;

@@ -709,10 +709,7 @@ export class WorkspaceService {
     payload: removeUserFromWorkspaceDto,
   ): Promise<WithId<User>> {
     await this.isWorkspaceAdmin(payload.workspaceId, payload.userId);
-    const lastWorkspaceofTeam = await this.isLastTeamWorkspace(
-      payload.workspaceId,
-      payload.userId,
-    );
+
     const workspaceData = await this.workspaceRepository.get(
       payload.workspaceId,
     );
@@ -734,30 +731,8 @@ export class WorkspaceService {
     const updatedUserWorkspaces = userWorkspaces.filter(
       (workspace) => workspace.workspaceId !== payload.workspaceId,
     );
-    const userTeams = [...userData.teams];
-    let updatedUserTeams;
-    if (lastWorkspaceofTeam) {
-      updatedUserTeams = userTeams.filter(
-        (team) => team.id.toString() !== workspaceData.team.id,
-      );
-      const teamData = await this.teamRepository.findTeamByTeamId(
-        new ObjectId(workspaceData.team.id),
-      );
-      const teamUsers = [...teamData.users];
-      const updatedTeamUsers = teamUsers.filter(
-        (user) => user.id !== payload.userId,
-      );
-      const updatedTeamParams = {
-        users: updatedTeamUsers,
-      };
-      await this.teamRepository.updateTeamById(
-        new ObjectId(workspaceData.team.id),
-        updatedTeamParams,
-      );
-    }
     const updatedUserParams = {
       workspaces: updatedUserWorkspaces,
-      teams: lastWorkspaceofTeam ? updatedUserTeams : userTeams,
     };
     const response = await this.userRepository.updateUserById(
       new ObjectId(payload.userId),

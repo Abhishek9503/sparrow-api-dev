@@ -142,6 +142,17 @@ export class AuthController {
   })
   @UseGuards(GoogleOAuthGuard)
   async googleCallback(@Req() req: any, @Res() res: FastifyReply) {
+    if (req.user === "access_denied") {
+      const url = encodeURI(this.configService.get("oauth.google.redirectUrl"));
+      const urlWithToken = `${url}?accessToken=&refreshToken=`;
+      const urlWithTokenAndSource = urlWithToken + "&source=";
+
+      return res.redirect(
+        HttpStatusCode.MOVED_PERMANENTLY,
+        urlWithTokenAndSource,
+      );
+    }
+
     const { oAuthId, name, email } = req.user;
     const isUserExists = await this.userService.getUserByEmail(email);
     let id: ObjectId;

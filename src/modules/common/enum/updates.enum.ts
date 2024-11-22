@@ -8,4 +8,5 @@ export enum UpdatesType {
   TESTFLOW = "testflow",
   WEBSOCKET = "websocket",
   SOCKETIO = "socketio",
+  GRAPHQL = "graphql",
 }

@@ -27,6 +27,7 @@ import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { WorkspaceService } from "../services/workspace.service";
 import {
   BranchChangeDto,
+  CollectionGraphQLDto,
   CollectionRequestDto,
   CollectionSocketIODto,
   CollectionWebSocketDto,
@@ -619,6 +620,106 @@ export class collectionController {
     await this.collectionRequestService.deleteSocketIO(socketioId, socketioDto);
     const collection = await this.collectionService.getCollection(
       socketioDto.collectionId,
+    );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to add a new GraphQL instance. This can be either an individual
+   * GraphQL instance or a folder-based GraphQL, and it will be stored in the collection.
+   *
+   * @param graphqlDto The DTO containing the details of the GraphQL to be added.
+   * @param res The response object.
+   * @returns The response containing the status and the added GraphQL object.
+   */
+  @Post("graphql")
+  @ApiOperation({
+    summary: "Add a GraphQL",
+    description:
+      "This will add a GraphQL which will be individual GraphQL or folder based GraphQL in collection",
+  })
+  @ApiResponse({ status: 200, description: "GraphQL Updated Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to Update a GraphQL" })
+  async addGraphQL(
+    @Body() graphqlDto: Partial<CollectionGraphQLDto>,
+    @Res() res: FastifyReply,
+  ) {
+    const graphqlObj = await this.collectionRequestService.addGraphQL(
+      graphqlDto,
+    );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      graphqlObj,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to update an existing GraphQL instance in the collection.
+   * This can be used for both individual and folder-based GraphQL instances.
+   *
+   * @param graphqlId The ID of the GraphQL to be updated.
+   * @param graphqlDto The DTO containing the updated details of the GraphQL.
+   * @param res The response object.
+   * @returns The response containing the status and the updated GraphQL object.
+   */
+  @Put("graphql/:graphqlId")
+  @ApiOperation({
+    summary: "Update a GraphQL",
+    description:
+      "This will update a GraphQL which will be individual GraphQL or folder based GraphQL in collection",
+  })
+  @ApiResponse({ status: 200, description: "GraphQL saved Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to save GraphQL" })
+  async updateGraphQL(
+    @Param("graphqlId") graphqlId: string,
+    @Body() graphqlDto: Partial<CollectionGraphQLDto>,
+    @Res() res: FastifyReply,
+  ) {
+    const graphql = await this.collectionRequestService.updateGraphQL(
+      graphqlId,
+      graphqlDto,
+    );
+
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      graphql,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to delete a specific GraphQL instance from a collection.
+   * Supports both individual and folder-based GraphQL deletions.
+   *
+   * @param graphqlId The ID of the GraphQL to be deleted.
+   * @param graphqlDto The DTO containing the details of the GraphQL to be deleted.
+   * @param res The response object.
+   * @returns The response containing the status and the updated collection.
+   */
+  @Delete("graphql/:graphqlId")
+  @ApiOperation({
+    summary: "Delete a GraphQL",
+    description:
+      "This will delete a GraphQL which will be individual GraphQL or folder based GraphQL in collection",
+  })
+  @ApiResponse({ status: 200, description: "GraphQL Deleted Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to delete GraphQL" })
+  async deleteGraphQL(
+    @Param("graphqlId") graphqlId: string,
+    @Body() graphqlDto: Partial<CollectionGraphQLDto>,
+    @Res() res: FastifyReply,
+  ) {
+    await this.collectionRequestService.deleteGraphQL(graphqlId, graphqlDto);
+    const collection = await this.collectionService.getCollection(
+      graphqlDto.collectionId,
     );
     const responseData = new ApiResponseService(
       "Success",

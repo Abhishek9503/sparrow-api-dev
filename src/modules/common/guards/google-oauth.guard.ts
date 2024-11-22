@@ -1,9 +1,14 @@
-import { Injectable } from "@nestjs/common";
+import { ExecutionContext, Injectable } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
 @Injectable()
 export class GoogleOAuthGuard extends AuthGuard("google") {
-  constructor() {
-    super();
+  handleRequest(err: string, user: any, info: any, context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+    const error = request.query.error;
+    if (error) {
+      return error;
+    }
+    return user;
   }
 }
