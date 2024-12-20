@@ -8,6 +8,7 @@ export enum ErrorMessages {
   PasswordExist = "Old Password and New Password cannot be same",
   InvalidFile = "Invalid File Type",
   JWTFailed = "JWT Failed",
+  MagicCodeExpired = "Magic Code Expired",
 }
 
 export enum FeedbackErrorMessages {

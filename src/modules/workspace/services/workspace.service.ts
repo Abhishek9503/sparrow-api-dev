@@ -276,6 +276,7 @@ export class WorkspaceService {
     }
     const params = {
       name: workspaceData.name,
+      description: "",
       team: {
         id: teamData._id.toString(),
         name: teamData.name,

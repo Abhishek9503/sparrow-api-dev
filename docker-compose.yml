@@ -4,11 +4,11 @@ services:
   # MongoDB
   mongo:
     image: mongo:7.0
+    ports:
+      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: sparowapp
       MONGO_INITDB_ROOT_PASSWORD: sparrow123
-    ports:
-      - "27017:27017"
     networks:
       - localnet
 
@@ -26,7 +26,7 @@ services:
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,EXTERNAL://kafka:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092,EXTERNAL://kafka:9094
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
       - ALLOW_PLAINTEXT_LISTENER=yes
@@ -38,15 +38,99 @@ services:
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
       - KAFKA_MESSAGE_MAX_BYTES=1000000
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 1G
+    networks:
+      - localnet
+
+  # Api
+  api:
+    build:
+      context: .
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+      - "9002:9002"
+    volumes:
+      - ./:/src
+    networks:
+      - localnet
+    depends_on:
+      - mongo
+      - kafka
+    environment:
+      # APP
+      PORT: 9000
+      APP_ENV: DEV
+      APP_URL: http://localhost
+
+      # AUTH
+      JWT_SECRET_KEY: webtoken-secret-key
+      JWT_EXPIRATION_TIME: 2400
+
+      # DATABASE
+      DB_URL: mongodb://sparowapp:sparrow123@mongo:27017
+
+      # Google OAuth
+      GOOGLE_CLIENT_ID: google-client-id
+      GOOGLE_CLIENT_SECRET: google-client-secret
+      GOOGLE_APP_URL: google-app-url
+      LOGIN_REDIRECT_URL: login-redirect-url
+      GOOGLE_ACCESS_TYPE: google-access-type
+
+      # EXPIRY TIME FOR EMAIL VALIDATION CODE/LINK
+      EMAIL_VALIDATION_CODE_EXPIRY_TIME: ""
+
+      # KAFKA
+      KAFKA_BROKER: kafka:9094
+
+      # EMAIL
+      SMTP_SENDER_EMAIL: ""
+      SMTP_SENDER_PASSWORD: ""
+      SMTP_MAIL_HOST: ""
+      SMTP_MAIL_PORT: ""
+      SMTP_MAIL_SECURE: ""
+      SMTP_USER_NAME: ""
+
+      # REFRESH TOKEN
+      REFRESH_TOKEN_SECRET_KEY: refresh-token-secret
+      REFRESH_TOKEN_EXPIRATION_TIME: 604800
+      REFRESH_TOKEN_MAX_LIMIT: 50
+
+      # APP UPDATER
+      APP_UPDATE_AVAILABLE: false
+      APP_VERSION: ""
+      WINDOWS_APP_SIGNATURE: ""
+      WINDOWS_APP_URL: ""
+      MAC_APPLE_SILICON_APP_SIGNATURE: ""
+      MAC_APPLE_SILICON_APP_URL: ""
+      MAC_INTEL_APP_SIGNATURE: ""
+      MAC_INTEL_APP_URL: ""
+
+      # SUPPORT
+      SPARROW_EMAIL: contactus@sparrowapp.dev
+
+      # AZURE SERVICES
+      AZURE_CONNECTION_STRING: ""
+      AZURE_INSIGHTS_CONNECTION_STRING: ""
+      FEEDBACK_BLOB_CONTAINER: ""
+
+      # AI SUPPORT
+      AZURE_OPENAI_ENDPOINT: ""
+      AZURE_OPENAI_API_KEY: ""
+      AZURE_OPENAI_DEPLOYMENT: ""
+      AZURE_OPENAI_API_VERSION: ""
+      AZURE_OPENAI_MAX_TOKENS: ""
+      AZURE_OPENAI_MONTHLY_TOKEN_LIMIT: ""
+
+      # Hubspot
+      HUBSPOT_BASEURL: ""
+      HUBSPOT_INTEGRATION_ENABLED: ""
+      HUBSPOT_PORTALID: ""
+      HUBSPOT_FORMID: ""
+
 volumes:
   kafka_data:
     driver: local
 
 networks:
   localnet:
-    attachable: true
+    driver: bridge

@@ -23,6 +23,7 @@ spec:
           resources: {}
           ports:
             - containerPort: 80
+            - containerPort: 9001
           env:
             - name: PORT
               valueFrom:
@@ -267,6 +268,12 @@ spec:
   selector:
     app: release-api-v1
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
       targetPort: 9000
+
+    - name: ws
+      protocol: TCP
+      port: 9001
+      targetPort: 9001

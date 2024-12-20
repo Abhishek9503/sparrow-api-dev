@@ -18,7 +18,12 @@ import {
 } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
 import { RegisterPayload } from "../payloads/register.payload";
-import { UpdateUserDto } from "../payloads/user.payload";
+import {
+  EmailPayload,
+  OccaisonalUpdatesPayload,
+  UpdateUserDto,
+  VerifyMagiCodePayload,
+} from "../payloads/user.payload";
 import { FastifyReply } from "fastify";
 import { ApiResponseService } from "@src/modules/common/services/api-response.service";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
@@ -170,6 +175,30 @@ export class UserController {
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
+  /**
+   * Sends a Magic Code to the specified email for login purposes.
+   *
+   * @param emailPayload - The payload containing the email address to send the Magic Code to.
+   * @param res - The Fastify reply object used to send the HTTP response.
+   * @returns A promise resolving to a Fastify reply with a success message.
+   */
+  @Post("send-magic-code-email")
+  @ApiOperation({
+    summary: "Send a Magic Code on Email",
+    description: "Sends a Email containing a Magic Code for login.",
+  })
+  async sendMagicCodeEmail(
+    @Body() emailPayload: EmailPayload,
+    @Res() res: FastifyReply,
+  ) {
+    await this.userService.sendMagicCodeEmail(emailPayload);
+    const responseData = new ApiResponseService(
+      "Email Sent Successfully",
+      HttpStatusCode.OK,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
   @Post("send-welcome-email")
   @ApiOperation({
     summary: "Send Welcome Email",
@@ -187,6 +216,7 @@ export class UserController {
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
   @Get("logout")
   @ApiOperation({
     summary: "Logout User",
@@ -295,6 +325,76 @@ export class UserController {
     const responseData = new ApiResponseService(
       "Password Updated",
       HttpStatusCode.OK,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Verifies the validity of a Magic Code sent to the user's email and returns
+   * an access token and a refresh token upon successful verification.
+   *
+   * @param res - The Fastify reply object used to send the HTTP response.
+   * @param verifyMagicCodePayload - The payload containing the email and magic code to be verified.
+   * @returns A promise resolving to a Fastify reply with the verification result.
+   */
+  @Post("verify-magic-code")
+  @ApiOperation({
+    summary: "Verify Magic Code for login",
+    description:
+      "Verify the validity of a magic code sent of user account and return access token and refresh token.",
+  })
+  @ApiResponse({ status: 200, description: "Magic Code Verified" })
+  @ApiResponse({ status: 400, description: "Bad Request" })
+  async verifyMagicCode(
+    @Res() res: FastifyReply,
+    @Body() verifyMagicCodePayload: VerifyMagiCodePayload,
+  ) {
+    const expireTime = this.configService.get(
+      "app.emailValidationCodeExpirationTime",
+    );
+    const data = await this.userService.verifyMagicCode(
+      verifyMagicCodePayload.email.toLowerCase(),
+      verifyMagicCodePayload.magicCode,
+      expireTime,
+    );
+    const responseData = new ApiResponseService(
+      "Magic Code Verified Successfully",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Updates the occasional updates status for a user in the database.
+   *
+   * @param updatesPayload - The payload containing the user's email and their occasional updates preference.
+   * @param res - The Fastify reply object used to send the HTTP response.
+   * @returns A promise resolving to a Fastify reply with the update status.
+   */
+  @Post("update-occasional-updates-status")
+  @ApiOperation({
+    summary: "Update the occasional updates.",
+    description: "Updates the occasional updates status in user model.",
+  })
+  async updateUserOccasionalUpdatesStatus(
+    @Body() updatesPayload: OccaisonalUpdatesPayload,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.userService.updateUserOccaisonalUpdates(
+      updatesPayload.email,
+      updatesPayload.isUserAcceptedOccasionalUpdates,
+    );
+    const response = {
+      name: data.name,
+      email: data.email,
+      isUserAcceptedOccasionalUpdates:
+        updatesPayload.isUserAcceptedOccasionalUpdates,
+    };
+    const responseData = new ApiResponseService(
+      "Updated Status Successfully",
+      HttpStatusCode.OK,
+      response,
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }

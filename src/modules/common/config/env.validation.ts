@@ -35,22 +35,6 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  GOOGLE_CLIENT_ID: string;
-
-  @IsString()
-  GOOGLE_CLIENT_SECRET: string;
-
-  @IsString()
-  GOOGLE_APP_URL: string;
-
-  @IsString()
-  LOGIN_REDIRECT_URL: string;
-
-  @IsString()
-  GOOGLE_ACCESS_TYPE: string;
-
-  @IsString()
-  @IsNotEmpty()
   REFRESH_TOKEN_SECRET_KEY: string;
 
   @Type(() => Number)
@@ -62,38 +46,6 @@ export class EnvironmentVariables {
   REFRESH_TOKEN_MAX_LIMIT: number;
 
   @IsString()
-  SMTP_SENDER_EMAIL: string;
-
-  @IsString()
-  SMTP_SENDER_PASSWORD: string;
-
-  @Type(() => Number)
-  @IsNumber()
-  SMTP_MAIL_PORT: number;
-
-  @IsString()
-  SMTP_MAIL_HOST: string;
-
-  @IsString()
-  SMTP_MAIL_SECURE: string;
-
-  @IsString()
-  SMTP_USER_NAME: string;
-
-  @Type(() => Number)
-  @IsNumber()
-  EMAIL_VALIDATION_CODE_EXPIRY_TIME: number;
-
-  @IsString()
   @IsNotEmpty()
   KAFKA_BROKER: string;
-
-  @IsString()
-  AZURE_CONNECTION_STRING: string;
-
-  @IsString()
-  FEEDBACK_BLOB_CONTAINER: string;
-
-  @IsString()
-  AZURE_INSIGHTS_CONNECTION_STRING: string;
 }

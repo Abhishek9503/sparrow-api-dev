@@ -28,6 +28,7 @@ export class BlobStorageService {
     const feedbackBlobContainer = this.configService.get(
       "feedbackBlob.container",
     );
+
     try {
       /**
        * Create an instance of BlobServiceClient using the connection string.

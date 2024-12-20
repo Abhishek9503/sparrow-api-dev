@@ -101,6 +101,31 @@ export class User {
   @IsDate()
   @IsOptional()
   emailVerificationCodeTimeStamp?: Date;
+
+  @IsString()
+  @MaxLength(6)
+  @IsOptional()
+  magicCode?: string;
+
+  @IsDate()
+  @IsOptional()
+  magicCodeTimeStamp?: Date;
+
+  @IsDate()
+  @IsOptional()
+  lastMagicCodeTimeStamp?: Date;
+
+  @IsDate()
+  @IsOptional()
+  secondLastMagicCodeTimeStamp?: Date;
+
+  @IsBoolean()
+  @IsOptional()
+  isUserAcceptedOccasionalUpdates?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isCoolDownActive?: boolean;
 }
 
 export class UserDto {

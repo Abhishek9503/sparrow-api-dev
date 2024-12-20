@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { RegisteredWith, UpdateUserDto } from "../payloads/user.payload";
+import {
+  EmailPayload,
+  RegisteredWith,
+  UpdateUserDto,
+} from "../payloads/user.payload";
 import { UserRepository } from "../repositories/user.repository";
 import { RegisterPayload } from "../payloads/register.payload";
 import { ConfigService } from "@nestjs/config";
@@ -236,6 +240,67 @@ export class UserService {
     await Promise.all(promise);
   }
 
+  /**
+   * Sends a email to the user with the magic code to login.
+   * The email includes a magic code and other necessary information.
+   * Also updates the user's magic code in the database.
+   *
+   * @param emailPayload - The payload containing the user's email for magic code.
+   * @throws If the email is already verified.
+   * @returns Resolves when the email is sent and the verification code is updated.
+   */
+  async sendMagicCodeEmail(emailPayload: EmailPayload): Promise<void> {
+    const userDetails = await this.getUserByEmail(
+      emailPayload.email.toLowerCase(),
+    );
+    if (
+      userDetails &&
+      userDetails?.magicCodeTimeStamp &&
+      userDetails?.secondLastMagicCodeTimeStamp &&
+      (new Date(userDetails.magicCodeTimeStamp).getTime() -
+        new Date(userDetails.secondLastMagicCodeTimeStamp).getTime()) /
+        60000 <
+        30 && // Difference between magicCodeTimestamp and secondLastMagicCodeTimestamp < 30 mins
+      userDetails?.magicCodeTimeStamp &&
+      (Date.now() - new Date(userDetails.magicCodeTimeStamp).getTime()) /
+        60000 <
+        30 // Difference between magicCodeTimestamp and current time < 30 mins
+    ) {
+      throw new BadRequestException("Cooldown Active");
+    }
+    // Create an email transporter using the email service
+    const transporter = this.emailService.createTransporter();
+
+    const magicCode = this.generateEmailVerificationCode().toUpperCase();
+
+    const mailOptions = {
+      from: this.configService.get("app.senderEmail"),
+      to: emailPayload.email,
+      text: "Magic Code",
+      template: "magicCodeEmail",
+      context: {
+        name: userDetails.name.split(" ")[0],
+        magicCode,
+        sparrowEmail: this.configService.get("support.sparrowEmail"),
+        sparrowWebsite: this.configService.get("support.sparrowWebsite"),
+        sparrowWebsiteName: this.configService.get(
+          "support.sparrowWebsiteName",
+        ),
+      },
+      subject: `Your Sparrow's Magic Code is Inside!`,
+    };
+    const promise = [
+      transporter.sendMail(mailOptions),
+      this.userRepository.updateMagicCode(
+        emailPayload.email.toLowerCase(),
+        magicCode,
+        userDetails?.magicCodeTimeStamp,
+        userDetails.lastMagicCodeTimeStamp,
+      ),
+    ];
+    await Promise.all(promise);
+  }
+
   async sendWelcomeEmail(earlyAccessDto: EarlyAccessPayload): Promise<void> {
     const transporter = nodemailer.createTransport({
       host: this.configService.get("app.mailHost"),
@@ -424,5 +489,62 @@ export class UserService {
     };
     const promise = [transporter.sendMail(mailOptions)];
     await Promise.all(promise);
+  }
+
+  /**
+   * Verifies the user's magic code and updates the user's email magic code status.
+   * If the code is valid and not expired, generates and returns access and refresh tokens.
+   *
+   * @param email - The email address of the user who is verifying the code.
+   * @param magicCode - The magic code sent to the user.
+   * @param expireTime - The time (in seconds) after which the verification code expires.
+   * @throws  If the verification code is wrong or expired.
+   * @returns  An object containing the access and refresh tokens.
+   */
+  async verifyMagicCode(email: string, magicCode: string, expireTime: number) {
+    const user = await this.getUserByEmail(email);
+    if (user?.magicCode !== magicCode) {
+      throw new BadRequestException("Wrong Code");
+    }
+    if ((Date.now() - user.magicCodeTimeStamp.getTime()) / 1000 > expireTime) {
+      throw new BadRequestException(ErrorMessages.MagicCodeExpired);
+    }
+    if (magicCode === user.magicCode) {
+      await this.userRepository.updateUserMagicCodeStatus(email);
+      this.contextService.set("user", user);
+    }
+    const tokenPromises = [
+      this.authService.createToken(user._id),
+      this.authService.createRefreshToken(user._id),
+    ];
+    const [accessToken, refreshToken] = await Promise.all(tokenPromises);
+    const data = {
+      accessToken,
+      refreshToken,
+      isEmailVerified: true,
+    };
+    return data;
+  }
+
+  /**
+   * Updates the user's occasional updates subscription status.
+   *
+   * @param email - The email address of the user whose Magic Code is being updated.
+   * @param isUserAcceptedOccasionalUpdates - Boolean value wheather user accepted or not.
+   * @returns A promise that resolves when the update operation is complete.
+   */
+  async updateUserOccaisonalUpdates(
+    email: string,
+    isUserAcceptedOccasionalUpdates: boolean,
+  ): Promise<WithId<User>> {
+    const user = await this.getUserByEmail(email);
+    if (!user) {
+      throw new BadRequestException("User does not exist");
+    }
+    const data = await this.userRepository.updateOccaisonalUpdates(
+      email,
+      isUserAcceptedOccasionalUpdates,
+    );
+    return data.value;
   }
 }

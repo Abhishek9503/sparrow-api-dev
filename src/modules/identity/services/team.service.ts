@@ -54,7 +54,7 @@ export class TeamService {
     if (image) {
       await this.isImageSizeValid(image.size);
       const dataBuffer = image.buffer;
-      const dataString = Buffer.from(dataBuffer).toString("base64");
+      const dataString = dataBuffer.toString("base64");
       const logo = {
         bufferString: dataString,
         encoding: image.encoding,
@@ -138,7 +138,7 @@ export class TeamService {
     if (image) {
       await this.isImageSizeValid(image.size);
       const dataBuffer = image.buffer;
-      const dataString = Buffer.from(dataBuffer).toString("base64");
+      const dataString = dataBuffer.toString("base64");
       const logo = {
         bufferString: dataString,
         encoding: image.encoding,

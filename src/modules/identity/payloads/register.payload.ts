@@ -1,5 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNotEmpty, MinLength, Matches } from "class-validator";
+import {
+  IsEmail,
+  IsNotEmpty,
+  MinLength,
+  Matches,
+  IsBoolean,
+  IsOptional,
+} from "class-validator";
 
 /**
  * Register Payload Class
@@ -45,4 +52,12 @@ export class RegisterPayload {
   })
   @MinLength(8)
   password: string;
+
+  @ApiProperty({
+    required: true,
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isUserAcceptedOccasionalUpdates?: boolean;
 }

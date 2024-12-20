@@ -36,60 +36,63 @@ To install this project, you must have the following installed on your machine :
 ![Docker](https://img.shields.io/badge/-Docker-black?style=for-the-badge&logoColor=white&logo=docker&color=2496ED)
 ![NODE](https://img.shields.io/badge/-Node.js-black?style=for-the-badge&logoColor=white&logo=nodedotjs&color=339933)
 ![NPM](https://img.shields.io/badge/-NPM-black?style=for-the-badge&logoColor=white&logo=npm&color=CB3837)
- 
-Then, run the following commands :
- 
+
+### Prerequisite:
+
 ```bash
 # Clone the repository
-git clone https://github.com/techdome-io/sparrow-api.git
- 
+	git clone https://github.com/sparrowapp-dev/sparrow-api.git
+
 # Move into the project directory
-cd sparrow-api
+	cd sparrow-api
 
 # Install PNPM globally
-npm i -g pnpm
+	npm i -g pnpm
+```
 
-# Setup required components locally - Mongo, Kafka (Wait for 3-5 minutes after running this command)
-pnpm docker:up
+### Docker Method
 
-# Insatll dependencies
-pnpm i
+- To install all services as docker containers, run:
+
+  `pnpm docker:up `
+
+- To install individual services, run:
+
+  `pnpm docker:<SERVICE NAME>`
+
+  #### Example - `pnpm docker:mongo` or `pnpm:docker:kafka`
+
+Note - If you decide to run all services in docker, make sure to set the required envs for API Service inside docker compose under api environments beforehand.
+
+### Local Method
+
+```bash
+# Install dependencies
+	pnpm i
 
 # Copy .env file
-cp .env.example .env
+	cp .env.example .env
 
 # Run App in development mode
-pnpm start:dev
-
-# Access swagger on localhost
-Go to http://localhost/api/docs
-
-#[OPTIONAL] In case you want to remove the local components, run the below command 
-pnpm docker:down
-
+	pnpm start:dev
 ```
- 
-The above will start the app in development mode and watch for changes on local.
 
-### 📝 Note
----
-1) "pnpm docker:up" command will expose the below components on respective ports, make sure you have those ports free on your system 
+### Access swagger on localhost:
 
-	- 27017 (Mongo)
-	- 2181 (Zookeeper)
-	- 29092, 9092, 9101 (Kafka)
+Go to http://localhost:{PORT}/api/docs
 
-2) Wait for 3-5 minutes after running "pnpm docker:up", so that kafka can initiate properly.
- 
+### [OPTIONAL] In case you want to remove the docker services, run the following command:
+
+`pnpm docker:down`
 
 ## <a name="contributors">❤️ How to Contribue ?</a>
 
 You can checkout [Contributing Guidelines](./docs/CONTRIBUTING.md)
- 
+
 ## <a name="subscribe-to-our-newsletter">📨 Newsletter</a>
- 
-Subscribe to our newsletter by applying [here!](https://sparrows-newsletter.beehiiv.com/subscribe) 
- 
+
+Subscribe to our newsletter by applying [here!](https://sparrows-newsletter.beehiiv.com/subscribe)
+
 ## <a name="license">©️ License</a>
 
 Sparrow comes under the GNU AFFERO GENERAL PUBLIC LICENSE. For more information, you can checkout [LICENSE](./LICENSE)
