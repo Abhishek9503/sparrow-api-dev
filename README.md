@@ -41,37 +41,37 @@ To install this project, you must have the following installed on your machine :
 
 ```bash
 # Clone the repository
-	git clone https://github.com/sparrowapp-dev/sparrow-api.git
+git clone https://github.com/sparrowapp-dev/sparrow-api.git
 
 # Move into the project directory
-	cd sparrow-api
+cd sparrow-api
 
 # Install PNPM globally
-	npm i -g pnpm
+npm i -g pnpm
+
+# Create and setup environments file
+cp .env.example .env
 ```
 
 ### Docker Method
 
-- To install all services as docker containers, run:
+- To install all services(mongo + kafka + api server) as docker containers, run:
 
   `pnpm docker:up `
 
 - To install individual services, run:
 
-  `pnpm docker:<SERVICE NAME>`
+        pnpm docker:<SERVICE NAME>
 
-  #### Example - `pnpm docker:mongo` or `pnpm:docker:kafka`
+  - `pnpm docker:mongo` - Runs only mongo in a docker container
+  - `pnpm docker:kafka` - Runs only kafka in a docker container
+  - `pnpm docker:api` - Runs only the api server
 
-Note - If you decide to run all services in docker, make sure to set the required envs for API Service inside docker compose under api environments beforehand.
-
-### Local Method
+### Non-Docker Method
 
 ```bash
 # Install dependencies
 	pnpm i
-
-# Copy .env file
-	cp .env.example .env
 
 # Run App in development mode
 	pnpm start:dev
@@ -80,6 +80,15 @@ Note - If you decide to run all services in docker, make sure to set the require
 ### Access swagger on localhost:
 
 Go to http://localhost:{PORT}/api/docs
+
+### Default User for Login:
+
+Sparrow creates a default user to help you get started quickly and easily.
+
+**Login Credentials:**
+
+- **Email:** dev@sparrow.com
+- **Password:** 12345678@
 
 ### [OPTIONAL] In case you want to remove the docker services, run the following command:
 

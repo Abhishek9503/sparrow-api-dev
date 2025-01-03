@@ -130,6 +130,11 @@ spec:
                 secretKeyRef:
                   name: release-api-v1-secret
                   key: GOOGLE_CLIENT_ID
+            - name: ENABLE_GOOGLE_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: release-api-v1-secret
+                  key: ENABLE_GOOGLE_AUTH
             - name: GOOGLE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

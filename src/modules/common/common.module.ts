@@ -19,6 +19,7 @@ import { ContextService } from "./services/context.service";
 import { EmailService } from "./services/email.service";
 import { InsightsService } from "./services/insights.service";
 import { PostmanParserService } from "./services/postman.parser.service";
+import { CreateUserMigration } from "migrations/create-test-user.migration";
 
 /**
  * Common Module provides global services and configurations used across the application.
@@ -30,6 +31,7 @@ import { PostmanParserService } from "./services/postman.parser.service";
   controllers: [],
   providers: [
     InsightsService,
+    CreateUserMigration,
     {
       provide: "DATABASE_CONNECTION",
       inject: [ConfigService, InsightsService],
@@ -42,6 +44,7 @@ import { PostmanParserService } from "./services/postman.parser.service";
           const client = await MongoClient.connect(configService.get("db.url"));
           return client.db("sparrow");
         } catch (e) {
+          console.log("ERROR =====> ", e);
           const client = await insightsService.getClient();
           if (client) {
             client.trackException({

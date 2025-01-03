@@ -23,7 +23,7 @@ When contributing to this repository, please first discuss the change you wish t
 # Clone the repo
 git clone https://github.com/<User-Name>/sparrow-api.git
 
-# move to the folder
+# Move to the folder
 cd sparrow-api
 
 # Add upstream remote
@@ -31,7 +31,8 @@ git remote add upstream https://github.com/sparrowapp-dev/sparrow-api.git
 ```
 
 #### Step 2
-- [Setup project locally](https://github.com/sparrowapp-dev/sparrow-api#installation)  
+
+- [Setup project locally](https://github.com/sparrowapp-dev/sparrow-api#installation)
 
 #### Step 3
 

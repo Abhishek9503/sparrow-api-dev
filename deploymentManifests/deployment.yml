@@ -131,6 +131,11 @@ spec:
                 secretKeyRef:
                   name: sparrow-api-secret
                   key: GOOGLE_CLIENT_ID
+            - name: ENABLE_GOOGLE_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: ENABLE_GOOGLE_AUTH
             - name: GOOGLE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

@@ -84,9 +84,8 @@ export class WorkspaceService {
     }
     const workspaces: WithId<Workspace>[] = [];
     for (const { workspaceId } of user.workspaces) {
-      const workspaceData: WithId<WorkspaceWithNewInviteTag> = await this.get(
-        workspaceId,
-      );
+      const workspaceData: WithId<WorkspaceWithNewInviteTag> =
+        await this.get(workspaceId);
       user.workspaces.forEach((workspace) => {
         if (workspace.workspaceId.toString() === workspaceData._id.toString()) {
           workspaceData.isNewInvite = workspace.isNewInvite;
@@ -315,9 +314,8 @@ export class WorkspaceService {
         userIdArray.push(new ObjectId(item.id));
       }
     }
-    const userDataArray = await this.userRepository.findUsersByIdArray(
-      userIdArray,
-    );
+    const userDataArray =
+      await this.userRepository.findUsersByIdArray(userIdArray);
     for (let index = 0; index < userDataArray.length; index++) {
       userDataArray[index].workspaces.push({
         workspaceId: response.insertedId.toString(),
@@ -395,9 +393,8 @@ export class WorkspaceService {
         }
         updatedIdArray.push(new ObjectId(item.id));
       }
-      const userDataArray = await this.userRepository.findUsersByIdArray(
-        updatedIdArray,
-      );
+      const userDataArray =
+        await this.userRepository.findUsersByIdArray(updatedIdArray);
       for (let index = 0; index < userDataArray.length; index++) {
         for (
           let flag = 0;
@@ -470,9 +467,8 @@ export class WorkspaceService {
       }
       updatedIdArray.push(new ObjectId(item.id));
     }
-    const userDataArray = await this.userRepository.findUsersByIdArray(
-      updatedIdArray,
-    );
+    const userDataArray =
+      await this.userRepository.findUsersByIdArray(updatedIdArray);
     for (let index = 0; index < userDataArray.length; index++) {
       userDataArray[index].workspaces = userDataArray[index].workspaces.filter(
         (item: any) => item.workspaceId.toString() !== id,
@@ -811,9 +807,8 @@ export class WorkspaceService {
       }
       updatedIdArray.push(new ObjectId(item.id));
     }
-    const userDataArray = await this.userRepository.findUsersByIdArray(
-      updatedIdArray,
-    );
+    const userDataArray =
+      await this.userRepository.findUsersByIdArray(updatedIdArray);
     const allUsers: workspaceUsersResponseDto[] = [];
     for (const user of userDataArray) {
       for (let index = 0; index < workspaceData.users.length; index++) {

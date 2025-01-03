@@ -34,6 +34,7 @@ export default () => ({
   },
   oauth: {
     google: {
+      enableGoogleAuth: process.env.ENABLE_GOOGLE_AUTH,
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       appUrl: process.env.GOOGLE_APP_URL,
