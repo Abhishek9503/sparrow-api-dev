@@ -191,10 +191,11 @@ export class UserController {
     @Body() emailPayload: EmailPayload,
     @Res() res: FastifyReply,
   ) {
-    await this.userService.sendMagicCodeEmail(emailPayload);
+    const data = await this.userService.sendMagicCodeEmail(emailPayload);
     const responseData = new ApiResponseService(
       "Email Sent Successfully",
       HttpStatusCode.OK,
+      data.name,
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }

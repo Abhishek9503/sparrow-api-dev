@@ -247,9 +247,9 @@ export class UserService {
    *
    * @param emailPayload - The payload containing the user's email for magic code.
    * @throws If the email is already verified.
-   * @returns Resolves when the email is sent and the verification code is updated.
+   * @returns Resolves when the email is sent and the verification code is updated and return the user data.
    */
-  async sendMagicCodeEmail(emailPayload: EmailPayload): Promise<void> {
+  async sendMagicCodeEmail(emailPayload: EmailPayload): Promise<WithId<User>> {
     const userDetails = await this.getUserByEmail(
       emailPayload.email.toLowerCase(),
     );
@@ -299,6 +299,7 @@ export class UserService {
       ),
     ];
     await Promise.all(promise);
+    return userDetails;
   }
 
   async sendWelcomeEmail(earlyAccessDto: EarlyAccessPayload): Promise<void> {

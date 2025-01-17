@@ -50,9 +50,8 @@ export class AppController {
     @Res() res: FastifyReply,
     @Param("currentVersion") currentVersion: string,
   ) {
-    const { statusCode, data } = await this.appService.getUpdaterDetails(
-      currentVersion,
-    );
+    const { statusCode, data } =
+      await this.appService.getUpdaterDetails(currentVersion);
     return res.status(statusCode).send(data);
   }
 

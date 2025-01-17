@@ -111,7 +111,31 @@ export class AppService {
       if (!curl || !curl.length) {
         throw new Error();
       }
-      return this.transformRequest(JSON.parse(toJsonString(updatedCurl)));
+      const stringifiedCurl = toJsonString(updatedCurl);
+      const parsedCurl = JSON.parse(stringifiedCurl);
+      // Match all -F flags with their key-value pairs
+      const formDataMatches = curl.match(/-F\s+'([^=]+)=@([^;]+)/g);
+      const formDataItems = formDataMatches
+        ? formDataMatches.map((match) => {
+            // Extract key and filename
+            const [, keyValue] = match.split("-F '");
+            const [key, filePath] = keyValue.split("=@");
+            const value = filePath.replace(/'/g, "");
+
+            return {
+              key,
+              value,
+              checked: true,
+              base: value,
+            };
+          })
+        : [];
+
+      // Override the form data in second
+      if (formDataItems.length > 0) {
+        parsedCurl.files = formDataItems;
+      }
+      return this.transformRequest(parsedCurl);
     } catch (error) {
       console.error("Error parsing :", error);
       throw new BadRequestException("Invalid Curl");
@@ -206,54 +230,110 @@ export class AppService {
       transformedObject.request.url = url;
       transformedObject.request.queryParams = queryParams;
     }
+    let isFormData = false;
 
     // Handle request body based on Content-Type
-    if (requestObject.data) {
+    if (requestObject?.data || requestObject?.files) {
       const contentType =
         requestObject.headers["content-type"] ||
         requestObject.headers["Content-Type"] ||
         "";
       if (contentType.startsWith("multipart/form-data")) {
+        isFormData = true;
         const boundary = contentType.split("boundary=")[1];
-        const formDataParts = requestObject.data.split(`--${boundary}\r\n`);
-        formDataParts.shift(); // Remove the first boundary part
+        if (contentType.includes("boundary=")) {
+          const formDataParts = requestObject.data.split(`--${boundary}\r\n`);
+          formDataParts.shift(); // Remove the first boundary part
 
-        for (const part of formDataParts) {
-          const lines = part.trim().split("\r\n");
-          const disposition = lines[0]; // Content-Disposition line
-          if (disposition.includes('name="_method"')) {
-            // Ignore the _method part
-            continue;
+          for (const part of formDataParts) {
+            const lines = part.trim().split("\r\n");
+            const disposition = lines[0]; // Content-Disposition line
+            if (disposition.includes('name="_method"')) {
+              // Ignore the _method part
+              continue;
+            }
+            const key = disposition.split('name="')[1].split('"')[0];
+            let value = "";
+
+            if (lines.length > 2) {
+              value = lines.slice(2).join("\r\n").trim(); // Extract value from part content
+            }
+
+            if (value.includes(boundary)) {
+              value = "";
+            }
+
+            if (
+              disposition.includes('Content-Disposition: form-data; name="')
+            ) {
+              transformedObject.request.body.formdata.text.push({
+                key,
+                value,
+                checked: true,
+              });
+            } else if (
+              disposition.includes(
+                'Content-Disposition: form-data; name="file"',
+              ) &&
+              value.startsWith("/")
+            ) {
+              transformedObject.request.body.formdata.text.push({
+                key,
+                value: "",
+                checked: true,
+              });
+            }
           }
-          const key = disposition.split('name="')[1].split('"')[0];
-          let value = "";
+        } else {
+          // Handle case where no boundary is present
+          try {
+            // Try to parse the body data
+            const bodyData =
+              typeof requestObject.data === "string"
+                ? JSON.parse(requestObject.data)
+                : requestObject.data;
 
-          if (lines.length > 2) {
-            value = lines.slice(2).join("\r\n").trim(); // Extract value from part content
-          }
-
-          if (value.includes(boundary)) {
-            value = "";
-          }
-
-          if (disposition.includes('Content-Disposition: form-data; name="')) {
-            transformedObject.request.body.formdata.text.push({
-              key,
-              value,
-              checked: true,
-            });
-          } else if (
-            disposition.includes(
-              'Content-Disposition: form-data; name="file"',
-            ) &&
-            value.startsWith("/")
-          ) {
-            transformedObject.request.body.formdata.file.push({
-              key,
-              value,
-              checked: true,
-              base: `${value}`,
-            });
+            // If bodyData is an object, convert its key-value pairs
+            if (typeof bodyData === "object" && bodyData !== null) {
+              Object.entries(bodyData).forEach(([key, value]) => {
+                // Check if the value appears to be a file path
+                if (typeof value === "string" && value.startsWith("/")) {
+                  transformedObject.request.body.formdata.text.push({
+                    key,
+                    value: "",
+                    checked: true,
+                  });
+                } else {
+                  transformedObject.request.body.formdata.text.push({
+                    key,
+                    value: String(value),
+                    checked: true,
+                  });
+                }
+              });
+            }
+          } catch (error) {
+            // If parsing fails, try to handle it as a plain string
+            if (typeof requestObject.data === "string") {
+              // Split by common form data delimiters
+              const pairs = requestObject.data.split(/[&\n]/).filter(Boolean);
+              pairs.forEach((pair: any) => {
+                const [key, value] = pair.split("=").map(decodeURIComponent);
+                if (value && value.startsWith("/")) {
+                  transformedObject.request.body.formdata.text.push({
+                    key,
+                    value: "",
+                    checked: true,
+                  });
+                } else {
+                  transformedObject.request.body.formdata.text.push({
+                    key,
+                    value: value || "",
+                    checked: true,
+                  });
+                }
+              });
+            }
           }
         }
         transformedObject.request.selectedRequestBodyType =
@@ -305,20 +385,34 @@ export class AppService {
 
     // Handle files from request object
     if (requestObject.files) {
-      for (const [key, filename] of Object.entries(requestObject.files)) {
-        transformedObject.request.body.formdata.file.push({
-          key,
-          value: filename,
-          checked: true,
-          base: `${filename}`,
+      // If files is an array of objects
+      if (Array.isArray(requestObject.files)) {
+        requestObject.files.forEach((fileObj: any) => {
+          transformedObject.request.body.formdata.text.push({
+            key: fileObj?.key || "",
+            value: "",
+            checked: true,
+          });
         });
+      }
+      // If files is an object with key-value pairs
+      else {
+        for (const [key, filename] of Object.entries(requestObject.files)) {
+          transformedObject.request.body.formdata.text.push({
+            key,
+            value: "",
+            checked: true,
+          });
+        }
       }
     }
 
     // Handle headers and populate auth details
     if (requestObject.headers) {
       for (const [key, value] of Object.entries(requestObject.headers)) {
-        transformedObject.request.headers.push({ key, value, checked: true });
+        if (isFormData && key !== "Content-Type") {
+          transformedObject.request.headers.push({ key, value, checked: true });
+        }
 
         // Check for Bearer token
         if (
@@ -363,6 +457,7 @@ export class AppService {
             AuthModeEnum["Basic Auth"];
         }
       }
+      transformedObject.request.headers.push(keyValueDefaultObj);
     }
 
     //Assign default values
