@@ -92,4 +92,8 @@ export default () => ({
     portalId: process.env.HUBSPOT_PORTALID,
     baseURL: process.env.HUBSPOT_BASEURL,
   },
+  docs: {
+    beehiivApiKey: process.env.BEEHIIV_API_KEY,
+    beehiivPublicationId: process.env.BEEHIIV_PUBLICATION_ID,
+  },
 });

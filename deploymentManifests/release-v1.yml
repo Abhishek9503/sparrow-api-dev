@@ -260,6 +260,16 @@ spec:
                 secretKeyRef:
                   name: release-api-v1-secret
                   key: HUBSPOT_FORMID
+            - name: BEEHIIV_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: BEEHIIV_API_KEY
+            - name: BEEHIIV_PUBLICATION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: BEEHIIV_PUBLICATION_ID
 
 ---
 apiVersion: v1

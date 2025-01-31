@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpStatusCode } from "../common/enum/httpStatusCode.enum";
 import { UpdaterJsonResponsePayload } from "./payloads/updaterJson.payload";
@@ -15,6 +19,7 @@ import {
 import { ContextService } from "../common/services/context.service";
 import { Kafka } from "kafkajs";
 import { MongoClient } from "mongodb";
+import axios from "axios";
 
 /**
  * Application Service
@@ -524,6 +529,46 @@ export class AppService {
     } catch (error) {
       console.error("MongoDB connection error:", error);
       return false;
+    }
+  }
+
+  /**Users can subscribe to Sparrow through email. This is for Sparrow-docs.*/
+  async subscribeToBeehiiv(email: string): Promise<any> {
+    if (!email) {
+      throw new BadRequestException("Please provide an email to subscribe.");
+    }
+    const beehiivPublicationId = this.config.get("docs.beehiivPublicationId");
+    const beehiivApiKey = this.config.get("docs.beehiivApiKey");
+    if (!beehiivPublicationId || !beehiivApiKey) {
+      throw new InternalServerErrorException(
+        "Beehiiv configuration is missing.",
+      );
+    }
+    const url = `https://api.beehiiv.com/v2/publications/${beehiivPublicationId}/subscriptions`;
+    try {
+      const response = await axios.post(
+        url,
+        {
+          email,
+          reactivate_existing: false,
+          send_welcome_email: true,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${beehiivApiKey}`,
+          },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 500) {
+        throw new InternalServerErrorException(
+          "An error occurred while subscribing.",
+        );
+      } else {
+        throw new BadRequestException("Request Failed");
+      }
     }
   }
 }

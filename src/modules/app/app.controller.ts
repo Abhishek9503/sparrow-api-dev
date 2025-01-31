@@ -23,7 +23,7 @@ import { ApiResponseService } from "../common/services/api-response.service";
 import { HttpStatusCode } from "../common/enum/httpStatusCode.enum";
 import { curlDto } from "./payloads/curl.payload";
 import { PostmanParserService } from "../common/services/postman.parser.service";
-
+import { subscribePayload } from "./payloads/subscribe.payload";
 /**
  * App Controller
  */
@@ -212,5 +212,27 @@ export class AppController {
       kafka: isKafkaConnected ? "connected" : "disconnected",
       mongo: isMongoConnected ? "connected" : "disconnected",
     });
+  }
+
+  // Users can Subscribe to Sparrow.
+  @Post("subscribe")
+  @ApiResponse({ status: 200, description: "Subscription successful." })
+  @ApiResponse({
+    status: 400,
+    description: "Please provide Email to Subscribe.",
+  })
+  @ApiResponse({ status: 500, description: "Failed to Subscribe." })
+  async subscribeSparrow(
+    @Body() req: subscribePayload,
+    @Res() res: FastifyReply,
+  ) {
+    const { email } = req;
+    const data = await this.appService.subscribeToBeehiiv(email);
+    const responseData = {
+      message: "Success",
+      httpStatusCode: HttpStatus.OK,
+      data,
+    };
+    return res.status(HttpStatus.OK).send(responseData);
   }
 }
