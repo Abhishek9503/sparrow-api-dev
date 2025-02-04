@@ -86,7 +86,7 @@ export class StreamPromptPayload {
    */
   @IsString()
   @IsOptional()
-  @ApiProperty({ required: true, example: "thread id" })
+  @ApiProperty({ required: false, example: "thread id" })
   threadId: string;
 
   /**
@@ -103,6 +103,6 @@ export class StreamPromptPayload {
    */
   @IsString()
   @IsOptional()
-  @ApiProperty({ required: true, example: "instructions to your assistant" })
+  @ApiProperty({ required: false, example: "instructions to your assistant" })
   instructions: string;
 }
