@@ -86,7 +86,7 @@ export class StreamPromptPayload {
    */
   @IsString()
   @IsOptional()
-  @ApiProperty({ required: false, example: "thread id" })
+  @ApiProperty({ required: true, example: "thread id" })
   threadId: string;
 
   /**
@@ -98,11 +98,36 @@ export class StreamPromptPayload {
   tabId: string;
 
   /**
-   * Additional instructions for the assistant which will
-   * decide the context for a particular thread.
+   * The email id to check the limit.
    */
   @IsString()
-  @IsOptional()
-  @ApiProperty({ required: false, example: "instructions to your assistant" })
-  instructions: string;
+  @IsNotEmpty()
+  @ApiProperty({ required: true, example: "emailId" })
+  emailId: string;
+
+  /**
+   * The Api data.
+   */
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ required: true, example: "Api Data" })
+  apiData: string;
+}
+
+export class ErrorResponsePayload {
+  /**
+   * The cURL.
+   */
+  @IsString()
+  @ApiProperty({ required: true, example: "curl -X" })
+  @IsNotEmpty()
+  curl: string;
+
+  /**
+   * The error.
+   */
+  @IsString()
+  @ApiProperty({ required: true, example: "error" })
+  @IsNotEmpty()
+  error: string;
 }

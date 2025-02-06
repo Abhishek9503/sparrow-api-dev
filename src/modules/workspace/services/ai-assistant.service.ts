@@ -10,7 +10,10 @@ import { Socket } from "socket.io";
 import { AzureOpenAI } from "openai";
 
 // ---- Payload
-import { StreamPromptPayload } from "../payloads/ai-assistant.payload";
+import {
+  StreamPromptPayload,
+  ErrorResponsePayload,
+} from "../payloads/ai-assistant.payload";
 
 // ---- Services
 import { ContextService } from "@src/modules/common/services/context.service";
@@ -57,10 +60,7 @@ export class AiAssistantService {
         apiVersion: this.apiVersion,
         apiKey: this.apiKey,
       });
-
-      console.log("AzureOpenAI client initialized.");
     } catch (error) {
-      console.error("Error initializing AzureOpenAI client:", error);
       throw new InternalServerErrorException(
         "Failed to initialize AI service.",
       );
@@ -77,24 +77,21 @@ export class AiAssistantService {
       let threadId = parsedData.threadId;
       const tabId = parsedData.tabId;
       const emailId = parsedData.emailId;
-
-      console.log("Text:", text);
-      console.log("ThreadId:", threadId);
-      console.log("TabId:", tabId);
-      console.log("EmailId:", emailId);
+      const apiData = parsedData.apiData || "Data not available";
 
       const user = await this.userService.getUserByEmail(emailId);
-      console.log("user:", user);
       const stat = await this.chatbotStatsService.getIndividualStat(
         user?._id?.toString(),
       );
-      console.log("Stat:", stat);
       const currentYearMonth = this.chatbotStatsService.getCurrentYearMonth();
       if (
         stat?.tokenStats &&
         stat.tokenStats?.yearMonth === currentYearMonth &&
         stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
       ) {
+        client.emit(`assistant-response_${tabId}`, {
+          messages: "Limit Reached. Can you please try again after some time.",
+        });
         throw new BadRequestException("Limit reached");
       }
 
@@ -104,9 +101,6 @@ export class AiAssistantService {
           "Invalid input: 'text' field is required.",
         );
       }
-
-      console.log("Text:", text);
-      console.log("ThreadId:", threadId);
 
       if (!this.assistantsClient) {
         throw new InternalServerErrorException(
@@ -125,7 +119,7 @@ export class AiAssistantService {
 
           await this.assistantsClient.beta.threads.messages.create(threadId, {
             role: "user",
-            content: text,
+            content: `{Text: ${text} , API data: ${apiData} }`,
           });
 
           const assistantResponse =
@@ -139,7 +133,7 @@ export class AiAssistantService {
 
           let runStatus = runResponse.status;
           while (runStatus === "queued" || runStatus === "in_progress") {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 3000));
             const runStatusResponse =
               await this.assistantsClient.beta.threads.runs.retrieve(
                 threadId,
@@ -163,8 +157,6 @@ export class AiAssistantService {
               total_tokens: 0,
             };
 
-            console.log("Token Usage:", tokenUsage);
-
             const latestAssistantMessage = messagesResponse.data
               .filter((message) => message.role === "assistant")
               .sort(
@@ -178,6 +170,8 @@ export class AiAssistantService {
               .map((item) => item.text.value)
               .join(" ");
 
+            console.log("Assistant Reply: ", assistantReply);
+
             client.emit(`assistant-response_${tabId}`, {
               messages: assistantReply,
               thread_Id: threadId,
@@ -185,7 +179,6 @@ export class AiAssistantService {
 
             const userData = await this.userService.getUserByEmail(emailId);
             const id = userData._id.toString();
-            console.log("User Data:", id);
 
             const kafkaMessage = {
               userId: id,
@@ -220,6 +213,45 @@ export class AiAssistantService {
         messages: "Please try again",
         thread_Id: null,
       });
+    }
+  }
+
+  public async specificError(text: ErrorResponsePayload): Promise<string> {
+    try {
+      if (!text) {
+        throw new BadRequestException(
+          "Invalid input: 'text' field is required.",
+        );
+      }
+
+      const curl = text.curl;
+      const error = text.error;
+
+      const prompt =
+        "You are provided with two things. One is cURL and second is the error message. You need to provide the solution for the error message.";
+
+      const userMessage = `This is the cURL: ${curl} and this is the Error: ${error}`;
+
+      const messages: { role: "system" | "user"; content: string }[] = [
+        { role: "system", content: prompt },
+        { role: "user", content: userMessage },
+      ];
+
+      const response = await this.assistantsClient.chat.completions.create({
+        model: "sparrow",
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1024,
+      });
+
+      const result =
+        response.choices[response.choices.length - 1].message.content.trim();
+      return result;
+    } catch (error) {
+      console.error("Error processing specificError:", error);
+      throw new InternalServerErrorException(
+        "An error occurred while processing the request.",
+      );
     }
   }
 }
