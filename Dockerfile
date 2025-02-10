@@ -10,9 +10,7 @@ RUN apk update && apk add --no-cache python3 py3-pip build-base gcc
 # Install dependencies with the preferred package manager
 RUN npm i -g pnpm@latest
 RUN pnpm install --frozen-lockfile
-# RUN corepack prepare pnpm@latest --activate
 # RUN corepack enable pnpm && pnpm i --frozen-lockfile
-# RUN corepack enable pnpm && pnpm i --frozen-lockfile --no-verify-store-integrity
 
 FROM node:18-alpine AS builder
 WORKDIR /app
@@ -32,9 +30,7 @@ RUN pnpm build
 ENV NODE_ENV production
 
 # Re-run install only for production dependencies
-# RUN corepack prepare pnpm@latest --activate
 # RUN corepack enable pnpm && pnpm i --frozen-lockfile --prod
-# RUN corepack enable pnpm && pnpm i --frozen-lockfile --no-verify-store-integrity --prod
 RUN pnpm install --frozen-lockfile --prod
 
 FROM node:18-alpine AS runner

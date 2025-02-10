@@ -2,7 +2,7 @@ name: Development
 on:
   push:
     branches:
-      - pratik/dev
+      - development
 
 jobs:
    build:
