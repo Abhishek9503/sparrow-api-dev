@@ -80,6 +80,11 @@ spec:
                 secretKeyRef:
                   name: release-api-v1-secret
                   key: REFRESH_TOKEN_MAX_LIMIT
+            - name: SMTP_ENABLED
+              valueFrom:
+                secretKeyRef:
+                  name: release-api-v1-secret
+                  key: SMTP_ENABLED
             - name: SMTP_SENDER_EMAIL
               valueFrom:
                 secretKeyRef:

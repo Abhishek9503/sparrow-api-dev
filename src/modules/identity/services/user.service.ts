@@ -182,7 +182,7 @@ export class UserService {
       subject: `Reset your Sparrow account password`,
     };
     const promise = [
-      transporter.sendMail(mailOptions),
+      this.emailService.sendEmail(transporter, mailOptions),
       this.userRepository.updateVerificationCode(
         resetPasswordDto.email.toLowerCase(),
         verificationCode,
@@ -231,7 +231,7 @@ export class UserService {
       subject: `Your Sparrow Verification Code Inside - Let’s Get You Started!`,
     };
     const promise = [
-      transporter.sendMail(mailOptions),
+      this.emailService.sendEmail(transporter, mailOptions),
       this.userRepository.updateEmailVerificationCode(
         verificationPayload.email.toLowerCase(),
         verificationCode,
@@ -290,7 +290,7 @@ export class UserService {
       subject: `Your Sparrow's Magic Code is Inside!`,
     };
     const promise = [
-      transporter.sendMail(mailOptions),
+      this.emailService.sendEmail(transporter, mailOptions),
       this.userRepository.updateMagicCode(
         emailPayload.email.toLowerCase(),
         magicCode,
@@ -327,7 +327,7 @@ export class UserService {
       template: "welcomeEmail",
     };
     const promise = [
-      transporter.sendMail(mailOptions),
+      this.emailService.sendEmail(transporter, mailOptions),
       this.userRepository.saveEarlyAccessEmail(earlyAccessDto.email),
     ];
     await Promise.all(promise);
@@ -488,7 +488,7 @@ export class UserService {
       },
       subject: `Welcome to Sparrow - Elevate Your REST API Management Effortlessly!`,
     };
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
