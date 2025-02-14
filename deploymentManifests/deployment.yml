@@ -81,6 +81,11 @@ spec:
                 secretKeyRef:
                   name: sparrow-api-secret
                   key: REFRESH_TOKEN_MAX_LIMIT
+            - name: SMTP_ENABLED
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: SMTP_ENABLED
             - name: SMTP_SENDER_EMAIL
               valueFrom:
                 secretKeyRef:

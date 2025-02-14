@@ -13,10 +13,7 @@ import { Team } from "@src/modules/common/models/team.model";
 import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { TeamService } from "./team.service";
-import * as nodemailer from "nodemailer";
-import hbs = require("nodemailer-express-handlebars");
 import { ConfigService } from "@nestjs/config";
-import path = require("path");
 import { EmailService } from "@src/modules/common/services/email.service";
 /**
  * Team User Service
@@ -89,7 +86,7 @@ export class TeamUserService {
         },
         subject: `Welcome to ${payload.teamName} team on Sparrow!`,
       };
-      promiseArray.push(transporter.sendMail(mailOptions));
+      promiseArray.push(this.emailService.sendEmail(transporter, mailOptions));
     }
     await Promise.all(promiseArray);
   }
@@ -640,7 +637,7 @@ export class TeamUserService {
       subject: `Team Member Update: ${MemberName} has left ${teamName} team`,
     };
 
-    await transporter.sendMail(mailOptions);
+    await this.emailService.sendEmail(transporter, mailOptions);
   }
 
   /**
@@ -676,7 +673,7 @@ export class TeamUserService {
       },
       subject: `Team Member Update: ${MemberName} has been removed from ${teamName} team`,
     };
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
@@ -710,7 +707,7 @@ export class TeamUserService {
       },
       subject: `Ownership of ${teamName} team is transferred `,
     };
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
@@ -744,7 +741,7 @@ export class TeamUserService {
       },
       subject: `Congratulations! You Are Now the Owner of ${teamName} team.`,
     };
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
@@ -782,7 +779,7 @@ export class TeamUserService {
       subject: `Your Role in ${teamName} team has been updated.`,
     };
 
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
@@ -820,7 +817,7 @@ export class TeamUserService {
       subject: `Your Role in ${teamName} team has been updated.`,
     };
 
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 }

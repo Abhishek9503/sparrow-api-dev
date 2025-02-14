@@ -14,8 +14,11 @@ import {
   WithId,
 } from "mongodb";
 import {
+  AuthModeEnum,
+  BodyModeEnum,
   Collection,
   CollectionBranch,
+  CollectionItem,
   ItemTypeEnum,
 } from "@src/modules/common/models/collection.model";
 import { ContextService } from "@src/modules/common/services/context.service";
@@ -28,7 +31,8 @@ import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { UpdatesType } from "@src/modules/common/enum/updates.enum";
 import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
 import { PostmanParserService } from "@src/modules/common/services/postman.parser.service";
-
+import { v4 as uuidv4 } from "uuid";
+import { AddTo } from "@src/modules/common/models/collection.rxdb.model";
 @Injectable()
 export class CollectionService {
   constructor(
@@ -60,9 +64,8 @@ export class CollectionService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const collection = await this.collectionRepository.addCollection(
-      newCollection,
-    );
+    const collection =
+      await this.collectionRepository.addCollection(newCollection);
     const updateMessage = `New Collection "${createCollectionDto.name}" is added in "${workspace.name}" workspace`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
@@ -74,21 +77,282 @@ export class CollectionService {
     return collection;
   }
 
+  async createSampleData(user: any): Promise<CollectionItem[]> {
+    const bodyData = {
+      id: 0,
+      category: {
+        id: 0,
+        name: "",
+      },
+      name: "doggie",
+      status: "",
+    };
+    const sampleRequests: CollectionItem[] = [
+      {
+        id: uuidv4(),
+        name: "Add Pet",
+        type: ItemTypeEnum.REQUEST,
+        description: "",
+        updatedAt: new Date(),
+        updatedBy: user.name,
+        createdAt: new Date(),
+        createdBy: user.name,
+        request: {
+          method: "POST",
+          url: "https://petstore.swagger.io/v2/pet",
+          body: {
+            raw: JSON.stringify(bodyData),
+            urlencoded: [
+              {
+                key: "",
+                value: "",
+                checked: false,
+              },
+            ],
+            formdata: {
+              text: [
+                {
+                  key: "",
+                  value: "",
+                  checked: false,
+                },
+              ],
+              file: [],
+            },
+          },
+          headers: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          queryParams: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          auth: {
+            bearerToken: "",
+            basicAuth: {
+              username: "",
+              password: "",
+            },
+            apiKey: {
+              authKey: "",
+              authValue: "",
+              addTo: AddTo.Header,
+            },
+          },
+          selectedRequestBodyType: BodyModeEnum["application/json"],
+          selectedRequestAuthType: AuthModeEnum["No Auth"],
+        },
+      },
+      {
+        id: uuidv4(),
+        name: "Get Pet",
+        type: ItemTypeEnum.REQUEST,
+        description: "",
+        updatedAt: new Date(),
+        updatedBy: user.name,
+        createdAt: new Date(),
+        createdBy: user.name,
+        request: {
+          method: "GET",
+          url: "https://petstore.swagger.io/v2/pet/{petid}",
+          body: {
+            raw: "",
+            urlencoded: [
+              {
+                key: "",
+                value: "",
+                checked: false,
+              },
+            ],
+            formdata: {
+              text: [
+                {
+                  key: "",
+                  value: "",
+                  checked: false,
+                },
+              ],
+              file: [],
+            },
+          },
+          headers: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          queryParams: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          auth: {
+            bearerToken: "",
+            basicAuth: {
+              username: "",
+              password: "",
+            },
+            apiKey: {
+              authKey: "",
+              authValue: "",
+              addTo: AddTo.Header,
+            },
+          },
+          selectedRequestBodyType: BodyModeEnum["text/plain"],
+          selectedRequestAuthType: AuthModeEnum["No Auth"],
+        },
+      },
+      {
+        id: uuidv4(),
+        name: "Update Pet",
+        type: ItemTypeEnum.REQUEST,
+        description: "",
+        updatedAt: new Date(),
+        updatedBy: user.name,
+        createdAt: new Date(),
+        createdBy: user.name,
+        request: {
+          method: "PUT",
+          url: "https://petstore.swagger.io/v2/pet",
+          body: {
+            raw: JSON.stringify(bodyData),
+            urlencoded: [
+              {
+                key: "",
+                value: "",
+                checked: false,
+              },
+            ],
+            formdata: {
+              text: [
+                {
+                  key: "",
+                  value: "",
+                  checked: false,
+                },
+              ],
+              file: [],
+            },
+          },
+          headers: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          queryParams: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          auth: {
+            bearerToken: "",
+            basicAuth: {
+              username: "",
+              password: "",
+            },
+            apiKey: {
+              authKey: "",
+              authValue: "",
+              addTo: AddTo.Header,
+            },
+          },
+          selectedRequestBodyType: BodyModeEnum["application/json"],
+          selectedRequestAuthType: AuthModeEnum["No Auth"],
+        },
+      },
+      {
+        id: uuidv4(),
+        name: "Delete Pet",
+        type: ItemTypeEnum.REQUEST,
+        description: "",
+        updatedAt: new Date(),
+        updatedBy: user.name,
+        createdAt: new Date(),
+        createdBy: user.name,
+        request: {
+          method: "DELETE",
+          url: "https://petstore.swagger.io/v2/pet/{petid}",
+          body: {
+            raw: "",
+            urlencoded: [
+              {
+                key: "",
+                value: "",
+                checked: false,
+              },
+            ],
+            formdata: {
+              text: [
+                {
+                  key: "",
+                  value: "",
+                  checked: false,
+                },
+              ],
+              file: [],
+            },
+          },
+          headers: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          queryParams: [
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+          auth: {
+            bearerToken: "",
+            basicAuth: {
+              username: "",
+              password: "",
+            },
+            apiKey: {
+              authKey: "",
+              authValue: "",
+              addTo: AddTo.Header,
+            },
+          },
+          selectedRequestBodyType: BodyModeEnum["text/plain"],
+          selectedRequestAuthType: AuthModeEnum["No Auth"],
+        },
+      },
+    ];
+    return sampleRequests;
+  }
+
   async createDefaultCollection(): Promise<InsertOneResult> {
     const user = await this.contextService.get("user");
-
     const newCollection: Collection = {
       name: "Sample Collection",
-      totalRequests: 1,
+      totalRequests: 4,
       createdBy: user.name,
-      items: [],
+      items: await this.createSampleData(user),
       updatedBy: user.name,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const collection = await this.collectionRepository.addCollection(
-      newCollection,
-    );
+    const collection =
+      await this.collectionRepository.addCollection(newCollection);
     return collection;
   }
 
@@ -148,9 +412,8 @@ export class CollectionService {
     updateCollectionDto: Partial<UpdateCollectionDto>,
     workspaceId: string,
   ): Promise<UpdateResult> {
-    const workspace = await this.workspaceService.IsWorkspaceAdminOrEditor(
-      workspaceId,
-    );
+    const workspace =
+      await this.workspaceService.IsWorkspaceAdminOrEditor(workspaceId);
     const user = await this.contextService.get("user");
     await this.checkPermission(workspaceId, user._id);
     const collection = await this.collectionRepository.get(collectionId);
@@ -201,9 +464,8 @@ export class CollectionService {
     id: string,
     workspaceId: string,
   ): Promise<DeleteResult> {
-    const workspace = await this.workspaceService.IsWorkspaceAdminOrEditor(
-      workspaceId,
-    );
+    const workspace =
+      await this.workspaceService.IsWorkspaceAdminOrEditor(workspaceId);
     const user = await this.contextService.get("user");
     await this.checkPermission(workspaceId, user._id);
     const collection = await this.getCollection(id);

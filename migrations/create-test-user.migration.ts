@@ -66,6 +66,13 @@ export class CreateUserMigration implements OnModuleInit {
             owner: userId.toString(),
           },
         ],
+        workspaces: [] as { id: string; name: string }[],
+        owner: userId.toString(),
+        admins: [] as string[],
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        updatedBy: userId,
       };
       const { insertedId: teamId } = await teamsCollection.insertOne(teamData);
 

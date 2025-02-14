@@ -49,7 +49,10 @@ cd sparrow-api
 # Install PNPM globally
 npm i -g pnpm
 
-# Create and setup environments file
+# Tweak environment variables in .env.example by following the below mentioned guide
+[Environment Variables](./docs/ENV.md)
+
+# Create .env file from the tweaked .env.example file
 cp .env.example .env
 ```
 

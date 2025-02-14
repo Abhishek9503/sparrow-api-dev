@@ -612,7 +612,7 @@ export class WorkspaceService {
         },
         subject: `You've been invited to contribute to ${payload.workspaceName} workspace on Sparrow!`,
       };
-      promiseArray.push(transporter.sendMail(mailOptions));
+      promiseArray.push(this.emailService.sendEmail(transporter, mailOptions));
     }
     await Promise.all(promiseArray);
   }
@@ -884,7 +884,7 @@ export class WorkspaceService {
       subject: `Workspace Update: New Workspace is created under ${teamName} team.`,
     };
 
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
@@ -924,7 +924,7 @@ export class WorkspaceService {
       subject: `Your Role in the ${workspaceName} Workspace has been updated`,
     };
 
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
@@ -965,7 +965,7 @@ export class WorkspaceService {
       subject: `Your Role in the ${workspaceName} Workspace has been updated`,
     };
 
-    const promise = [transporter.sendMail(mailOptions)];
+    const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
   }
 
@@ -1103,7 +1103,7 @@ export class WorkspaceService {
         },
         subject: `You've been invited to contribute to ${payload.workspaceName} workspace on Sparrow!`,
       };
-      promiseArray.push(transporter.sendMail(mailOptions));
+      promiseArray.push(this.emailService.sendEmail(transporter, mailOptions));
     }
     await Promise.all(promiseArray);
   }
