@@ -29,6 +29,7 @@ import {
   BranchChangeDto,
   CollectionGraphQLDto,
   CollectionRequestDto,
+  CollectionRequestResponseDto,
   CollectionSocketIODto,
   CollectionWebSocketDto,
   FolderPayload,
@@ -713,6 +714,105 @@ export class collectionController {
     await this.collectionRequestService.deleteGraphQL(graphqlId, graphqlDto);
     const collection = await this.collectionService.getCollection(
       graphqlDto.collectionId,
+    );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to add a response to a request in the collection.
+   *
+   * @param requestResponseDto The request response data.
+   * @param res The Fastify response object.
+   * @returns The response object with status and data.
+   */
+  @Post("response")
+  @ApiOperation({
+    summary: "Add A Response",
+    description: "This will add a response inside request in collection",
+  })
+  @ApiResponse({ status: 200, description: "Response Added Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to add a response" })
+  async addRequestResponse(
+    @Body() requestResponseDto: Partial<CollectionRequestResponseDto>,
+    @Res() res: FastifyReply,
+  ) {
+    const requestResponseObj =
+      await this.collectionRequestService.addRequestResponse(
+        requestResponseDto,
+      );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      requestResponseObj,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to update a response inside a request in the collection.
+   *
+   * @param responseId The ID of the response to update.
+   * @param requestResponseDto The updated request response data.
+   * @param res The Fastify response object.
+   * @returns The response object with status and data.
+   */
+  @Put("response/:responseId")
+  @ApiOperation({
+    summary: "Update a response",
+    description: "This will update a response inside a request in collection",
+  })
+  @ApiResponse({ status: 200, description: "Response saved Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to save response" })
+  async updateRequestResponse(
+    @Param("responseId") responseId: string,
+    @Body() requestResponseDto: Partial<CollectionRequestResponseDto>,
+    @Res() res: FastifyReply,
+  ) {
+    const requestResponse =
+      await this.collectionRequestService.updateRequestResponse(
+        responseId,
+        requestResponseDto,
+      );
+
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      requestResponse,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to delete a response inside a request in the collection.
+   *
+   * @param responseId The ID of the response to delete.
+   * @param requestResponseDto The request response data, including collection ID.
+   * @param res The Fastify response object.
+   * @returns The response object with status and updated collection data.
+   */
+  @Delete("response/:responseId")
+  @ApiOperation({
+    summary: "Delete a Response",
+    description: "This will delete a Response inside a Request in collection",
+  })
+  @ApiResponse({ status: 200, description: "Response Deleted Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to delete Response" })
+  async deleteRequestResponse(
+    @Param("responseId") responseId: string,
+    @Body() requestResponseDto: Partial<CollectionRequestResponseDto>,
+    @Res() res: FastifyReply,
+  ) {
+    await this.collectionRequestService.deleteRequestResponse(
+      responseId,
+      requestResponseDto,
+    );
+    const collection = await this.collectionService.getCollection(
+      requestResponseDto.collectionId,
     );
     const responseData = new ApiResponseService(
       "Success",
