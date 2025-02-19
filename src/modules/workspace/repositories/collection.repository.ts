@@ -195,7 +195,10 @@ export class CollectionRepository {
         { _id, "items.id": requestId },
         {
           $set: {
-            "items.$": request.items,
+            "items.$.name": request.items.name,
+            "items.$.description": request.items.description,
+            "items.$.request": request.items.request,
+            "items.$.updatedAt": new Date(),
             updatedAt: new Date(),
             updatedBy: {
               id: this.contextService.get("user")._id,
@@ -215,7 +218,11 @@ export class CollectionRepository {
         },
         {
           $set: {
-            "items.$[i].items.$[j]": request.items.items,
+            "items.$[i].items.$[j].name": request.items.items.name,
+            "items.$[i].items.$[j].description":
+              request.items.items.description,
+            "items.$[i].items.$[j].request": request.items.items.request,
+            "items.$[i].items.$[j].updatedAt": new Date(),
             updatedAt: new Date(),
             updatedBy: {
               id: this.contextService.get("user")._id,
