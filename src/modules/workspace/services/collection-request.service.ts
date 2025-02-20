@@ -11,6 +11,7 @@ import {
   CollectionGraphQLDto,
   CollectionRequestDto,
   CollectionRequestItem,
+  CollectionRequestResponseDto,
   CollectionSocketIODto,
   CollectionWebSocketDto,
   DeleteFolderDto,
@@ -278,9 +279,8 @@ export class CollectionRequestService {
     folderId?: string,
   ): Promise<CollectionItem> {
     const uuid = uuidv4();
-    const collection = await this.collectionReposistory.getCollection(
-      collectionId,
-    );
+    const collection =
+      await this.collectionReposistory.getCollection(collectionId);
     const requestObj: CollectionItem = {
       id: uuid,
       name: request.items.name,
@@ -364,9 +364,8 @@ export class CollectionRequestService {
     requestId: string,
     request: Partial<CollectionRequestDto>,
   ): Promise<CollectionRequestItem> {
-    const collectionData = await this.collectionReposistory.getCollection(
-      collectionId,
-    );
+    const collectionData =
+      await this.collectionReposistory.getCollection(collectionId);
     const requestData = await this.findItemById(
       collectionData.items,
       requestId,
@@ -429,9 +428,8 @@ export class CollectionRequestService {
     noOfRequests: number,
     requestDto: Partial<CollectionRequestDto>,
   ): Promise<UpdateResult<Collection>> {
-    const collectionData = await this.collectionReposistory.getCollection(
-      collectionId,
-    );
+    const collectionData =
+      await this.collectionReposistory.getCollection(collectionId);
     const requestData = await this.findItemById(
       collectionData.items,
       requestId,
@@ -953,6 +951,155 @@ export class CollectionRequestService {
         message: updateMessage,
         type: UpdatesType.GRAPHQL,
         workspaceId: graphqlDto.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Adds a request response to a collection or folder.
+   * Ensures the user has the necessary permissions before performing the operation.
+   * Produces an update message after saving the response.
+   *
+   * @param requestResponse - The request response data to add.
+   * @returns - The newly created request response object.
+   */
+  async addRequestResponse(
+    requestResponse: Partial<CollectionRequestResponseDto>,
+  ): Promise<CollectionItem> {
+    const user = await this.contextService.get("user");
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      requestResponse.workspaceId,
+    );
+    await this.checkPermission(requestResponse.workspaceId, user._id);
+    const uuid = uuidv4();
+    const collection = await this.collectionReposistory.getCollection(
+      requestResponse.collectionId,
+    );
+    const requestResponseObj: CollectionItem = {
+      id: uuid,
+      name: requestResponse.items.name,
+      type: requestResponse.items.type,
+      description: requestResponse.items.description,
+      requestResponse: requestResponse.items.requestResponse,
+      source: requestResponse.source ?? SourceTypeEnum.USER,
+      isDeleted: false,
+      createdBy: user?.name,
+      updatedBy: user?.name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateMessage = ``;
+    if (!requestResponse?.folderId) {
+      await this.collectionReposistory.addRequestResponse(
+        requestResponse.collectionId,
+        requestResponse.requestId,
+        requestResponseObj,
+      );
+      updateMessage = `Response "${requestResponse.items.name}" is saved under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.REQUEST_RESPONSE,
+          workspaceId: requestResponse.workspaceId,
+        }),
+      });
+      return requestResponseObj;
+    } else {
+      await this.collectionReposistory.addRequestResponseInFolder(
+        requestResponse.collectionId,
+        requestResponse.requestId,
+        requestResponseObj,
+        requestResponse?.folderId,
+      );
+      updateMessage = `Response "${requestResponse.items.name}" is saved under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.REQUEST_RESPONSE,
+          workspaceId: requestResponse.workspaceId,
+        }),
+      });
+      return requestResponseObj;
+    }
+  }
+
+  /**
+   * Updates an existing request response within a collection or folder.
+   * Ensures the user has the necessary permissions before updating.
+   * Produces an update message after modifying the response.
+   *
+   * @param responseId - The ID of the request response to update.
+   * @param requestResponse - The updated request response data.
+   * @returns - The updated request response object.
+   */
+  async updateRequestResponse(
+    responseId: string,
+    requestResponse: Partial<CollectionRequestResponseDto>,
+  ): Promise<CollectionRequestItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      requestResponse.workspaceId,
+    );
+    const user = await this.contextService.get("user");
+    await this.checkPermission(requestResponse.workspaceId, user._id);
+    const collection = await this.collectionReposistory.updateRequestResponse(
+      requestResponse.collectionId,
+      responseId,
+      requestResponse,
+    );
+    const collectionData = await this.collectionReposistory.getCollection(
+      requestResponse.collectionId,
+    );
+    const updateMessage = `Response "${
+      requestResponse?.items?.name
+    }" is updated under "${collectionData.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        type: UpdatesType.REQUEST_RESPONSE,
+        workspaceId: requestResponse.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Deletes a request response from a collection or folder.
+   * Ensures the user has the necessary permissions before deletion.
+   * Produces an update message after deletion.
+   *
+   * @param responseId - The ID of the request response to delete.
+   * @param requestResponseDto - Data containing collection and request details.
+   * @returns - The result of the delete operation.
+   */
+  async deleteRequestResponse(
+    responseId: string,
+    requestResponseDto: Partial<CollectionRequestResponseDto>,
+  ): Promise<UpdateResult<Collection>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      requestResponseDto.workspaceId,
+    );
+    const user = await this.contextService.get("user");
+    await this.checkPermission(requestResponseDto.workspaceId, user._id);
+    const collectionData = await this.collectionReposistory.getCollection(
+      requestResponseDto.collectionId,
+    );
+    const requestResponseData = await this.findItemById(
+      collectionData.items,
+      responseId,
+    );
+    const collection = await this.collectionReposistory.deleteRequestResponse(
+      requestResponseDto.collectionId,
+      requestResponseDto.requestId,
+      responseId,
+      requestResponseDto?.folderId,
+    );
+    const updateMessage = `Response "${requestResponseData?.name}" is deleted from "${collectionData?.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        type: UpdatesType.REQUEST_RESPONSE,
+        workspaceId: requestResponseDto.workspaceId,
       }),
     });
     return collection;
