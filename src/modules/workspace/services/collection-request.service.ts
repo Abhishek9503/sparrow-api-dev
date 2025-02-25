@@ -16,6 +16,7 @@ import {
   CollectionWebSocketDto,
   DeleteFolderDto,
   FolderDto,
+  UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -1035,8 +1036,8 @@ export class CollectionRequestService {
    */
   async updateRequestResponse(
     responseId: string,
-    requestResponse: Partial<CollectionRequestResponseDto>,
-  ): Promise<CollectionRequestItem> {
+    requestResponse: Partial<UpdateCollectionRequestResponseDto>,
+  ): Promise<Partial<UpdateCollectionRequestResponseDto>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       requestResponse.workspaceId,
     );
@@ -1050,8 +1051,12 @@ export class CollectionRequestService {
     const collectionData = await this.collectionReposistory.getCollection(
       requestResponse.collectionId,
     );
+    const requestResponseData = await this.findItemById(
+      collectionData.items,
+      responseId,
+    );
     const updateMessage = `Response "${
-      requestResponse?.items?.name
+      requestResponseData?.name
     }" is updated under "${collectionData.name}" collection`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({

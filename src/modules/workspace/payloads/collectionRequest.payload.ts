@@ -560,7 +560,7 @@ export class CollectionGraphQLDto {
 }
 
 /**
- * Data Transfer Object representing a GraphQL in a collection.
+ * Data Transfer Object representing a Request Response in a collection.
  */
 export class CollectionRequestResponseDto {
   @ApiProperty({ example: "6538e910aa77d958912371f5" })
@@ -598,6 +598,46 @@ export class CollectionRequestResponseDto {
   @IsString()
   @IsOptional()
   currentBranch?: string;
+}
+
+/**
+ * Data Transfer Object representing a update Response in a collection.
+ */
+export class UpdateCollectionRequestResponseDto {
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  collectionId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  workspaceId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsOptional()
+  folderId?: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  requestId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  responseId: string;
+
+  @ApiProperty({ example: "response name" })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({ example: "response description" })
+  @IsString()
+  @IsOptional()
+  description?: string;
 }
 
 export class FolderPayload {

@@ -33,6 +33,7 @@ import {
   CollectionSocketIODto,
   CollectionWebSocketDto,
   FolderPayload,
+  UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { CollectionRequestService } from "../services/collection-request.service";
 import { ContextService } from "@src/modules/common/services/context.service";
@@ -770,7 +771,7 @@ export class collectionController {
   @ApiResponse({ status: 400, description: "Failed to save response" })
   async updateRequestResponse(
     @Param("responseId") responseId: string,
-    @Body() requestResponseDto: Partial<CollectionRequestResponseDto>,
+    @Body() requestResponseDto: Partial<UpdateCollectionRequestResponseDto>,
     @Res() res: FastifyReply,
   ) {
     const requestResponse =
