@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Res,
@@ -33,6 +34,7 @@ import {
   CollectionSocketIODto,
   CollectionWebSocketDto,
   FolderPayload,
+  UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { CollectionRequestService } from "../services/collection-request.service";
 import { ContextService } from "@src/modules/common/services/context.service";
@@ -761,7 +763,7 @@ export class collectionController {
    * @param res The Fastify response object.
    * @returns The response object with status and data.
    */
-  @Put("response/:responseId")
+  @Patch("response/:responseId")
   @ApiOperation({
     summary: "Update a response",
     description: "This will update a response inside a request in collection",
@@ -770,7 +772,7 @@ export class collectionController {
   @ApiResponse({ status: 400, description: "Failed to save response" })
   async updateRequestResponse(
     @Param("responseId") responseId: string,
-    @Body() requestResponseDto: Partial<CollectionRequestResponseDto>,
+    @Body() requestResponseDto: Partial<UpdateCollectionRequestResponseDto>,
     @Res() res: FastifyReply,
   ) {
     const requestResponse =

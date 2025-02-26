@@ -21,9 +21,9 @@ import {
   CollectionGraphQLDto,
   CollectionRequestDto,
   CollectionRequestItem,
-  CollectionRequestResponseDto,
   CollectionSocketIODto,
   CollectionWebSocketDto,
+  UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
 import { Workspace } from "@src/modules/common/models/workspace.model";
@@ -1015,8 +1015,8 @@ export class CollectionRepository {
   async updateRequestResponse(
     collectionId: string,
     responseId: string, // The requestResponse to update
-    requestResponse: Partial<CollectionRequestResponseDto>, // New requestResponse data
-  ): Promise<CollectionRequestItem> {
+    requestResponse: Partial<UpdateCollectionRequestResponseDto>, // New requestResponse data
+  ): Promise<Partial<UpdateCollectionRequestResponseDto>> {
     const _id = new ObjectId(collectionId);
     const defaultParams = {
       updatedAt: new Date(),
@@ -1027,23 +1027,28 @@ export class CollectionRepository {
     };
 
     // Merge updated fields with default parameters
-    requestResponse.items = { ...requestResponse.items, ...defaultParams };
 
     if (!requestResponse?.folderId) {
       // Case: No Folder (request exists inside `items`)
+      const updateObject: Record<string, any> = {
+        updatedAt: defaultParams.updatedAt,
+        updatedBy: defaultParams.updatedBy,
+      };
+
+      if (requestResponse?.name) {
+        updateObject["items.$[i].items.$[j].name"] = requestResponse.name;
+      }
+      if (requestResponse?.description) {
+        updateObject["items.$[i].items.$[j].description"] =
+          requestResponse.description;
+      }
       await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
         {
           _id,
           "items.id": requestResponse.requestId, // Find the request inside `items`
           "items.items.id": responseId, // Find the requestResponse inside the request
         },
-        {
-          $set: {
-            "items.$[i].items.$[j]": requestResponse.items, // Update the correct requestResponse
-            updatedAt: new Date(),
-            updatedBy: defaultParams.updatedBy,
-          },
-        },
+        { $set: updateObject },
         {
           arrayFilters: [
             { "i.id": requestResponse.requestId }, // Locate the request
@@ -1053,6 +1058,19 @@ export class CollectionRepository {
       );
     } else {
       // Case: Inside a Folder (request exists inside `items.items`)
+      const updateObject: Record<string, any> = {
+        updatedAt: defaultParams.updatedAt,
+        updatedBy: defaultParams.updatedBy,
+      };
+
+      if (requestResponse?.name !== undefined) {
+        updateObject["items.$[i].items.$[j].items.$[k].name"] =
+          requestResponse.name;
+      }
+      if (requestResponse?.description !== undefined) {
+        updateObject["items.$[i].items.$[j].items.$[k].description"] =
+          requestResponse.description;
+      }
       await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
         {
           _id,
@@ -1060,13 +1078,7 @@ export class CollectionRepository {
           "items.items.id": requestResponse.requestId, // Find the request inside the folder
           "items.items.items.id": responseId, // Find the requestResponse inside the request
         },
-        {
-          $set: {
-            "items.$[i].items.$[j].items.$[k]": requestResponse.items, // Update the correct requestResponse
-            updatedAt: new Date(),
-            updatedBy: defaultParams.updatedBy,
-          },
-        },
+        { $set: updateObject },
         {
           arrayFilters: [
             { "i.id": requestResponse.folderId }, // Locate the folder
@@ -1077,7 +1089,7 @@ export class CollectionRepository {
       );
     }
 
-    return { ...requestResponse.items, id: responseId };
+    return { ...requestResponse, responseId: responseId };
   }
 
   /**
