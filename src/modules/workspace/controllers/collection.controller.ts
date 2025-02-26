@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Res,
@@ -762,7 +763,7 @@ export class collectionController {
    * @param res The Fastify response object.
    * @returns The response object with status and data.
    */
-  @Put("response/:responseId")
+  @Patch("response/:responseId")
   @ApiOperation({
     summary: "Update a response",
     description: "This will update a response inside a request in collection",
