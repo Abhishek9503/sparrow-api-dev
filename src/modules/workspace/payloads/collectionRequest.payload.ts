@@ -626,8 +626,8 @@ export class UpdateCollectionRequestResponseDto {
 
   @ApiProperty({ example: "6538e910aa77d958912371f5" })
   @IsString()
-  @IsNotEmpty()
-  responseId: string;
+  @IsOptional()
+  responseId?: string;
 
   @ApiProperty({ example: "response name" })
   @IsString()
