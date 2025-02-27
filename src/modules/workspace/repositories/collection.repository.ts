@@ -1035,10 +1035,10 @@ export class CollectionRepository {
         updatedBy: defaultParams.updatedBy,
       };
 
-      if (requestResponse?.name) {
+      if (requestResponse?.name !== undefined) {
         updateObject["items.$[i].items.$[j].name"] = requestResponse.name;
       }
-      if (requestResponse?.description) {
+      if (requestResponse?.description !== undefined) {
         updateObject["items.$[i].items.$[j].description"] =
           requestResponse.description;
       }
