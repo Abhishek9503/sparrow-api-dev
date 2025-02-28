@@ -23,6 +23,7 @@ import {
   CollectionRequestItem,
   CollectionSocketIODto,
   CollectionWebSocketDto,
+  UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
 import { Workspace } from "@src/modules/common/models/workspace.model";
@@ -194,7 +195,10 @@ export class CollectionRepository {
         { _id, "items.id": requestId },
         {
           $set: {
-            "items.$": request.items,
+            "items.$.name": request.items.name,
+            "items.$.description": request.items.description,
+            "items.$.request": request.items.request,
+            "items.$.updatedAt": new Date(),
             updatedAt: new Date(),
             updatedBy: {
               id: this.contextService.get("user")._id,
@@ -214,7 +218,11 @@ export class CollectionRepository {
         },
         {
           $set: {
-            "items.$[i].items.$[j]": request.items.items,
+            "items.$[i].items.$[j].name": request.items.items.name,
+            "items.$[i].items.$[j].description":
+              request.items.items.description,
+            "items.$[i].items.$[j].request": request.items.items.request,
+            "items.$[i].items.$[j].updatedAt": new Date(),
             updatedAt: new Date(),
             updatedBy: {
               id: this.contextService.get("user")._id,
@@ -916,6 +924,237 @@ export class CollectionRepository {
                 name: this.contextService.get("user").name,
               },
             },
+          },
+        );
+    }
+  }
+
+  /**
+   * Adds a request response to a request inside a collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param requestId - The ID of the request to which the response is added.
+   * @param requestResponse - The request response data to add.
+   * @returns The result of the update operation.
+   */
+  async addRequestResponse(
+    collectionId: string,
+    requestId: string,
+    requestResponse: CollectionItem,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const data = await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .updateOne(
+        {
+          _id,
+          "items.id": requestId, // Find the request inside items
+        },
+        {
+          $push: {
+            "items.$.items": requestResponse, // Push inside the found request
+          },
+        },
+      );
+    return data;
+  }
+
+  /**
+   * Adds a request response inside a folder within a collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param requestId - The ID of the request inside the folder.
+   * @param requestResponse - The request response data to add.
+   * @param folderId - The ID of the folder containing the request.
+   * @returns  The result of the update operation.
+   */
+  async addRequestResponseInFolder(
+    collectionId: string,
+    requestId: string,
+    requestResponse: CollectionItem,
+    folderId: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const collection = await this.getCollection(collectionId);
+    const isFolderExists = collection.items.some((item) => {
+      return item.id === folderId;
+    });
+    if (isFolderExists) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": folderId, // Find the folder
+            "items.items.id": requestId, // Find the request inside the folder
+          },
+          {
+            $push: {
+              "items.$[i].items.$[j].items": requestResponse, // Push inside the correct request
+            },
+          },
+          {
+            arrayFilters: [
+              { "i.id": folderId }, // Locate the folder
+              { "j.id": requestId }, // Locate the request inside the folder
+            ],
+          },
+        );
+    } else {
+      throw new BadRequestException("Folder Not Found.");
+    }
+  }
+
+  /**
+   * Updates a request response inside a collection or folder.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param responseId - The ID of the response to update.
+   * @param requestResponse - The updated response data.
+   */
+  async updateRequestResponse(
+    collectionId: string,
+    responseId: string, // The requestResponse to update
+    requestResponse: Partial<UpdateCollectionRequestResponseDto>, // New requestResponse data
+  ): Promise<Partial<UpdateCollectionRequestResponseDto>> {
+    const _id = new ObjectId(collectionId);
+    const defaultParams = {
+      updatedAt: new Date(),
+      updatedBy: {
+        id: this.contextService.get("user")._id,
+        name: this.contextService.get("user").name,
+      },
+    };
+
+    // Merge updated fields with default parameters
+
+    if (!requestResponse?.folderId) {
+      // Case: No Folder (request exists inside `items`)
+      const updateObject: Record<string, any> = {
+        updatedAt: defaultParams.updatedAt,
+        updatedBy: defaultParams.updatedBy,
+      };
+
+      if (requestResponse?.name !== undefined) {
+        updateObject["items.$[i].items.$[j].name"] = requestResponse.name;
+      }
+      if (requestResponse?.description !== undefined) {
+        updateObject["items.$[i].items.$[j].description"] =
+          requestResponse.description;
+      }
+      await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
+        {
+          _id,
+          "items.id": requestResponse.requestId, // Find the request inside `items`
+          "items.items.id": responseId, // Find the requestResponse inside the request
+        },
+        { $set: updateObject },
+        {
+          arrayFilters: [
+            { "i.id": requestResponse.requestId }, // Locate the request
+            { "j.id": responseId }, // Locate the requestResponse
+          ],
+        },
+      );
+    } else {
+      // Case: Inside a Folder (request exists inside `items.items`)
+      const updateObject: Record<string, any> = {
+        updatedAt: defaultParams.updatedAt,
+        updatedBy: defaultParams.updatedBy,
+      };
+
+      if (requestResponse?.name !== undefined) {
+        updateObject["items.$[i].items.$[j].items.$[k].name"] =
+          requestResponse.name;
+      }
+      if (requestResponse?.description !== undefined) {
+        updateObject["items.$[i].items.$[j].items.$[k].description"] =
+          requestResponse.description;
+      }
+      await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
+        {
+          _id,
+          "items.id": requestResponse.folderId, // Find the folder inside `items`
+          "items.items.id": requestResponse.requestId, // Find the request inside the folder
+          "items.items.items.id": responseId, // Find the requestResponse inside the request
+        },
+        { $set: updateObject },
+        {
+          arrayFilters: [
+            { "i.id": requestResponse.folderId }, // Locate the folder
+            { "j.id": requestResponse.requestId }, // Locate the request inside the folder
+            { "k.id": responseId }, // Locate the requestResponse inside the request
+          ],
+        },
+      );
+    }
+
+    return { ...requestResponse, responseId: responseId };
+  }
+
+  /**
+   * Deletes a request response from a request inside a collection or folder.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param requestId - The ID of the request that contains the response.
+   * @param responseId - The ID of the response to delete.
+   * @param folderId - Optional folder ID if the request is inside a folder.
+   */
+  async deleteRequestResponse(
+    collectionId: string,
+    requestId: string, // The request where the requestResponse exists
+    responseId: string, // The requestResponse to delete
+    folderId?: string, // Optional folderId (if the request is inside a folder)
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const updatedBy = {
+      id: this.contextService.get("user")._id,
+      name: this.contextService.get("user").name,
+    };
+
+    if (!folderId) {
+      // Case: No Folder (request exists inside `items`)
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": requestId, // Find the request inside `items`
+          },
+          {
+            $pull: {
+              "items.$.items": { id: responseId }, // Remove the requestResponse from `items.items`
+            },
+            $set: {
+              updatedAt: new Date(),
+              updatedBy: updatedBy,
+            },
+          },
+        );
+    } else {
+      // Case: Inside a Folder (request exists inside `items.items`)
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": folderId, // Find the folder inside `items`
+            "items.items.id": requestId, // Find the request inside the folder
+          },
+          {
+            $pull: {
+              "items.$[i].items.$[j].items": { id: responseId }, // Remove the requestResponse from `items.items.items`
+            },
+            $set: {
+              updatedAt: new Date(),
+              updatedBy: updatedBy,
+            },
+          },
+          {
+            arrayFilters: [
+              { "i.id": folderId }, // Locate the folder
+              { "j.id": requestId }, // Locate the request inside the folder
+            ],
           },
         );
     }

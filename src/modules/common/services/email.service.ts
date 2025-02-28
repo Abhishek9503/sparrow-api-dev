@@ -3,6 +3,18 @@ import hbs from "nodemailer-express-handlebars";
 import * as path from "path";
 import { ConfigService } from "@nestjs/config";
 import { Injectable } from "@nestjs/common";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
+
+interface MailOptions {
+  from: string;
+  to: string;
+  text?: string;
+  template: string;
+  context?: {
+    [key: string]: any;
+  };
+  subject: string;
+}
 
 @Injectable()
 export class EmailService {
@@ -38,5 +50,28 @@ export class EmailService {
     transporter.use("compile", hbs(handlebarOptions));
 
     return transporter;
+  }
+
+  async sendEmail(
+    transporter: nodemailer.Transporter<
+      SMTPTransport.SentMessageInfo,
+      SMTPTransport.Options
+    >,
+    mailOptions: MailOptions,
+  ): Promise<any> {
+    const smtpEnabled = this.configService.get("app.smtpEnabled");
+
+    // Exit early if SMTP is disabled
+    if (smtpEnabled !== "true") {
+      console.warn("SMTP is disabled. Email not sent.");
+      return;
+    }
+
+    try {
+      const result = await transporter.sendMail(mailOptions);
+      return result; // Return the result for further processing if needed
+    } catch (error) {
+      console.error("Failed to send email:", error);
+    }
   }
 }

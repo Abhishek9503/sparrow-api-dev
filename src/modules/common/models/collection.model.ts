@@ -28,6 +28,7 @@ export enum ItemTypeEnum {
   WEBSOCKET = "WEBSOCKET",
   SOCKETIO = "SOCKETIO",
   GRAPHQL = "GRAPHQL",
+  REQUEST_RESPONSE = "REQUEST_RESPONSE",
 }
 
 export enum BodyModeEnum {
@@ -263,6 +264,124 @@ export class RequestMetaData {
   auth?: Auth;
 }
 
+export class RequestResponseMetaData {
+  @ApiProperty({ example: "put" })
+  @IsNotEmpty()
+  method: HTTPMethods;
+
+  @ApiProperty({ example: "/pet" })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiProperty({ type: [SparrowRequestBody] })
+  @Type(() => SparrowRequestBody)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  body?: SparrowRequestBody;
+
+  @ApiProperty({
+    enum: [
+      "application/json",
+      "application/xml",
+      "application/x-www-form-urlencoded",
+      "multipart/form-data",
+      "application/javascript",
+      "text/plain",
+      "text/html",
+    ],
+  })
+  @IsEnum({ BodyModeEnum })
+  @IsString()
+  @IsOptional()
+  selectedRequestBodyType?: BodyModeEnum;
+
+  @ApiProperty({
+    enum: AuthModeEnum,
+  })
+  @IsEnum({ AuthModeEnum })
+  @IsString()
+  @IsNotEmpty()
+  selectedRequestAuthType?: AuthModeEnum;
+
+  @ApiProperty({
+    example: {
+      name: "search",
+      description: "The search term to filter results",
+      required: false,
+      schema: {},
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  queryParams?: KeyValue[];
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      name: "userID",
+      description: "The unique identifier of the user",
+      required: true,
+      schema: {},
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  pathParams?: KeyValue[];
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      name: "Authorization",
+      description: "Bearer token for authentication",
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  headers?: KeyValue[];
+
+  @ApiProperty({
+    type: [Auth],
+    example: {
+      bearerToken: "Bearer xyz",
+    },
+  })
+  @IsArray()
+  @Type(() => Auth)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  auth?: Auth;
+
+  @ApiProperty({ example: "body" })
+  @IsString()
+  @IsOptional()
+  responseBody?: string;
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      name: "Authorization",
+      description: "Bearer token for authentication",
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  responseHeaders?: KeyValue[];
+
+  @ApiProperty({ example: "200 OK" })
+  @IsString()
+  @IsOptional()
+  responseStatusCode?: string;
+}
+
 /**
  * Data Transfer Object representing the metadata for a WebSocket connection.
  */
@@ -475,6 +594,11 @@ export class CollectionItem {
   @IsOptional()
   @Type(() => RequestMetaData)
   request?: RequestMetaData;
+
+  @ApiProperty({ type: RequestResponseMetaData })
+  @IsOptional()
+  @Type(() => RequestResponseMetaData)
+  requestResponse?: RequestResponseMetaData;
 
   @ApiProperty({ type: WebSocketMetaData })
   @IsOptional()

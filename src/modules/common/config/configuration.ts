@@ -22,6 +22,7 @@ export default () => ({
       process.env.REFRESH_TOKEN_EXPIRATION_TIME,
     ),
     refreshTokenMaxLimit: parseInt(process.env.REFRESH_TOKEN_MAX_LIMIT),
+    smtpEnabled: process.env.SMTP_ENABLED || "false",
     senderEmail: process.env.SMTP_SENDER_EMAIL,
     senderPassword: process.env.SMTP_SENDER_PASSWORD,
     mailHost: process.env.SMTP_MAIL_HOST,
