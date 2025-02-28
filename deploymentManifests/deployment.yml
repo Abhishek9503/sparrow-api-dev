@@ -50,11 +50,7 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
             successThreshold: 1
-
-          ports:
-            - containerPort: 80
-            - containerPort: 9001
-
+            
           env:
             - name: PORT
               valueFrom:
