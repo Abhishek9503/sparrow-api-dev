@@ -1,6 +1,7 @@
 import SwaggerParser from "@apidevtools/swagger-parser";
 import {
   Collection,
+  CollectionAuthModeEnum,
   CollectionItem,
   ItemTypeEnum,
   SourceTypeEnum,
@@ -95,6 +96,7 @@ export class ParserService {
       collection = {
         name: openApiDocument.info.title,
         description: openApiDocument.info.description,
+        selectedAuthType: CollectionAuthModeEnum["No Auth"],
         primaryBranch: "",
         localRepositoryPath: "",
         branches: [],
