@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
 // ---- Model
-import { Collection } from "@common/models/collection.model";
+import {
+  Collection,
+  CollectionAuthModeEnum,
+} from "@common/models/collection.model";
 
 // ---- Services
 import { ContextService } from "./context.service";
@@ -43,6 +46,7 @@ export class PostmanParserService {
       name: info.name,
       description: info.description ?? "",
       items: convertedItems,
+      selectedAuthType: CollectionAuthModeEnum["No Auth"],
       totalRequests: countTotalRequests(items),
       createdBy: user?.name,
       updatedBy: {
