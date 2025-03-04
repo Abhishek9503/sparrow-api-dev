@@ -22,8 +22,23 @@ spec:
           imagePullPolicy: Always
           resources: {}
           ports:
-            - containerPort: 80
+            - containerPort: 9000
             - containerPort: 9001
+
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 9000
+          #   initialDelaySeconds: 40
+          #   periodSeconds: 5
+          #   failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 40
+            periodSeconds: 5
+            failureThreshold: 3
 
           env:
             - name: PORT
@@ -276,6 +291,9 @@ spec:
                 secretKeyRef:
                   name: sparrow-api-secret
                   key: BEEHIIV_PUBLICATION_ID
+
+      imagePullSecrets:
+        - name: acr-secret
 
 ---
 apiVersion: v1
