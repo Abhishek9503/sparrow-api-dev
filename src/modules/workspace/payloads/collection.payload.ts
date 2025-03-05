@@ -10,6 +10,7 @@ import {
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import {
+  CollectionAuthModeEnum,
   CollectionItem,
   ItemTypeEnum,
   QueryParams,
@@ -17,6 +18,7 @@ import {
 } from "@src/modules/common/models/collection.model";
 import { HTTPMethods } from "fastify";
 import { Type } from "class-transformer";
+import { Auth } from "@src/modules/common/models/collection.rxdb.model";
 
 export class collectionItemsRequestDto {
   @ApiProperty()
@@ -101,6 +103,26 @@ export class UpdateCollectionDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    enum: CollectionAuthModeEnum,
+  })
+  @IsEnum({ CollectionAuthModeEnum })
+  @IsString()
+  @IsOptional()
+  selectedAuthType?: CollectionAuthModeEnum;
+
+  @ApiProperty({
+    type: [Auth],
+    example: {
+      bearerToken: "Bearer xyz",
+    },
+  })
+  @IsArray()
+  @Type(() => Auth)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  auth?: Auth;
 
   @ApiProperty({ type: [CollectionItem] })
   @IsArray()

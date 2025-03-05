@@ -54,8 +54,16 @@ export enum PostmanBodyModeEnum {
   "html" = "text/html",
 }
 
+export enum CollectionAuthModeEnum {
+  "No Auth" = "No Auth",
+  "API Key" = "API Key",
+  "Bearer Token" = "Bearer Token",
+  "Basic Auth" = "Basic Auth",
+}
+
 export enum AuthModeEnum {
   "No Auth" = "No Auth",
+  "Inherit Auth" = "Inherit Auth",
   "API Key" = "API Key",
   "Bearer Token" = "Bearer Token",
   "Basic Auth" = "Basic Auth",
@@ -63,6 +71,7 @@ export enum AuthModeEnum {
 
 export enum PostmanAuthModeEnum {
   "noauth" = "No Auth",
+  "inherit" = "Inherit Auth",
   "apikey" = "API Key",
   "bearer" = "Bearer Token",
   "basic" = "Basic Auth",
@@ -664,6 +673,26 @@ export class Collection {
   @IsString()
   @IsNotEmpty()
   description?: string;
+
+  @ApiProperty({
+    enum: CollectionAuthModeEnum,
+  })
+  @IsEnum({ CollectionAuthModeEnum })
+  @IsString()
+  @IsOptional()
+  selectedAuthType?: CollectionAuthModeEnum;
+
+  @ApiProperty({
+    type: [Auth],
+    example: {
+      bearerToken: "Bearer xyz",
+    },
+  })
+  @IsArray()
+  @Type(() => Auth)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  auth?: Auth;
 
   @ApiProperty()
   @IsString()

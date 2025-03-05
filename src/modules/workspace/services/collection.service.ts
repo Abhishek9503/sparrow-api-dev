@@ -15,6 +15,7 @@ import {
 } from "mongodb";
 import {
   Collection,
+  CollectionAuthModeEnum,
   CollectionBranch,
   ItemTypeEnum,
 } from "@src/modules/common/models/collection.model";
@@ -55,6 +56,7 @@ export class CollectionService {
       name: createCollectionDto.name,
       totalRequests: 0,
       createdBy: user.name,
+      selectedAuthType: CollectionAuthModeEnum["No Auth"],
       items: [],
       updatedBy: user.name,
       createdAt: new Date(),
@@ -81,7 +83,12 @@ export class CollectionService {
       name: "Sample Collection",
       totalRequests: 1,
       createdBy: user.name,
+<<<<<<< HEAD
       items: [],
+=======
+      selectedAuthType: CollectionAuthModeEnum["No Auth"],
+      items: await this.createSampleData(user),
+>>>>>>> b0a6047e293f3945050465b954da06ac0cc04fd6
       updatedBy: user.name,
       createdAt: new Date(),
       updatedAt: new Date(),
