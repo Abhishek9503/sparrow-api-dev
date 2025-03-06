@@ -83,12 +83,8 @@ export class CollectionService {
       name: "Sample Collection",
       totalRequests: 1,
       createdBy: user.name,
-<<<<<<< HEAD
-      items: [],
-=======
       selectedAuthType: CollectionAuthModeEnum["No Auth"],
       items: await this.createSampleData(user),
->>>>>>> b0a6047e293f3945050465b954da06ac0cc04fd6
       updatedBy: user.name,
       createdAt: new Date(),
       updatedAt: new Date(),
