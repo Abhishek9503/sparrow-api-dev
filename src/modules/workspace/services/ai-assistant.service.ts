@@ -429,15 +429,12 @@ export class AiAssistantService {
               .map((item) => item.text.value)
               .join(" ");
 
-            console.log("Assistant Reply: ", assistantReply);
-
             client.emit(`assistant-response_${tabId}`, {
               messages: assistantReply,
               thread_Id: threadId,
             });
 
-            const userData = await this.userService.getUserByEmail(emailId);
-            const id = userData._id.toString();
+            const id = user._id.toString();
 
             const kafkaMessage = {
               userId: id,
@@ -477,7 +474,6 @@ export class AiAssistantService {
 
   public async specificError(text: ErrorResponsePayload): Promise<string> {
     try {
-      console.log("Specific Error: ", text);
       if (!text) {
         throw new BadRequestException(
           "Invalid input: 'text' field is required.",

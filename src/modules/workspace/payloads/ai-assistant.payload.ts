@@ -112,7 +112,7 @@ export class ChatBotPayload {
    * The prompt or command.
    */
   @IsString()
-  @ApiProperty({ required: true, example: "prompt" })
+  @ApiProperty({ required: true, example: "user input" })
   @IsNotEmpty()
   text: string;
 

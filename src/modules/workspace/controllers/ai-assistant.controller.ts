@@ -48,10 +48,10 @@ export class AiAssistantController {
 
   @Post("specific-error")
   async CurlError(
-    @Body() text: ErrorResponsePayload,
+    @Body() errorResponse: ErrorResponsePayload,
     @Res() res: FastifyReply,
   ) {
-    const data = await this.aiAssistantService.specificError(text);
+    const data = await this.aiAssistantService.specificError(errorResponse);
     const response = new ApiResponseService(
       "AI Reposonse Generated",
       HttpStatusCode.CREATED,
