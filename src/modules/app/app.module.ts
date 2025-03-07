@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { AppController } from "@app/app.controller";
 import { AppService } from "@app/app.service";
 import { ConfigModule } from "@nestjs/config";
@@ -15,9 +15,21 @@ import pino from "pino";
 import { APP_FILTER } from "@nestjs/core";
 import { LoggingExceptionsFilter } from "../common/exception/logging.exception-filter";
 import { ProxyModule } from "../proxy/proxy.module";
+import {
+  makeCounterProvider,
+  makeGaugeProvider,
+  PrometheusModule,
+} from "@willsoto/nestjs-prometheus";
+import { CustomMetricsMiddleware } from "./middleware/metrics.middleware";
 
 @Module({
   imports: [
+    PrometheusModule.register({
+      path: "/metrics",
+      defaultMetrics: {
+        enabled: false,
+      },
+    }),
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
     LoggerModule.forRootAsync({
       useFactory: async () => {
@@ -48,6 +60,22 @@ import { ProxyModule } from "../proxy/proxy.module";
   ],
   controllers: [AppController],
   providers: [
+    CustomMetricsMiddleware,
+    makeCounterProvider({
+      name: "count",
+      help: "Number of HTTP requests",
+      labelNames: ["method", "origin", "status", "environment"],
+    }),
+    makeGaugeProvider({
+      name: "gauge",
+      help: "Number of concurrent requests being processed",
+      labelNames: ["method", "origin", "status", "environment"],
+    }),
+    makeGaugeProvider({
+      name: "app_duration_metrics",
+      help: "Duration of HTTP requests in milliseconds",
+      labelNames: ["method", "origin", "status", "environment"],
+    }),
     AppService,
     {
       provide: EnvironmentVariables,
@@ -59,4 +87,12 @@ import { ProxyModule } from "../proxy/proxy.module";
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    try {
+      consumer.apply(CustomMetricsMiddleware).exclude("metrics").forRoutes("*");
+    } catch (error) {
+      console.error("Error configuring middleware:", error);
+    }
+  }
+}
