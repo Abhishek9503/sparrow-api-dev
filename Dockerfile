@@ -8,7 +8,9 @@ COPY package.json pnpm-lock.yaml* ./
 RUN apk update && apk add --no-cache python3 py3-pip build-base gcc
 
 # Install dependencies with the preferred package manager
-RUN corepack enable pnpm && pnpm i --frozen-lockfile
+RUN npm i -g pnpm@latest
+RUN pnpm install --frozen-lockfile
+# RUN corepack enable pnpm && pnpm i --frozen-lockfile
 
 FROM node:18-alpine AS builder
 WORKDIR /app
@@ -19,13 +21,17 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Run build with the preferred package manager
-RUN corepack enable pnpm && pnpm build
+# RUN corepack enable pnpm && pnpm build
+RUN npm i -g pnpm@latest
+RUN pnpm install --frozen-lockfile
+RUN pnpm build
 
 # Set NODE_ENV environment variable
 ENV NODE_ENV production
 
 # Re-run install only for production dependencies
-RUN corepack enable pnpm && pnpm i --frozen-lockfile --prod
+# RUN corepack enable pnpm && pnpm i --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod
 
 FROM node:18-alpine AS runner
 WORKDIR /app

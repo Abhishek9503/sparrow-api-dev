@@ -180,8 +180,8 @@ export class RequestMetaData {
 
   @ApiProperty({ example: "updatePet" })
   @IsString()
-  @IsNotEmpty()
-  operationId: string;
+  @IsOptional()
+  operationId?: string;
 
   @ApiProperty({ example: "/pet" })
   @IsString()
