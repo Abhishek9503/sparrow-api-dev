@@ -53,7 +53,7 @@ export class AiAssistantController {
   ) {
     const data = await this.aiAssistantService.specificError(errorResponse);
     const response = new ApiResponseService(
-      "AI Reposonse Generated",
+      "AI Error Handler Reposonse Generated",
       HttpStatusCode.CREATED,
       data,
     );

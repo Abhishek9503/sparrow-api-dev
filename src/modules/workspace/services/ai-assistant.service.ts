@@ -332,7 +332,7 @@ export class AiAssistantService {
   ): Promise<void> {
     try {
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
-      const text = parsedData.text;
+      const text = parsedData.userInput;
       let threadId = parsedData.threadId;
       const tabId = parsedData.tabId;
       const emailId = parsedData.emailId;

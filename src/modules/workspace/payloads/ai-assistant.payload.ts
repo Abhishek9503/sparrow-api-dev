@@ -114,7 +114,7 @@ export class ChatBotPayload {
   @IsString()
   @ApiProperty({ required: true, example: "user input" })
   @IsNotEmpty()
-  text: string;
+  userInput: string;
 
   /**
    * The thread ID associated with the prompt.
