@@ -32,14 +32,13 @@ spec:
           #   initialDelaySeconds: 40
           #   periodSeconds: 5
           #   failureThreshold: 3
-          
-          # readinessProbe:
-          #   httpGet:
-          #     path: /health
-          #     port: 9000
-          #   initialDelaySeconds: 40
-          #   periodSeconds: 5
-          #   failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 40
+            periodSeconds: 5
+            failureThreshold: 3
 
           env:
             - name: PORT
