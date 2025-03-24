@@ -30,11 +30,12 @@ export class CustomWebSocketAdapter implements WebSocketAdapter {
     options: SocketServerOptions = { type: SocketServerType.WEBSOCKET },
   ): HybridWebsocketServer {
     switch (options.path) {
-      case SocketServerType.WEBSOCKET:
-        return new WebSocket.Server({
-          server: this.app.getHttpServer(),
-          ...options,
-        });
+      // might enable in future
+      // case SocketServerType.WEBSOCKET:
+      //   return new WebSocket.Server({
+      //     server: this.app.getHttpServer(),
+      //     ...options,
+      //   });
       case SocketServerType.SOCKET_IO:
         return new SocketIO.Server(port, options);
       default:

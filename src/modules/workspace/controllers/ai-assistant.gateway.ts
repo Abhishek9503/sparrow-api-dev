@@ -15,7 +15,7 @@ import {
   ChatBotPayload,
 } from "../payloads/ai-assistant.payload";
 
-const AI_ASSISTANT_SOCKET_PORT = 9002;
+const AI_ASSISTANT_SOCKET_PORT = 9000;
 /**
  * WebSocket Gateway for AI Assistant.
  * Handles WebSocket connections, disconnections, and incoming messages
