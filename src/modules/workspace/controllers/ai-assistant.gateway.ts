@@ -15,13 +15,13 @@ import {
   ChatBotPayload,
 } from "../payloads/ai-assistant.payload";
 
-const AI_ASSISTANT_SOCKET_PORT = 9000;
+// const AI_ASSISTANT_SOCKET_PORT = 9002;
 /**
  * WebSocket Gateway for AI Assistant.
  * Handles WebSocket connections, disconnections, and incoming messages
  * for the AI Assistant service.
  */
-@WebSocketGateway(AI_ASSISTANT_SOCKET_PORT, {
+@WebSocketGateway({
   cors: true,
   path: "/ai-assistant",
 })
@@ -66,13 +66,13 @@ export class AiAssistantGateway
    * @param {Socket} client - The client socket that sent the message.
    * @param {StreamPromptPayload} promptPayload - The payload containing the prompt data.
    */
-  @SubscribeMessage("sendPrompt")
-  async handleMessage(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() promptPayload: StreamPromptPayload,
-  ) {
-    await this.aiAssistantService.generateTextStream(promptPayload, client);
-  }
+  // @SubscribeMessage("sendPrompt")
+  // async handleMessage(
+  //   @ConnectedSocket() client: Socket,
+  //   @MessageBody() promptPayload: StreamPromptPayload,
+  // ) {
+  //   await this.aiAssistantService.generateTextStream(promptPayload, client);
+  // }
 
   @SubscribeMessage("sendMessage")
   async handleChatBotMessage(
