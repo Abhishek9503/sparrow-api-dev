@@ -1042,6 +1042,11 @@ export class CollectionRepository {
         updateObject["items.$[i].items.$[j].description"] =
           requestResponse.description;
       }
+      if (requestResponse?.selectedResponseBodyType !== undefined) {
+        updateObject[
+          "items.$[i].items.$[j].requestResponse.selectedResponseBodyType"
+        ] = requestResponse.selectedResponseBodyType;
+      }
       await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
         {
           _id,
@@ -1070,6 +1075,11 @@ export class CollectionRepository {
       if (requestResponse?.description !== undefined) {
         updateObject["items.$[i].items.$[j].items.$[k].description"] =
           requestResponse.description;
+      }
+      if (requestResponse?.selectedResponseBodyType !== undefined) {
+        updateObject[
+          "items.$[i].items.$[j].items.$[k].requestResponse.selectedResponseBodyType"
+        ] = requestResponse.selectedResponseBodyType;
       }
       await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
         {

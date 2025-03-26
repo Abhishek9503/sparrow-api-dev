@@ -19,6 +19,7 @@ import {
   ItemTypeEnum,
   RequestMetaData,
   RequestResponseMetaData,
+  ResponseBodyModeEnum,
   SourceTypeEnum,
 } from "@src/modules/common/models/collection.model";
 import {
@@ -638,6 +639,20 @@ export class UpdateCollectionRequestResponseDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    enum: [
+      "application/json",
+      "application/xml",
+      "application/javascript",
+      "text/plain",
+      "text/html",
+    ],
+  })
+  @IsEnum({ ResponseBodyModeEnum })
+  @IsString()
+  @IsOptional()
+  selectedResponseBodyType?: ResponseBodyModeEnum;
 }
 
 export class FolderPayload {
