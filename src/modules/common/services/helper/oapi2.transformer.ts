@@ -131,12 +131,6 @@ function transformPath(
       value: "",
       checked: false,
     };
-    // const formDataFileDefaultObj = {
-    //   key: "",
-    //   value: "",
-    //   checked: false,
-    //   base: "",
-    // };
     const transformedObject: TransformedRequest = {
       name: pathName || "",
       description: "",
