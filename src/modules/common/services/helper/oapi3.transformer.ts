@@ -120,12 +120,7 @@ function transformPathV3(
       value: "",
       checked: false,
     };
-    const formDataFileDefaultObj = {
-      key: "",
-      value: "",
-      checked: false,
-      base: "",
-    };
+
     const transformedObject: TransformedRequest = {
       name: pathName || "",
       description: "",
@@ -360,21 +355,10 @@ function transformPathV3(
     }
 
     //Assign default values
-    if (!transformedObject.request.headers.length) {
-      transformedObject.request.headers.push(keyValueDefaultObj);
-    }
-    if (!transformedObject.request.queryParams.length) {
-      transformedObject.request.queryParams.push(keyValueDefaultObj);
-    }
-    if (!transformedObject.request.body.formdata.text.length) {
-      transformedObject.request.body.formdata.text.push(keyValueDefaultObj);
-    }
-    if (!transformedObject.request.body.formdata.file.length) {
-      transformedObject.request.body.formdata.file.push(formDataFileDefaultObj);
-    }
-    if (!transformedObject.request.body.urlencoded.length) {
-      transformedObject.request.body.urlencoded.push(keyValueDefaultObj);
-    }
+    transformedObject.request.headers.push(keyValueDefaultObj);
+    transformedObject.request.queryParams.push(keyValueDefaultObj);
+    transformedObject.request.body.formdata.text.push(keyValueDefaultObj);
+    transformedObject.request.body.urlencoded.push(keyValueDefaultObj);
     transformedObjectArray.push(transformedObject);
   }
 

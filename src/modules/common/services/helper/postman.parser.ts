@@ -320,11 +320,18 @@ function mapKeyValuePairs(data: any[]): KeyValue[] {
 function convertParams(params: any[]): KeyValue[] {
   if (!params || !params.length)
     return [{ key: "", value: "", checked: false }];
-  return params.map((param) => ({
+  const convertedParams = params.map((param) => ({
     key: param.key || param.name || "",
     value: param.value || "",
     checked: false,
   }));
+  // Pushed extra empty key values.
+  convertedParams.push({
+    key: "",
+    value: "",
+    checked: false,
+  });
+  return convertedParams;
 }
 
 /**
