@@ -43,6 +43,16 @@ export enum BodyModeEnum {
   "text/html" = "text/html",
 }
 
+export enum ResponseBodyModeEnum {
+  "none" = "none",
+  "application/json" = "application/json",
+  "application/xml" = "application/xml",
+  "application/yaml" = "application/yaml",
+  "application/javascript" = "application/javascript",
+  "text/plain" = "text/plain",
+  "text/html" = "text/html",
+}
+
 export enum PostmanBodyModeEnum {
   "none" = "none",
   "json" = "application/json",
@@ -389,6 +399,20 @@ export class RequestResponseMetaData {
   @IsString()
   @IsOptional()
   responseStatusCode?: string;
+
+  @ApiProperty({
+    enum: [
+      "application/json",
+      "application/xml",
+      "application/javascript",
+      "text/plain",
+      "text/html",
+    ],
+  })
+  @IsEnum({ ResponseBodyModeEnum })
+  @IsString()
+  @IsOptional()
+  selectedResponseBodyType?: ResponseBodyModeEnum;
 }
 
 /**
