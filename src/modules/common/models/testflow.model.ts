@@ -1,3 +1,4 @@
+import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
   IsArray,
@@ -10,6 +11,7 @@ import {
   IsString,
   ValidateNested,
 } from "class-validator";
+import { RequestMetaData, RequestResponseMetaData } from "./collection.model";
 
 /**
  * Represents the edges of a Testflow which tell the connection between nodes.
@@ -59,6 +61,25 @@ export class NodeData {
   @IsNotEmpty()
   @IsOptional()
   collectionId?: string;
+
+  @ApiProperty({ example: "pet" })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ type: RequestMetaData })
+  @IsOptional()
+  @Type(() => RequestMetaData)
+  requestData?: RequestMetaData;
+
+  @ApiProperty({ type: RequestResponseMetaData })
+  @IsOptional()
+  @Type(() => RequestResponseMetaData)
+  requestResponse?: RequestResponseMetaData;
+
+  @IsOptional()
+  @IsBoolean()
+  isDeleted?: boolean = false;
 }
 
 /**
