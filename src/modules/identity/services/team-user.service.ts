@@ -84,7 +84,7 @@ export class TeamUserService {
             "support.sparrowWebsiteName",
           ),
         },
-        subject: `Welcome to ${payload.teamName} team on Sparrow!`,
+        subject: `Welcome to ${payload.teamName} hub on Sparrow - Let's Build Together!`,
       };
       promiseArray.push(this.emailService.sendEmail(transporter, mailOptions));
     }
@@ -634,7 +634,7 @@ export class TeamUserService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Team Member Update: ${MemberName} has left ${teamName} team`,
+      subject: `Hub Member Update: ${MemberName} has left ${teamName} hub`,
     };
 
     await this.emailService.sendEmail(transporter, mailOptions);
@@ -671,7 +671,7 @@ export class TeamUserService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Team Member Update: ${MemberName} has been removed from ${teamName} team`,
+      subject: `Hub Member Update: ${MemberName} has been removed from ${teamName} hub`,
     };
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
@@ -705,7 +705,7 @@ export class TeamUserService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Ownership of ${teamName} team is transferred `,
+      subject: `Ownership of ${teamName} hub is transferred `,
     };
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
@@ -739,7 +739,7 @@ export class TeamUserService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Congratulations! You Are Now the Owner of ${teamName} team.`,
+      subject: `Congratulations! You Are Now the Owner of ${teamName} hub.`,
     };
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
@@ -776,7 +776,7 @@ export class TeamUserService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Your Role in ${teamName} team has been updated.`,
+      subject: `Your Role in ${teamName} has been updated.`,
     };
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
@@ -814,7 +814,7 @@ export class TeamUserService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Your Role in ${teamName} team has been updated.`,
+      subject: `Your Role in ${teamName} has been updated.`,
     };
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];

@@ -881,7 +881,7 @@ export class WorkspaceService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Workspace Update: New Workspace is created under ${teamName} team.`,
+      subject: `Workspace Update: New Workspace is created under ${teamName} hub.`,
     };
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];

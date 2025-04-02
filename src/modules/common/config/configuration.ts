@@ -9,7 +9,7 @@ export default () => ({
     jwtExpirationTime: parseInt(process.env.JWT_EXPIRATION_TIME) || 1800,
     defaultWorkspaceName: "My Workspace",
     userBlacklistPrefix: "BL_",
-    defaultTeamNameSuffix: "'s Team",
+    defaultTeamNameSuffix: "'s Hub",
     imageSizeLimit: 2097152, // value in byte
     deletedAPILimitInDays: 7,
     timeToDaysDivisor: 86400000,
