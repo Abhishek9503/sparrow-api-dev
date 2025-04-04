@@ -84,7 +84,7 @@ export class TeamUserService {
             "support.sparrowWebsiteName",
           ),
         },
-        subject: `Welcome to ${payload.teamName} hub on Sparrow - Let's Build Together!`,
+        subject: `Welcome to ${payload.teamName} on Sparrow - Let's Build Together!`,
       };
       promiseArray.push(this.emailService.sendEmail(transporter, mailOptions));
     }
@@ -634,7 +634,7 @@ export class TeamUserService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Hub Member Update: ${MemberName} has left ${teamName} hub`,
+      subject: `Hub Member Update: ${MemberName} has left from ${teamName} hub`,
     };
 
     await this.emailService.sendEmail(transporter, mailOptions);
