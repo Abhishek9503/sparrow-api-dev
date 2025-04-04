@@ -325,7 +325,7 @@ export class TeamUserService {
 
     await this.addAdminEmail(
       teamData.name,
-      userDetails.name,
+      userDetails.name.split(" ")[0],
       userDetails.email,
     );
 
