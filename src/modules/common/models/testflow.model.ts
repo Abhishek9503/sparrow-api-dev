@@ -94,6 +94,10 @@ export class TestflowNodes {
   @IsNotEmpty()
   type: string;
 
+  @IsString()
+  @IsNotEmpty()
+  blockName: string;
+
   @Type(() => NodePosition)
   @IsOptional()
   position?: NodePosition;
