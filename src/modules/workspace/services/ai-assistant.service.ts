@@ -566,7 +566,7 @@ export class AiAssistantService {
         }
 
         // Run Assistant Logic
-        const assistantReply = await this.runAssistant(client, text, apiData, threadId, tabId);
+        const assistantReply = await this.runAssistant(client, text, apiData, threadId, tabId, user);
 
         // Send AI Response back to the client
         client.send(JSON.stringify({
@@ -591,7 +591,7 @@ export class AiAssistantService {
     });
   }
   
-  private async runAssistant(client: WebSocket, text: string, apiData: string, threadId: string | undefined, tabId: string) {
+  private async runAssistant(client: WebSocket, text: string, apiData: string, threadId: string | undefined, tabId: string, user: any): Promise<string> {
     try {
 
       // Send user message to AI
@@ -617,6 +617,29 @@ export class AiAssistantService {
       // Process AI response
       if (runStatus === "completed") {
         const messagesResponse = await this.assistantsClient.beta.threads.messages.list(threadId);
+
+        const completedRun = await this.assistantsClient.beta.threads.runs.retrieve(threadId, runResponse.id);
+
+        const tokenUsage = completedRun.usage || {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+        };
+
+        const id = user._id.toString();
+
+        const kafkaMessage = {
+          userId: id,
+          tokenCount: tokenUsage,
+        };
+        
+        await this.producerService.produce(
+          TOPIC.AI_RESPONSE_GENERATED_TOPIC,
+          {
+            value: JSON.stringify(kafkaMessage),
+          },
+        );
+
         const latestAssistantMessage = messagesResponse.data
           .filter((message) => message.role === "assistant")
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
