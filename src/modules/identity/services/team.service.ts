@@ -90,7 +90,7 @@ export class TeamService {
     const isTeamExist = await this.teamRepository.isTeamNameAvailable(
       teamData.name,
     );
-    if (!isTeamExist) {
+    if (!isTeamExist && !teamData?.firstTeam) {
       throw new BadRequestException("Team with this name already exist.");
     }
 
