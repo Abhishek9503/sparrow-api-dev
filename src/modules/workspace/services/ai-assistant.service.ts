@@ -591,7 +591,7 @@ export class AiAssistantService {
     });
   }
   
-  private async runAssistant(client: WebSocket, text: string, apiData: string, threadId: string | undefined, tabId: string, user: any): Promise<string> {
+  private async runAssistant(client: WebSocket, text: string, apiData: string, threadId: string | undefined, tabId: string, user: any)  {
     try {
 
       // Send user message to AI
@@ -632,7 +632,7 @@ export class AiAssistantService {
           userId: id,
           tokenCount: tokenUsage,
         };
-        
+
         await this.producerService.produce(
           TOPIC.AI_RESPONSE_GENERATED_TOPIC,
           {
