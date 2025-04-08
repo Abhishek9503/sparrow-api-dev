@@ -279,6 +279,7 @@ export class WorkspaceService {
       team: {
         id: teamData._id.toString(),
         name: teamData.name,
+        hubUrl: teamData?.hubUrl || "",
       },
       users: usersInfo,
       admins: adminInfo,
