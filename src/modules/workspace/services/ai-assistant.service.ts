@@ -620,9 +620,7 @@ export class AiAssistantService {
 
         const completedRun = await this.assistantsClient.beta.threads.runs.retrieve(threadId, runResponse.id);
 
-        const tokenUsage = completedRun.usage.total_tokens || {
-          total_tokens: 0,
-        };
+        const tokenUsage = completedRun.usage.total_tokens || 0;
 
         const id = user._id.toString();
 
