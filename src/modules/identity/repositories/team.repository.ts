@@ -157,4 +157,22 @@ export class TeamRepository {
       },
     });
   }
+
+  async isTeamNameAvailable(name: string): Promise<boolean> {
+    const team = await this.db
+      .collection<Team>(Collections.TEAM)
+      .findOne({ name: name });
+
+    return !team; // true if not found (available), false if found (already exists)
+  }
+
+  async existingHubUrls(regexPattern: string) {
+    // Fetch all matching URLs (e.g., https://techdome.sparrowhub.net, https://techdome1.sparrowhub.net, etc.)
+    const existingTeams = await this.db
+      .collection<Team>(Collections.TEAM)
+      .find({ hubUrl: { $regex: regexPattern, $options: "i" } })
+      .project({ hubUrl: 1 }) // only fetch hubUrl field
+      .toArray();
+    return existingTeams;
+  }
 }

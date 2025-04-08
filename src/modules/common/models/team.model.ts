@@ -42,6 +42,10 @@ export class Team {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  hubUrl?: string;
+
   @IsOptional()
   @IsObject()
   logo?: logoDto;
