@@ -46,6 +46,7 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
+      console.log("Update test flow model migration start.");
       const testFlowCollection = this.db.collection<Testflow>(
         Collections.TESTFLOW,
       );
@@ -68,6 +69,7 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
           { $set: { nodes: updatedNodes } },
         );
       }
+      console.log("Update test flow model migration end.");
     } catch (error) {
       console.error("Error during update testflow model migration:", error);
     }
@@ -114,7 +116,7 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
 
         return {
           ...node,
-          blockName: "REST API Request",
+          blockName: `block ${node.id - 1}`,
           data: {
             collectionId,
             folderId,
@@ -144,7 +146,8 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
     for (const folder of collection.items) {
       if (folderId && folder.id === folderId) {
         return (
-          folder.items?.find((item) => item.id === requestId)?.request || null
+          folder.items?.find((item: any) => item.id === requestId)?.request ||
+          null
         );
       }
       if (!folderId && folder.id === requestId) {
