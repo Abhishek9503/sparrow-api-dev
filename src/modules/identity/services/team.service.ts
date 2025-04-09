@@ -54,7 +54,10 @@ export class TeamService {
     const suffix = ".sparrowhub.net";
     // const envPath =
     //   this.configService.get("app.env") === Env.PROD ? "/release/v1" : "/dev";
-    const base = this.sanitizeName(name);
+    let base = this.sanitizeName(name);
+    if (base.length > 50) {
+      base = base.slice(0, 50);
+    }
     const baseUrl = `${prefix}${base}`;
 
     const regexPattern = `^${baseUrl}\\d*${suffix}$`;
@@ -87,12 +90,6 @@ export class TeamService {
     image?: MemoryStorageFile,
   ): Promise<InsertOneResult<Team>> {
     let team;
-    const isTeamExist = await this.teamRepository.isTeamNameAvailable(
-      teamData.name,
-    );
-    if (!isTeamExist && !teamData?.firstTeam) {
-      throw new BadRequestException("Team with this name already exist.");
-    }
 
     const dynamicUrl = await this.generateUniqueTeamUrl(teamData.name);
     if (image) {
