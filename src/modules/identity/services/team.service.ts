@@ -41,6 +41,42 @@ export class TeamService {
     throw new BadRequestException("Image size should be less than 2MB");
   }
 
+  private sanitizeName(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-") // replace special chars and spaces with '-'
+      .replace(/^-+|-+$/g, ""); // trim leading/trailing dashes
+  }
+
+  async generateUniqueTeamUrl(name: string): Promise<string> {
+    const prefix = "https://";
+    const suffix = ".sparrowhub.net";
+    // const envPath =
+    //   this.configService.get("app.env") === Env.PROD ? "/release/v1" : "/dev";
+    const base = this.sanitizeName(name);
+    const baseUrl = `${prefix}${base}`;
+
+    const regexPattern = `^${baseUrl}\\d*${suffix}$`;
+    const existingHubs =
+      await this.teamRepository.existingHubUrls(regexPattern);
+    const existingUrls = new Set(existingHubs.map((hub) => hub.hubUrl));
+
+    const finalUrl = `${baseUrl}${suffix}`;
+
+    if (!existingUrls.has(finalUrl)) {
+      return finalUrl;
+    }
+
+    // Find next available suffix
+    let counter = 1;
+    while (existingUrls.has(`${baseUrl}${counter}${suffix}`)) {
+      counter++;
+    }
+
+    return `${baseUrl}${counter}${suffix}`;
+  }
+
   /**
    * Creates a new team in the database
    * @param {CreateOrUpdateTeamDto} teamData
@@ -51,6 +87,14 @@ export class TeamService {
     image?: MemoryStorageFile,
   ): Promise<InsertOneResult<Team>> {
     let team;
+    const isTeamExist = await this.teamRepository.isTeamNameAvailable(
+      teamData.name,
+    );
+    if (!isTeamExist && !teamData?.firstTeam) {
+      throw new BadRequestException("Team with this name already exist.");
+    }
+
+    const dynamicUrl = await this.generateUniqueTeamUrl(teamData.name);
     if (image) {
       await this.isImageSizeValid(image.size);
       const dataBuffer = image.buffer;
@@ -61,15 +105,18 @@ export class TeamService {
         mimetype: image.mimetype,
         size: image.size,
       };
+
       team = {
         name: teamData.name,
         description: teamData.description ?? "",
         logo: logo,
+        hubUrl: dynamicUrl,
       };
     } else {
       team = {
         name: teamData.name,
         description: teamData.description ?? "",
+        hubUrl: dynamicUrl,
       };
     }
     const createdTeam = await this.teamRepository.create(team);

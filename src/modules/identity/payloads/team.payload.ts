@@ -45,6 +45,10 @@ export class CreateOrUpdateTeamDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  hubUrl?: string;
+
   @IsBoolean()
   @IsOptional()
   firstTeam?: boolean;
