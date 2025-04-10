@@ -6,7 +6,7 @@ import { Db } from "mongodb";
 
 @Injectable()
 export class UpdateTestFlowModelMigration implements OnModuleInit {
-  constructor(@Inject("DATABASE_CONNECTION") private readonly db: Db) {}
+  constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
 
   async onModuleInit(): Promise<void> {
     try {
@@ -59,7 +59,11 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
           },
         };
       } else {
-        const { collectionId, requestId, folderId, name } = node?.data || {};
+        let { collectionId, requestId, folderId, name } = node?.data || {};
+
+        if (!name) {
+          name = node?.data?.requestData?.name;
+        }
 
         let requestData = this.findRequestData(
           collections,
@@ -71,7 +75,7 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
         if (requestData) {
           requestData = {
             ...requestData,
-            name,
+            name: name,
           };
         }
 
