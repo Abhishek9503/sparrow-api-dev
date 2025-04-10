@@ -59,8 +59,8 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
           },
         };
       } else {
-        const { collectionId, requestId, folderId, method, name } =
-          node?.data || {};
+        const { collectionId, requestId, folderId, name } = node?.data || {};
+
         let requestData = this.findRequestData(
           collections,
           collectionId,
