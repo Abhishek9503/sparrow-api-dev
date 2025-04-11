@@ -188,7 +188,7 @@ export class TeamController {
 
   @Post(":teamId/user")
   @ApiOperation({
-    summary: "Add Users in Team",
+    summary: "sends Users Invites in Team",
     description: "This will add multiple users in your Team",
   })
   @ApiResponse({ status: 201, description: "Users Added Successfully" })
@@ -198,7 +198,7 @@ export class TeamController {
     @Body() addTeamUserDto: AddTeamUserDto,
     @Res() res: FastifyReply,
   ) {
-    const data = await this.teamUserService.addUser({
+    const data = await this.teamUserService.sendInvite({
       teamId,
       ...addTeamUserDto,
     });
@@ -212,6 +212,7 @@ export class TeamController {
       HttpStatusCode.OK,
       response,
     );
+    console.log("Response -------------------->");
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
@@ -345,4 +346,18 @@ export class TeamController {
 
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  @Post(":teamId/invite/user")
+  @ApiOperation({
+    summary: "Create a Invite",
+    description: "",
+  })
+  async createNewInvite() {}
+
+  @Put(":teamId/invite/user/:userId")
+  @ApiOperation({
+    summary: "Updates a Invite values",
+    description: "",
+  })
+  async updateInvite() {}
 }

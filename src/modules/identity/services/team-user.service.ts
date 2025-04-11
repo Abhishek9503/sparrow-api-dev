@@ -15,6 +15,8 @@ import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { TeamService } from "./team.service";
 import { ConfigService } from "@nestjs/config";
 import { EmailService } from "@src/modules/common/services/email.service";
+import { TeamDto } from "../payloads/team.payload";
+import { v4 as uuidv4 } from "uuid";
 /**
  * Team User Service
  */
@@ -84,7 +86,7 @@ export class TeamUserService {
             "support.sparrowWebsiteName",
           ),
         },
-        subject: `Welcome to ${payload.teamName} on Sparrow - Let's Build Together!`,
+        subject: `${user.name} has invited you to the hub “${payload.teamName}”`,
       };
       promiseArray.push(this.emailService.sendEmail(transporter, mailOptions));
     }
@@ -819,5 +821,76 @@ export class TeamUserService {
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
+  }
+
+  /**
+   * This will create Invite in the Owner's Team of that Particular user.
+   *
+   * @param {string} email - This is the Email receive Invitation.
+   * @param {string} role - The Role select by the Inviter.
+   * @param {ObjectId} teamId - We will send this TeamId a Invite
+   * @param {ObjectId} senderId - We will send this TeamId a Invite
+   *
+   */
+  async createInvite(
+    email: string,
+    role: string,
+    teamId: ObjectId,
+    senderId?: ObjectId,
+  ) {
+    const teamFilter = new ObjectId(teamId);
+    const userData = await this.userRepository.getUserByEmail(email);
+    if (!userData) {
+      return "User not Found";
+    }
+    const team = await this.teamRepository.get(teamFilter.toString());
+    if (!team) {
+      return "Team not Found";
+    }
+    const now = new Date();
+    const inviteId = uuidv4();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(now.getDate() + 7);
+    const userInvite = {
+      inviteId,
+      email: userData.email,
+      name: userData.name,
+      role,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: senderId,
+      expiresAt,
+    };
+    const updatedInvites = [...(team.invites || []), userInvite];
+    const updatedData: Partial<TeamDto> = {
+      invites: updatedInvites,
+    };
+    const response = await this.teamRepository.updateTeamById(
+      teamId,
+      updatedData,
+    );
+    console.log("This is the main reponse -------->");
+    return response;
+  }
+
+  /**
+   * send user Invites to the team joining.
+   * @param {AddTeamUserDto} payload
+   * @returns {Promise<void>} Result of the invite operation
+   */
+  async sendInvite(payload: AddTeamUserDto): Promise<any[]> {
+    const teamFilter = new ObjectId(payload.teamId);
+    const responses = [];
+    for (let i = 0; i < payload.users.length; i++) {
+      const userEmail = payload.users[i];
+      const response = await this.createInvite(
+        userEmail,
+        payload.role,
+        teamFilter,
+      );
+      responses.push(response);
+    }
+    console.log("we are calling the response------------>", responses);
+    return responses;
   }
 }
