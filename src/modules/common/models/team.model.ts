@@ -16,6 +16,7 @@ import { WorkspaceDto } from "./workspace.model";
 import { Type } from "class-transformer";
 import { UserDto } from "./user.model";
 import { ObjectId } from "mongodb";
+import { SelectedWorkspaces } from "@src/modules/identity/payloads/teamUser.payload";
 
 export class logoDto {
   @IsString()
@@ -130,6 +131,11 @@ export class Invite {
   @IsString()
   role?: string;
 
+  @IsArray()
+  @Type(() => SelectedWorkspaces)
+  @ValidateNested({ each: true })
+  workspaces?: SelectedWorkspaces[];
+
   @IsDateString()
   createdAt: Date;
 
@@ -148,4 +154,8 @@ export class Invite {
   @Type(() => Date)
   @IsNotEmpty()
   expiresAt: Date;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  isAccepted: boolean;
 }

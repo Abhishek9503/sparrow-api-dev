@@ -38,7 +38,7 @@ import { UserService } from "../services/user.service";
 @ApiBearerAuth()
 @ApiTags("team")
 @Controller("api/team")
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class TeamController {
   constructor(
     private readonly teamService: TeamService,
@@ -47,6 +47,7 @@ export class TeamController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Create a new  Team",
     description: "This will Create a  new Team",
@@ -90,6 +91,7 @@ export class TeamController {
   }
 
   @Get(":teamId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Retrieve Team Details",
     description: "This will retrieve team details",
@@ -107,6 +109,7 @@ export class TeamController {
   }
 
   @Put(":teamId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Update a Team",
     description: "This will update a Team",
@@ -150,6 +153,7 @@ export class TeamController {
   }
 
   @Delete(":teamId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Delete a team",
     description: "This will delete a team",
@@ -167,6 +171,7 @@ export class TeamController {
   }
 
   @Get("user/:userId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Retreive User's all Teams",
     description: "This will retreive all teams of a User",
@@ -187,6 +192,7 @@ export class TeamController {
   }
 
   @Post(":teamId/user")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Sends multiple invites to users within a team.",
     description: "This will add multiple users in your Team",
@@ -215,6 +221,7 @@ export class TeamController {
   }
 
   @Delete(":teamId/user/:userId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Remove A User From Team",
     description: "This will remove a another user from Team",
@@ -237,6 +244,7 @@ export class TeamController {
   }
 
   @Post(":teamId/admin/:userId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Add Another Admin For a Team",
     description: "This will add another admin for a team",
@@ -259,6 +267,7 @@ export class TeamController {
   }
 
   @Put(":teamId/admin/:userId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Demote a Admin in Team",
     description: "This will demote admin in a team",
@@ -281,6 +290,7 @@ export class TeamController {
   }
 
   @Post(":teamId/owner/:userId")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Change Owner in a Team",
     description: "This will change the owner in a team",
@@ -303,6 +313,7 @@ export class TeamController {
   }
 
   @Put(":teamId/leave")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Leave the Team",
     description: "This will be for to leave a team",
@@ -321,6 +332,7 @@ export class TeamController {
   }
 
   @Get(":teamId/user/:userId/disableTeamNewInvite")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Disable new Invite tag",
     description: "This will return  information about a specific user",
@@ -345,10 +357,23 @@ export class TeamController {
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
-  @Post(":teamId/invite/user/accept")
+  @Post(":teamId/invite/user/accept/:inviteId")
   @ApiOperation({
     summary: "Create a Invite",
     description: "",
   })
-  async createNewInvite() {}
+  async createNewInvite(
+    @Param("teamId") teamId: string,
+    @Param("inviteId") inviteId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.teamUserService.acceptInvite(inviteId, teamId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      data,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }

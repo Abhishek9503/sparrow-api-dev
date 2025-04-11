@@ -155,6 +155,11 @@ export class TeamService {
    */
   async get(id: string): Promise<WithId<Team>> {
     const data = await this.teamRepository.get(id);
+    data.invites.forEach((invite) => {
+      delete invite.inviteId;
+      delete invite.isAccepted;
+      delete invite.workspaces;
+    });
     return data;
   }
 

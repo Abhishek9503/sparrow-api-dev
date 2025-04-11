@@ -1,8 +1,13 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { TeamRepository } from "../repositories/team.repository";
 import {
   AddTeamUserDto,
   CreateOrUpdateTeamUserDto,
+  SelectedWorkspaces,
   TeamInviteMailDto,
 } from "../payloads/teamUser.payload";
 import { ObjectId, WithId } from "mongodb";
@@ -835,14 +840,12 @@ export class TeamUserService {
   async createInvite(
     email: string,
     role: string,
-    teamId: ObjectId,
-    senderId?: ObjectId,
+    workspaces: SelectedWorkspaces[],
+    teamId: string,
   ) {
     const teamFilter = new ObjectId(teamId);
     const userData = await this.userRepository.getUserByEmail(email);
-    if (!userData) {
-      return "User not Found";
-    }
+
     const team = await this.teamRepository.get(teamFilter.toString());
     if (!team) {
       return "Team not Found";
@@ -851,22 +854,38 @@ export class TeamUserService {
     const inviteId = uuidv4();
     const expiresAt = new Date(now);
     expiresAt.setDate(now.getDate() + 7);
+
+    const sender = this.contextService.get("user")._id;
+
+    // need to check, if user already exist in the team
+    // add your code here
+
+    // need to check, if user already exist in the invites array
+    // add your code here
+
     const userInvite = {
       inviteId,
-      email: userData.email,
-      name: userData.name,
+      email: email,
+      name: userData?.name || email,
       role,
       createdAt: now,
       updatedAt: now,
-      createdBy: senderId,
+      createdBy: sender,
+      updatedBy: sender,
+      workspaces,
       expiresAt,
+      isAccepted: false, // used for non registered user
     };
+
+    // send a mail with teamId and inviteId
+    // add your code here
+
     const updatedInvites = [...(team.invites || []), userInvite];
     const updatedData: Partial<TeamDto> = {
       invites: updatedInvites,
     };
     const response = await this.teamRepository.updateTeamById(
-      teamId,
+      teamFilter,
       updatedData,
     );
     return response;
@@ -878,10 +897,17 @@ export class TeamUserService {
    * @returns {Promise<void>} Result of the invite operation
    */
   async sendInvite(payload: AddTeamUserDto): Promise<any[]> {
-    const teamFilter = new ObjectId(payload.teamId);
-    const senderId = new ObjectId(payload.userId);
+    const teamFilter = payload.teamId;
+    // check if inviter is admin or owner
+    // add your code here
+
     for (const userEmail of payload.users) {
-      await this.createInvite(userEmail, payload.role, teamFilter, senderId);
+      await this.createInvite(
+        userEmail,
+        payload.role,
+        payload.workspaces,
+        teamFilter,
+      );
     }
     return;
   }
@@ -909,7 +935,20 @@ export class TeamUserService {
       matchedInvite.email.toLowerCase(),
     );
     if (!user) {
-      throw new Error("User not found");
+      const updatedInvites = allInvites.map((invite: any) => {
+        if (invite.inviteId === inviteId) {
+          invite.isAccepted = true;
+        }
+        return invite;
+      });
+      const updatedData: Partial<TeamDto> = {
+        invites: updatedInvites,
+      };
+      await this.teamRepository.updateTeamById(
+        new ObjectId(teamId),
+        updatedData,
+      );
+      throw new NotFoundException("User doesn't exist");
     }
     // Check if user already in the team
     const isAlreadyMember = teamData.users.some(
