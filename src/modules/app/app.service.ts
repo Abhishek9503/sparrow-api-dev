@@ -119,6 +119,19 @@ export class AppService {
       }
       const stringifiedCurl = toJsonString(updatedCurl);
       const parsedCurl = JSON.parse(stringifiedCurl);
+
+      // Extracting query params
+      const urlString = parsedCurl.url;
+      const urlObj = new URL(urlString);
+      const queries = Array.from(urlObj.searchParams.entries()).map(
+        ([key, value]) => ({
+          key,
+          value,
+          checked: true,
+        }),
+      );
+      parsedCurl.queries = queries;
+
       // Match all -F flags with their key-value pairs
       const formDataMatches = curl.match(/-F\s+'([^=]+)=@([^;]+)/g);
       const formDataItems = formDataMatches
@@ -218,15 +231,15 @@ export class AppService {
     // Handle URL with query parameters
     if (requestObject.queries) {
       const queryParams = [];
-      for (const [key, value] of Object.entries(requestObject.queries)) {
-        queryParams.push({ key, value, checked: true });
+      for (const param of requestObject.queries) {
+        queryParams.push({ key: param.key, value: param.value, checked: true });
         if (
-          key.toLowerCase() === "api-key" ||
-          key.toLowerCase() === "x-api-key"
+          param.key.toLowerCase() === "api-key" ||
+          param.key.toLowerCase() === "x-api-key"
         ) {
           transformedObject.request.auth.apiKey = {
-            authKey: key,
-            authValue: value,
+            authKey: param.key,
+            authValue: param.value,
             addTo: AddTo.QueryParameter,
           };
           transformedObject.request.selectedRequestAuthType =
