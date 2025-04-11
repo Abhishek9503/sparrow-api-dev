@@ -880,6 +880,9 @@ export class TeamUserService {
     // send a mail with teamId and inviteId
     // add your code here
 
+    // update user model with teamId
+    // add your code here
+
     const updatedInvites = [...(team.invites || []), userInvite];
     const updatedData: Partial<TeamDto> = {
       invites: updatedInvites,
