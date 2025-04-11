@@ -74,10 +74,6 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
         const { collectionId, requestId, folderId, name, method } =
           node?.data || {};
 
-        if (!name) {
-          name = node?.data?.requestData?.name;
-        }
-
         let requestData = this.findRequestData(
           collections,
           collectionId,
@@ -88,7 +84,7 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
         if (requestData) {
           requestData = {
             ...requestData,
-            name: name,
+            name: name || "",
           };
         }
 
