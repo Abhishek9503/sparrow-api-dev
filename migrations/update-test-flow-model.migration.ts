@@ -84,7 +84,31 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
         if (requestData) {
           requestData = {
             ...requestData,
-            name: name || "",
+            name: name || "Untitled Request",
+            method: method || "GET",
+          };
+        } else {
+          requestData = {
+            method: method || "GET",
+            url: "",
+            body: {
+              raw: "",
+              urlencoded: [{ key: "", value: "", checked: false }],
+              formdata: {
+                text: [{ key: "", value: "", checked: false }],
+                file: [],
+              },
+            },
+            headers: [{ key: "", value: "", checked: false }],
+            queryParams: [{ key: "", value: "", checked: false }],
+            auth: {
+              bearerToken: "",
+              basicAuth: { username: "", password: "" },
+              apiKey: { authKey: "", authValue: "", addTo: "Header" },
+            },
+            selectedRequestBodyType: "application/json",
+            selectedRequestAuthType: "No Auth",
+            name: name || "Untitled Request",
           };
         }
 
@@ -93,8 +117,8 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
           data: {
             blockName: `block ${node.id - 1}`,
             collectionId,
-            name,
-            method,
+            name: name || "Untitled Request",
+            method: method || "GET",
             folderId,
             requestId,
             workspaceId,
