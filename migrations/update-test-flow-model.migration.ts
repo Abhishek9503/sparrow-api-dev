@@ -6,11 +6,18 @@ import { Db } from "mongodb";
 
 @Injectable()
 export class UpdateTestFlowModelMigration implements OnModuleInit {
+  private hasRun = false;
   constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
 
   async onModuleInit(): Promise<void> {
+    if (this.hasRun) {
+      // Check if migration has already run
+      return;
+    }
     try {
-      console.log("Update test flow model migration start.");
+      console.log(
+        `\n\x1b[32m[Nest]\x1b[0m \x1b[32mExecuting TestFlow Data Migration...`,
+      );
       const testFlowCollection = this.db.collection<Testflow>(
         Collections.TESTFLOW,
       );
@@ -33,7 +40,10 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
           { $set: { nodes: updatedNodes } },
         );
       }
-      console.log("Update test flow model migration end.");
+      console.log(
+        `\x1b[32m[Nest] \x1b[33m${testflows?.length || 0}\x1b[0m \x1b[32maffected documents, migration completed successfully.`,
+      );
+      this.hasRun = true; // Set flag after successful execution
     } catch (error) {
       console.error("Error during update testflow model migration:", error);
     }
@@ -54,16 +64,15 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
             folderId: "",
             requestId: "",
             workspaceId,
+            name: "",
+            method: "",
             isDeleted: false,
             requestData: null,
           },
         };
       } else {
-        let { collectionId, requestId, folderId, name } = node?.data || {};
-
-        if (!name) {
-          name = node?.data?.requestData?.name;
-        }
+        const { collectionId, requestId, folderId, name, method } =
+          node?.data || {};
 
         let requestData = this.findRequestData(
           collections,
@@ -75,7 +84,7 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
         if (requestData) {
           requestData = {
             ...requestData,
-            name: name,
+            name: name || "",
           };
         }
 
@@ -84,6 +93,8 @@ export class UpdateTestFlowModelMigration implements OnModuleInit {
           data: {
             blockName: `block ${node.id - 1}`,
             collectionId,
+            name,
+            method,
             folderId,
             requestId,
             workspaceId,
