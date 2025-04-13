@@ -1011,19 +1011,20 @@ export class TeamUserService {
       matchedInvite.email.toLowerCase(),
     );
     if (!user) {
-      const updatedInvites = allInvites.map((invite: any) => {
-        if (invite.inviteId === inviteId) {
-          invite.isAccepted = true;
-        }
-        return invite;
-      });
-      const updatedData: Partial<TeamDto> = {
-        invites: updatedInvites,
-      };
-      await this.teamRepository.updateTeamById(
-        new ObjectId(teamId),
-        updatedData,
-      );
+      // non registered user
+      // const updatedInvites = allInvites.map((invite: any) => {
+      //   if (invite.inviteId === inviteId) {
+      //     invite.isAccepted = true;
+      //   }
+      //   return invite;
+      // });
+      // const updatedData: Partial<TeamDto> = {
+      //   invites: updatedInvites,
+      // };
+      // await this.teamRepository.updateTeamById(
+      //   new ObjectId(teamId),
+      //   updatedData,
+      // );
       throw new NotFoundException("User doesn't exist");
     }
     // Check if user already in the team
