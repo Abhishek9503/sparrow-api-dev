@@ -1100,9 +1100,10 @@ export class TeamUserService {
     // });
 
     return {
-      success: true,
-      message: "User successfully added to the team",
+      teamId: teamId,
+      email: matchedInvite.email,
       role: matchedInvite.role,
+      workspaces: matchedInvite.workspaces,
     };
   }
 

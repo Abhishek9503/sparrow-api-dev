@@ -369,7 +369,7 @@ export class TeamController {
   ) {
     const data = await this.teamUserService.acceptInvite(inviteId, teamId);
     const responseData = new ApiResponseService(
-      "Success",
+      "User joined the hub",
       HttpStatusCode.OK,
       data,
     );
