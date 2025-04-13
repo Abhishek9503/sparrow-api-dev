@@ -67,6 +67,9 @@ export default () => ({
     sparrowWebsite: "https://sparrowapp.dev",
     sparrowWebsiteName: "www.sparrowapp.dev",
   },
+  auth: {
+    baseURL: process.env.AUTH_BASE_URL,
+  },
   social: {
     linkedinUrl: "https://www.linkedin.com/showcase/sparrow-app/",
     githubUrl: "https://github.com/sparrowapp-dev/sparrow-app",
