@@ -934,7 +934,7 @@ export class TeamUserService {
           sparrowWebsiteName: this.configService.get(
             "support.sparrowWebsiteName",
           ),
-          authUrl: this.configService.get("auth.baseURL"),
+          marketingUrl: this.configService.get("marketing.baseURL"),
           inviteId: inviteId,
           teamId: teamId,
           email: email,

@@ -70,6 +70,9 @@ export default () => ({
   auth: {
     baseURL: process.env.AUTH_BASE_URL,
   },
+  marketing: {
+    baseURL: process.env.MARKETING_BASE_URL,
+  },
   social: {
     linkedinUrl: "https://www.linkedin.com/showcase/sparrow-app/",
     githubUrl: "https://github.com/sparrowapp-dev/sparrow-app",
