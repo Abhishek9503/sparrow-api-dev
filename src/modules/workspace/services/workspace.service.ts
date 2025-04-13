@@ -35,6 +35,7 @@ import {
 import { CreateEnvironmentDto } from "../payloads/environment.payload";
 import { EnvironmentService } from "./environment.service";
 import { TeamService } from "@src/modules/identity/services/team.service";
+import { TeamUserService } from "@src/modules/identity/services/team-user.service";
 import {
   AddUserInWorkspaceDto,
   AddUsersWithRolesInWorkspaceDto,
@@ -65,6 +66,7 @@ export class WorkspaceService {
     private readonly teamRepository: TeamRepository,
     private readonly environmentService: EnvironmentService,
     private readonly userRepository: UserRepository,
+    private readonly teamUserService: TeamUserService,
     private readonly teamService: TeamService,
     private readonly configService: ConfigService,
     private readonly producerService: ProducerService,
@@ -696,6 +698,19 @@ export class WorkspaceService {
       },
       payload.role,
     );
+
+    await this.teamUserService.sendInvite({
+      teamId: workspaceData.team.id,
+      users: usersNotExist,
+      role: payload.role,
+      workspaces: [
+        {
+          id: workspaceData._id.toString(),
+          name: workspaceData.name,
+        },
+      ],
+    });
+
     const response = {
       notExistInTeam: usersNotExist,
       existInWorkspace: alreadyWorkspaceMember,

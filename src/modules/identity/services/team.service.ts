@@ -155,6 +155,11 @@ export class TeamService {
    */
   async get(id: string): Promise<WithId<Team>> {
     const data = await this.teamRepository.get(id);
+    data?.invites?.forEach((invite) => {
+      delete invite.inviteId;
+      delete invite.isAccepted;
+      delete invite.workspaces;
+    });
     return data;
   }
 
@@ -253,6 +258,10 @@ export class TeamService {
       teams.push(teamData);
     }
     return teams;
+  }
+
+  async getTeams(): Promise<WithId<Team>[]> {
+    return await this.teamRepository.getTeams();
   }
 
   async isTeamOwner(id: string): Promise<boolean> {

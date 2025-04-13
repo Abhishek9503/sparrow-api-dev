@@ -1,8 +1,13 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { TeamRepository } from "../repositories/team.repository";
 import {
   AddTeamUserDto,
   CreateOrUpdateTeamUserDto,
+  SelectedWorkspaces,
   TeamInviteMailDto,
 } from "../payloads/teamUser.payload";
 import { ObjectId, WithId } from "mongodb";
@@ -122,7 +127,7 @@ export class TeamUserService {
         usersNotExist.push(emailId);
       }
     }
-    await this.teamService.isTeamOwnerOrAdmin(teamFilter);
+    // await this.teamService.isTeamOwnerOrAdmin(teamFilter);
     const teamUsers = [...teamData.users];
     const teamAdmins = [...teamData.admins];
     for (const userData of usersExist) {
@@ -835,14 +840,12 @@ export class TeamUserService {
   async createInvite(
     email: string,
     role: string,
-    teamId: ObjectId,
-    senderId?: ObjectId,
+    workspaces: SelectedWorkspaces[],
+    teamId: string,
   ) {
     const teamFilter = new ObjectId(teamId);
     const userData = await this.userRepository.getUserByEmail(email);
-    if (!userData) {
-      return "User not Found";
-    }
+
     const team = await this.teamRepository.get(teamFilter.toString());
     if (!team) {
       return "Team not Found";
@@ -851,25 +854,117 @@ export class TeamUserService {
     const inviteId = uuidv4();
     const expiresAt = new Date(now);
     expiresAt.setDate(now.getDate() + 7);
+
+    const sender = this.contextService.get("user");
+
+    // need to check, if user already exist in the team
+    // add your code here
+
+    // need to check, if user already exist in the invites array
+    // add your code here
+
     const userInvite = {
       inviteId,
-      email: userData.email,
-      name: userData.name,
+      email: email,
+      name: userData?.name || email,
       role,
       createdAt: now,
       updatedAt: now,
-      createdBy: senderId,
+      createdBy: sender._id,
+      updatedBy: sender._id,
+      workspaces,
       expiresAt,
+      isAccepted: false, // used for non registered user
     };
+
+    // update user model with teamId
+    // add your code here
+
     const updatedInvites = [...(team.invites || []), userInvite];
     const updatedData: Partial<TeamDto> = {
       invites: updatedInvites,
     };
     const response = await this.teamRepository.updateTeamById(
-      teamId,
+      teamFilter,
       updatedData,
     );
+
+    // send a mail with teamId and inviteId
+    // add your code here
+
+    if (userData) {
+      // registered user
+      const transporter = this.emailService.createTransporter();
+      const mailOptions = {
+        from: this.configService.get("app.senderEmail"),
+        to: email,
+        text: "Team Invite Acceptance",
+        template: "teamInviteRegisteredReciever",
+        context: {
+          teamName: team.name,
+          userName: userData?.name || email,
+          sparrowEmail: this.configService.get("support.sparrowEmail"),
+          sparrowWebsite: this.configService.get("support.sparrowWebsite"),
+          sparrowWebsiteName: this.configService.get(
+            "support.sparrowWebsiteName",
+          ),
+          authUrl: this.configService.get("auth.baseURL"),
+          inviteId: inviteId,
+          teamId: teamId,
+          email: email,
+        },
+        subject: `${sender.name} has invited you to the hub “${team.name}”`,
+      };
+
+      const promise = [this.emailService.sendEmail(transporter, mailOptions)];
+      await Promise.all(promise);
+    } else {
+      // non registered user
+      const transporter = this.emailService.createTransporter();
+      const mailOptions = {
+        from: this.configService.get("app.senderEmail"),
+        to: email,
+        text: "Team Invite Acceptance",
+        template: "teamInviteNonRegisteredReciever",
+        context: {
+          teamName: team.name,
+          userName: userData?.name || email,
+          sparrowEmail: this.configService.get("support.sparrowEmail"),
+          sparrowWebsite: this.configService.get("support.sparrowWebsite"),
+          sparrowWebsiteName: this.configService.get(
+            "support.sparrowWebsiteName",
+          ),
+          marketingUrl: this.configService.get("marketing.baseURL"),
+          inviteId: inviteId,
+          teamId: teamId,
+          email: email,
+        },
+        subject: `You’ve Been Invited to Join Sparrow – Power Up Your API Workflow`,
+      };
+
+      const promise = [this.emailService.sendEmail(transporter, mailOptions)];
+      await Promise.all(promise);
+    }
+
     return response;
+  }
+
+  async removeTeamInvite(teamId: string, email: string) {
+    const team = await this.teamRepository.get(teamId);
+    if (!team) {
+      return "Team not Found";
+    }
+    const teamInvites = team.invites || [];
+    const updatedInvites = teamInvites.filter((invite) => {
+      if (invite.email === email) {
+        return false;
+      }
+      return true;
+    });
+    const updatedData: Partial<TeamDto> = {
+      invites: updatedInvites,
+    };
+    await this.teamRepository.updateTeamById(team._id, updatedData);
   }
 
   /**
@@ -878,10 +973,17 @@ export class TeamUserService {
    * @returns {Promise<void>} Result of the invite operation
    */
   async sendInvite(payload: AddTeamUserDto): Promise<any[]> {
-    const teamFilter = new ObjectId(payload.teamId);
-    const senderId = new ObjectId(payload.userId);
+    const teamFilter = payload.teamId;
+    // check if inviter is admin or owner
+    // add your code here
+
     for (const userEmail of payload.users) {
-      await this.createInvite(userEmail, payload.role, teamFilter, senderId);
+      await this.createInvite(
+        userEmail,
+        payload.role,
+        payload.workspaces,
+        teamFilter,
+      );
     }
     return;
   }
@@ -896,88 +998,112 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new Error("Team not found");
+      throw new NotFoundException("Team not found");
     }
     const allInvites = teamData.invites || [];
     const matchedInvite = allInvites.find(
       (invite: any) => invite.inviteId === inviteId,
     );
     if (!matchedInvite) {
-      throw new Error("Invite not found");
+      throw new NotFoundException("Invite not found");
     }
     const user = await this.userRepository.getUserByEmail(
       matchedInvite.email.toLowerCase(),
     );
     if (!user) {
-      throw new Error("User not found");
+      // non registered user
+      // const updatedInvites = allInvites.map((invite: any) => {
+      //   if (invite.inviteId === inviteId) {
+      //     invite.isAccepted = true;
+      //   }
+      //   return invite;
+      // });
+      // const updatedData: Partial<TeamDto> = {
+      //   invites: updatedInvites,
+      // };
+      // await this.teamRepository.updateTeamById(
+      //   new ObjectId(teamId),
+      //   updatedData,
+      // );
+      throw new NotFoundException("User doesn't exist");
     }
     // Check if user already in the team
     const isAlreadyMember = teamData.users.some(
       (u: any) => u.id === user._id.toString(),
     );
     if (isAlreadyMember) {
-      throw new Error("User is already a member of the team");
+      throw new BadRequestException("User is already a member of the team");
     }
-    const updatedInvites = allInvites.filter(
-      (invite: any) => invite.inviteId !== inviteId,
-    );
-    const teamUsers = [...teamData.users];
-    const teamAdmins = [...teamData.admins];
-    teamUsers.push({
-      id: user._id.toString(),
-      email: user.email.toLowerCase(),
-      name: user.name,
-      role:
-        matchedInvite.role === TeamRole.ADMIN
-          ? TeamRole.ADMIN
-          : TeamRole.MEMBER,
-    });
-    if (matchedInvite.role === TeamRole.ADMIN) {
-      teamAdmins.push(user._id.toString());
-    }
-    const updatedTeamParams: Partial<TeamDto> = {
-      users: teamUsers,
-      admins: teamAdmins,
-      invites: updatedInvites,
-    };
-    await this.teamRepository.updateTeamById(teamObjectId, updatedTeamParams);
-    const userTeams = [...user.teams];
-    const userWorkspaces = [...user.workspaces];
-
-    userTeams.push({
-      id: teamObjectId,
-      name: teamData.name,
+    // add user to the team
+    await this.addUser({
+      teamId: teamId,
+      users: [matchedInvite.email],
       role: matchedInvite.role,
-      isNewInvite: true,
+      workspaces: matchedInvite.workspaces,
     });
+    // now remove it from invites array
+    await this.removeTeamInvite(teamId, matchedInvite.email);
+    // const updatedInvites = allInvites.filter(
+    //   (invite: any) => invite.inviteId !== inviteId,
+    // );
+    // const teamUsers = [...teamData.users];
+    // const teamAdmins = [...teamData.admins];
+    // teamUsers.push({
+    //   id: user._id.toString(),
+    //   email: user.email.toLowerCase(),
+    //   name: user.name,
+    //   role:
+    //     matchedInvite.role === TeamRole.ADMIN
+    //       ? TeamRole.ADMIN
+    //       : TeamRole.MEMBER,
+    // });
+    // if (matchedInvite.role === TeamRole.ADMIN) {
+    //   teamAdmins.push(user._id.toString());
+    // }
+    // const updatedTeamParams: Partial<TeamDto> = {
+    //   users: teamUsers,
+    //   admins: teamAdmins,
+    //   invites: updatedInvites,
+    // };
+    // await this.teamRepository.updateTeamById(teamObjectId, updatedTeamParams);
+    // const userTeams = [...user.teams];
+    // const userWorkspaces = [...user.workspaces];
 
-    if (matchedInvite.role === TeamRole.ADMIN) {
-      for (const ws of teamData.workspaces) {
-        userWorkspaces.push({
-          teamId: teamId,
-          workspaceId: ws.id.toString(),
-          name: ws.name,
-        });
-      }
-    }
-    const updateUserParams = {
-      teams: userTeams,
-      workspaces: userWorkspaces,
-    };
-    await this.userRepository.updateUserById(user._id, updateUserParams);
-    await this.producerService.produce(TOPIC.USER_ADDED_TO_TEAM_TOPIC, {
-      value: JSON.stringify({
-        teamWorkspaces:
-          matchedInvite.role === TeamRole.ADMIN ? [...teamData.workspaces] : [],
-        userId: user._id,
-        role: matchedInvite.role,
-      }),
-    });
+    // userTeams.push({
+    //   id: teamObjectId,
+    //   name: teamData.name,
+    //   role: matchedInvite.role,
+    //   isNewInvite: true,
+    // });
+
+    // if (matchedInvite.role === TeamRole.ADMIN) {
+    //   for (const ws of teamData.workspaces) {
+    //     userWorkspaces.push({
+    //       teamId: teamId,
+    //       workspaceId: ws.id.toString(),
+    //       name: ws.name,
+    //     });
+    //   }
+    // }
+    // const updateUserParams = {
+    //   teams: userTeams,
+    //   workspaces: userWorkspaces,
+    // };
+    // await this.userRepository.updateUserById(user._id, updateUserParams);
+    // await this.producerService.produce(TOPIC.USER_ADDED_TO_TEAM_TOPIC, {
+    //   value: JSON.stringify({
+    //     teamWorkspaces:
+    //       matchedInvite.role === TeamRole.ADMIN ? [...teamData.workspaces] : [],
+    //     userId: user._id,
+    //     role: matchedInvite.role,
+    //   }),
+    // });
 
     return {
-      success: true,
-      message: "User successfully added to the team",
+      teamId: teamId,
+      email: matchedInvite.email,
       role: matchedInvite.role,
+      workspaces: matchedInvite.workspaces,
     };
   }
 

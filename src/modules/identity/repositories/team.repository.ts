@@ -86,6 +86,19 @@ export class TeamRepository {
   }
 
   /**
+   * Fetches a team from database by UUID
+   * @param {string} id
+   * @returns {Promise<Team>} queried team data
+   */
+  async getTeams(): Promise<WithId<Team>[]> {
+    const teams = await this.db
+      .collection<Team>(Collections.TEAM)
+      .find()
+      .toArray();
+    return teams;
+  }
+
+  /**
    * Updates a team name
    * @param {string} id
    * @returns {Promise<ITeam>} mutated team data
