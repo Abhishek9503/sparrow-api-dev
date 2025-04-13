@@ -998,14 +998,14 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new Error("Team not found");
+      throw new NotFoundException("Team not found");
     }
     const allInvites = teamData.invites || [];
     const matchedInvite = allInvites.find(
       (invite: any) => invite.inviteId === inviteId,
     );
     if (!matchedInvite) {
-      throw new Error("Invite not found");
+      throw new NotFoundException("Invite not found");
     }
     const user = await this.userRepository.getUserByEmail(
       matchedInvite.email.toLowerCase(),
@@ -1032,63 +1032,72 @@ export class TeamUserService {
       (u: any) => u.id === user._id.toString(),
     );
     if (isAlreadyMember) {
-      throw new Error("User is already a member of the team");
+      throw new BadRequestException("User is already a member of the team");
     }
-    const updatedInvites = allInvites.filter(
-      (invite: any) => invite.inviteId !== inviteId,
-    );
-    const teamUsers = [...teamData.users];
-    const teamAdmins = [...teamData.admins];
-    teamUsers.push({
-      id: user._id.toString(),
-      email: user.email.toLowerCase(),
-      name: user.name,
-      role:
-        matchedInvite.role === TeamRole.ADMIN
-          ? TeamRole.ADMIN
-          : TeamRole.MEMBER,
-    });
-    if (matchedInvite.role === TeamRole.ADMIN) {
-      teamAdmins.push(user._id.toString());
-    }
-    const updatedTeamParams: Partial<TeamDto> = {
-      users: teamUsers,
-      admins: teamAdmins,
-      invites: updatedInvites,
-    };
-    await this.teamRepository.updateTeamById(teamObjectId, updatedTeamParams);
-    const userTeams = [...user.teams];
-    const userWorkspaces = [...user.workspaces];
-
-    userTeams.push({
-      id: teamObjectId,
-      name: teamData.name,
+    // add user to the team
+    await this.addUser({
+      teamId: teamId,
+      users: [matchedInvite.email],
       role: matchedInvite.role,
-      isNewInvite: true,
+      workspaces: matchedInvite.workspaces,
     });
+    // now remove it from invites array
+    await this.removeTeamInvite(teamId, matchedInvite.email);
+    // const updatedInvites = allInvites.filter(
+    //   (invite: any) => invite.inviteId !== inviteId,
+    // );
+    // const teamUsers = [...teamData.users];
+    // const teamAdmins = [...teamData.admins];
+    // teamUsers.push({
+    //   id: user._id.toString(),
+    //   email: user.email.toLowerCase(),
+    //   name: user.name,
+    //   role:
+    //     matchedInvite.role === TeamRole.ADMIN
+    //       ? TeamRole.ADMIN
+    //       : TeamRole.MEMBER,
+    // });
+    // if (matchedInvite.role === TeamRole.ADMIN) {
+    //   teamAdmins.push(user._id.toString());
+    // }
+    // const updatedTeamParams: Partial<TeamDto> = {
+    //   users: teamUsers,
+    //   admins: teamAdmins,
+    //   invites: updatedInvites,
+    // };
+    // await this.teamRepository.updateTeamById(teamObjectId, updatedTeamParams);
+    // const userTeams = [...user.teams];
+    // const userWorkspaces = [...user.workspaces];
 
-    if (matchedInvite.role === TeamRole.ADMIN) {
-      for (const ws of teamData.workspaces) {
-        userWorkspaces.push({
-          teamId: teamId,
-          workspaceId: ws.id.toString(),
-          name: ws.name,
-        });
-      }
-    }
-    const updateUserParams = {
-      teams: userTeams,
-      workspaces: userWorkspaces,
-    };
-    await this.userRepository.updateUserById(user._id, updateUserParams);
-    await this.producerService.produce(TOPIC.USER_ADDED_TO_TEAM_TOPIC, {
-      value: JSON.stringify({
-        teamWorkspaces:
-          matchedInvite.role === TeamRole.ADMIN ? [...teamData.workspaces] : [],
-        userId: user._id,
-        role: matchedInvite.role,
-      }),
-    });
+    // userTeams.push({
+    //   id: teamObjectId,
+    //   name: teamData.name,
+    //   role: matchedInvite.role,
+    //   isNewInvite: true,
+    // });
+
+    // if (matchedInvite.role === TeamRole.ADMIN) {
+    //   for (const ws of teamData.workspaces) {
+    //     userWorkspaces.push({
+    //       teamId: teamId,
+    //       workspaceId: ws.id.toString(),
+    //       name: ws.name,
+    //     });
+    //   }
+    // }
+    // const updateUserParams = {
+    //   teams: userTeams,
+    //   workspaces: userWorkspaces,
+    // };
+    // await this.userRepository.updateUserById(user._id, updateUserParams);
+    // await this.producerService.produce(TOPIC.USER_ADDED_TO_TEAM_TOPIC, {
+    //   value: JSON.stringify({
+    //     teamWorkspaces:
+    //       matchedInvite.role === TeamRole.ADMIN ? [...teamData.workspaces] : [],
+    //     userId: user._id,
+    //     role: matchedInvite.role,
+    //   }),
+    // });
 
     return {
       success: true,
