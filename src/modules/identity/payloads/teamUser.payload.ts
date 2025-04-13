@@ -11,6 +11,7 @@ import {
   IsDateString,
   ValidateNested,
 } from "class-validator";
+import { ObjectId } from "mongodb";
 
 export class CreateOrUpdateTeamUserDto {
   @ApiProperty({ example: "64f03af32e420f7f68055b92" })
@@ -87,6 +88,11 @@ export class AddTeamUserDto {
   @IsNotEmpty()
   @ApiProperty({ example: "admin" })
   role: string;
+
+  @IsMongoId()
+  @IsOptional()
+  @ApiProperty({ example: "67dd0a5450f828183db376ef" })
+  userId?: string;
 
   @IsArray()
   @IsOptional()

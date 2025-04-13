@@ -2,12 +2,14 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEmail,
   IsMongoId,
   IsNotEmpty,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  IsUUID,
   ValidateNested,
 } from "class-validator";
 import { WorkspaceDto } from "./workspace.model";
@@ -69,6 +71,10 @@ export class Team {
   @IsOptional()
   admins?: string[];
 
+  @IsArray()
+  @IsOptional()
+  invites?: Invite[];
+
   @IsDateString()
   createdAt: Date;
 
@@ -106,4 +112,40 @@ export class TeamDto {
   @IsBoolean()
   @IsOptional()
   isNewInvite?: boolean;
+}
+
+export class Invite {
+  @IsUUID()
+  @IsNotEmpty()
+  inviteId: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  role?: string;
+
+  @IsDateString()
+  createdAt: Date;
+
+  @IsDateString()
+  updatedAt: Date;
+
+  @IsMongoId()
+  @IsOptional()
+  createdBy?: ObjectId;
+
+  @IsMongoId()
+  @IsOptional()
+  updatedBy?: ObjectId;
+
+  @IsDateString()
+  @Type(() => Date)
+  @IsNotEmpty()
+  expiresAt: Date;
 }

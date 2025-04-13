@@ -15,6 +15,8 @@ import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { TeamService } from "./team.service";
 import { ConfigService } from "@nestjs/config";
 import { EmailService } from "@src/modules/common/services/email.service";
+import { TeamDto } from "../payloads/team.payload";
+import { v4 as uuidv4 } from "uuid";
 /**
  * Team User Service
  */
@@ -84,7 +86,7 @@ export class TeamUserService {
             "support.sparrowWebsiteName",
           ),
         },
-        subject: `Welcome to ${payload.teamName} on Sparrow - Let's Build Together!`,
+        subject: `${user.name} has invited you to the hub “${payload.teamName}”`,
       };
       promiseArray.push(this.emailService.sendEmail(transporter, mailOptions));
     }
@@ -819,5 +821,209 @@ export class TeamUserService {
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
     await Promise.all(promise);
+  }
+
+  /**
+   * This will create Invite in the Owner's Team of that Particular user.
+   *
+   * @param {string} email - This is the Email receive Invitation.
+   * @param {string} role - The Role select by the Inviter.
+   * @param {ObjectId} teamId - We will send this TeamId a Invite
+   * @param {ObjectId} senderId - We will send this TeamId a Invite
+   *
+   */
+  async createInvite(
+    email: string,
+    role: string,
+    teamId: ObjectId,
+    senderId?: ObjectId,
+  ) {
+    const teamFilter = new ObjectId(teamId);
+    const userData = await this.userRepository.getUserByEmail(email);
+    if (!userData) {
+      return "User not Found";
+    }
+    const team = await this.teamRepository.get(teamFilter.toString());
+    if (!team) {
+      return "Team not Found";
+    }
+    const now = new Date();
+    const inviteId = uuidv4();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(now.getDate() + 7);
+    const userInvite = {
+      inviteId,
+      email: userData.email,
+      name: userData.name,
+      role,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: senderId,
+      expiresAt,
+    };
+    const updatedInvites = [...(team.invites || []), userInvite];
+    const updatedData: Partial<TeamDto> = {
+      invites: updatedInvites,
+    };
+    const response = await this.teamRepository.updateTeamById(
+      teamId,
+      updatedData,
+    );
+    return response;
+  }
+
+  /**
+   * send user Invites to join the Team.
+   * @param {AddTeamUserDto} payload
+   * @returns {Promise<void>} Result of the invite operation
+   */
+  async sendInvite(payload: AddTeamUserDto): Promise<any[]> {
+    const teamFilter = new ObjectId(payload.teamId);
+    const senderId = new ObjectId(payload.userId);
+    for (const userEmail of payload.users) {
+      await this.createInvite(userEmail, payload.role, teamFilter, senderId);
+    }
+    return;
+  }
+
+  /**
+   * user Accept to join the Team.
+   * @param {string} inviteId - The Role select by the Inviter.
+   * @param {ObjectId} teamId - We will send this TeamId a Invite
+   * @returns Result of the invite operation
+   */
+  async acceptInvite(inviteId: string, teamId: string): Promise<any> {
+    const teamObjectId = new ObjectId(teamId);
+    const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
+    if (!teamData) {
+      throw new Error("Team not found");
+    }
+    const allInvites = teamData.invites || [];
+    const matchedInvite = allInvites.find(
+      (invite: any) => invite.inviteId === inviteId,
+    );
+    if (!matchedInvite) {
+      throw new Error("Invite not found");
+    }
+    const user = await this.userRepository.getUserByEmail(
+      matchedInvite.email.toLowerCase(),
+    );
+    if (!user) {
+      throw new Error("User not found");
+    }
+    // Check if user already in the team
+    const isAlreadyMember = teamData.users.some(
+      (u: any) => u.id === user._id.toString(),
+    );
+    if (isAlreadyMember) {
+      throw new Error("User is already a member of the team");
+    }
+    const updatedInvites = allInvites.filter(
+      (invite: any) => invite.inviteId !== inviteId,
+    );
+    const teamUsers = [...teamData.users];
+    const teamAdmins = [...teamData.admins];
+    teamUsers.push({
+      id: user._id.toString(),
+      email: user.email.toLowerCase(),
+      name: user.name,
+      role:
+        matchedInvite.role === TeamRole.ADMIN
+          ? TeamRole.ADMIN
+          : TeamRole.MEMBER,
+    });
+    if (matchedInvite.role === TeamRole.ADMIN) {
+      teamAdmins.push(user._id.toString());
+    }
+    const updatedTeamParams: Partial<TeamDto> = {
+      users: teamUsers,
+      admins: teamAdmins,
+      invites: updatedInvites,
+    };
+    await this.teamRepository.updateTeamById(teamObjectId, updatedTeamParams);
+    const userTeams = [...user.teams];
+    const userWorkspaces = [...user.workspaces];
+
+    userTeams.push({
+      id: teamObjectId,
+      name: teamData.name,
+      role: matchedInvite.role,
+      isNewInvite: true,
+    });
+
+    if (matchedInvite.role === TeamRole.ADMIN) {
+      for (const ws of teamData.workspaces) {
+        userWorkspaces.push({
+          teamId: teamId,
+          workspaceId: ws.id.toString(),
+          name: ws.name,
+        });
+      }
+    }
+    const updateUserParams = {
+      teams: userTeams,
+      workspaces: userWorkspaces,
+    };
+    await this.userRepository.updateUserById(user._id, updateUserParams);
+    await this.producerService.produce(TOPIC.USER_ADDED_TO_TEAM_TOPIC, {
+      value: JSON.stringify({
+        teamWorkspaces:
+          matchedInvite.role === TeamRole.ADMIN ? [...teamData.workspaces] : [],
+        userId: user._id,
+        role: matchedInvite.role,
+      }),
+    });
+
+    return {
+      success: true,
+      message: "User successfully added to the team",
+      role: matchedInvite.role,
+    };
+  }
+
+  /**
+   * Admin or Owner can Change Invite role of a user in a Team.
+   * @param {string} inviteId - The Role select by the Inviter.
+   * @param {string} role - The Role select by the admin or owner.
+   * @param {ObjectId} teamId - We will send this TeamId a Invite
+   * @returns Result of the invite operation
+   */
+  async updateInvite(
+    inviteId: string,
+    teamId: string,
+    role: string,
+  ): Promise<any> {
+    const teamObjectId = new ObjectId(teamId);
+    // Fetch the team
+    const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
+    if (!teamData) {
+      throw new Error("Team not found");
+    }
+    const invites = teamData.invites || [];
+    // Check if invite exists
+    const inviteIndex = invites.findIndex(
+      (invite: any) => invite.inviteId === inviteId,
+    );
+    if (inviteIndex === -1) {
+      throw new Error("Invite not found");
+    }
+    // Update the role
+    invites[inviteIndex] = {
+      ...invites[inviteIndex],
+      role: role,
+      updatedAt: new Date(),
+    };
+    const updatedData: Partial<TeamDto> = {
+      invites,
+    };
+    const response = await this.teamRepository.updateTeamById(
+      teamObjectId,
+      updatedData,
+    );
+    return {
+      success: true,
+      message: "Invite updated with new role",
+      data: response,
+    };
   }
 }
