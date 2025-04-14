@@ -14,7 +14,7 @@ import { ObjectId, WithId } from "mongodb";
 import { ContextService } from "@src/modules/common/services/context.service";
 import { UserRepository } from "../repositories/user.repository";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
-import { Team } from "@src/modules/common/models/team.model";
+import { Invite, Team } from "@src/modules/common/models/team.model";
 import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { TeamService } from "./team.service";
@@ -1041,6 +1041,11 @@ export class TeamUserService {
     const matchedInvite = allInvites.find(
       (invite: any) => invite.inviteId === inviteId,
     );
+    const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
+
+    if (hasExpired) {
+      throw new NotFoundException("The invitation has expired.");
+    }
     if (!matchedInvite) {
       throw new NotFoundException("Invite not found");
     }
@@ -1185,5 +1190,10 @@ export class TeamUserService {
       message: "Invite updated with new role",
       data: response,
     };
+  }
+
+  public isInviteExpired(expiresAt: Date): boolean {
+    const now = new Date();
+    return new Date(expiresAt) < now;
   }
 }
