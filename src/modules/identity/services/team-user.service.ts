@@ -347,7 +347,6 @@ export class TeamUserService {
     const teamData = await this.teamRepository.findTeamByTeamId(
       new ObjectId(payload.teamId),
     );
-    console.log("This is the payload we are getting", payload);
     await this.teamService.isTeamOwnerOrAdmin(new ObjectId(payload.teamId));
     const updatedTeamAdmins = teamData.admins.filter(
       (id) => id !== payload.userId,
