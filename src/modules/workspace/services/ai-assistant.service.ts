@@ -394,6 +394,13 @@ export class AiAssistantService {
           content: `{Text: ${text}, API data: ${apiData}}`,
         });
   
+        client.send(JSON.stringify({
+          messages: "",
+          thread_Id: threadId,
+          tab_id: tabId,
+          stream_status: "start",
+        }));
+
         this.assistantsClient.beta.threads.runs.stream(threadId, {
           assistant_id: this.assistantId,
         })
@@ -405,10 +412,17 @@ export class AiAssistantService {
             messages: chunk,
             thread_Id: threadId,
             tab_id: tabId,
+            stream_status: "streaming",
           }));
         })
         .on('end', async () => {
           try {
+            client.send(JSON.stringify({
+              messages: "",
+              thread_Id: threadId,
+              tab_id: tabId,
+              stream_status: "end",
+            }));
             // Get latest run for Token Usage
             const runsList = await this.assistantsClient.beta.threads.runs.list(threadId);
             const latestRun = runsList.data[0];
