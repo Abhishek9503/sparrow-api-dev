@@ -369,8 +369,9 @@ export class AiAssistantService {
         ) {
           client.send(JSON.stringify({
             messages: "Limit Reached. Please try again later.",
+            thread_Id: threadId,
+            tab_id: tabId,
           }));
-          throw new BadRequestException("Limit reached");
         }
         
         // Validate user input
@@ -436,6 +437,7 @@ export class AiAssistantService {
           client.send(JSON.stringify({
             messages: "Some issue occurred while processing your request. Please try again.",
             thread_Id: threadId,
+            tab_id: tabId,
           }));
         });
       }
@@ -472,7 +474,7 @@ export class AiAssistantService {
         model: "sparrow",
         messages: messages,
         temperature: 0.7,
-        max_tokens: 1024,
+        max_tokens: this.maxTokens,
       });
       
       const result =
@@ -480,7 +482,7 @@ export class AiAssistantService {
       return result;
     } catch (error) {
       console.error("Error processing specificError:", error);
-      throw new InternalServerErrorException(
+      throw new BadRequestException(
         "An error occurred while processing the request.",
       );
     }
