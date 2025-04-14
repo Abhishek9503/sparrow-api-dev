@@ -504,6 +504,7 @@ export class TeamUserService {
     const prevOwnerUpdatedParams = {
       teams: prevOwnerUserTeams,
     };
+
     await this.userRepository.updateUserById(
       new ObjectId(user._id),
       prevOwnerUpdatedParams,
@@ -1173,99 +1174,5 @@ export class TeamUserService {
       message: "Invite updated with new role",
       data: response,
     };
-  }
-
-  /**
-   * Change the role of existing Member.
-   * @param {string} userId - The Role select by the Inviter.
-   * @param {string} role - The Role select by the admin or owner.
-   * @param {string} teamId - We will send this TeamId a Invite
-   */
-  async updateMemberRole(userId: string, role: string, teamId: string) {
-    try {
-      // Extract sender information
-      const sender = this.contextService.get("user");
-      const teamObjectId = new ObjectId(teamId);
-
-      // Fetch team and user data
-      const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
-      const userData = await this.userRepository.getUserById(userId);
-
-      if (!teamData) {
-        throw new Error("Team not found.");
-      }
-
-      if (!userData) {
-        throw new Error("User not found.");
-      }
-
-      // Permission check: Ensure sender is an Admin or Owner
-      const isOwnerOrAdmin = sender.teams?.some(
-        (team: any) =>
-          (team.id === teamId && team.role === TeamRole.ADMIN) ||
-          team.role === TeamRole.OWNER,
-      );
-
-      if (!isOwnerOrAdmin) {
-        throw new Error(
-          "Access Denied: Only an Admin or Owner can update a member's role.",
-        );
-      }
-
-      // Update role in team data
-      const teamUserIndex = teamData.users?.findIndex(
-        (user) => user.id === userId,
-      );
-      if (teamUserIndex === -1 || teamUserIndex === undefined) {
-        throw new Error("User not found in the team.");
-      }
-      teamData.users[teamUserIndex].role = role;
-
-      // Update role in user data
-      const userTeamIndex = userData.teams?.findIndex(
-        (team) => team.id === teamData._id,
-      );
-
-      if (userTeamIndex === -1 || userTeamIndex === undefined) {
-        throw new Error("Team not found in the user's teams.");
-      }
-      userData.teams[userTeamIndex].role = role;
-
-      // Persist both updates
-      await Promise.all([
-        this.teamRepository.updateTeamById(teamObjectId, teamData),
-        this.userRepository.updateUserById(userData._id, {
-          teams: userData.teams,
-        }),
-      ]);
-
-      // Send notification email
-      const transporter = this.emailService.createTransporter();
-      const mailOptions = {
-        from: this.configService.get("app.senderEmail"),
-        to: userData.email,
-        text: "Team Invite Acceptance",
-        template: "teamInviteRegisteredReciever",
-        context: {
-          teamName: teamData.name,
-          userName: userData?.name || userData.email,
-          sparrowEmail: this.configService.get("support.sparrowEmail"),
-          sparrowWebsite: this.configService.get("support.sparrowWebsite"),
-          sparrowWebsiteName: this.configService.get(
-            "support.sparrowWebsiteName",
-          ),
-          authUrl: this.configService.get("auth.baseURL"),
-          teamId: teamId,
-          role: role,
-          email: userData.email,
-          senderName: sender.name,
-        },
-        subject: `Your Role in ${teamData.name} on Sparrow Has Been Updated`,
-      };
-
-      await this.emailService.sendEmail(transporter, mailOptions);
-    } catch (error) {
-      throw error;
-    }
   }
 }
