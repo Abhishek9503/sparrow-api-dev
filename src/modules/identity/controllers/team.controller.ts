@@ -376,41 +376,4 @@ export class TeamController {
 
     return res.status(responseData.httpStatusCode).send(responseData);
   }
-
-  @Put(":teamId/role/:userId")
-  @ApiOperation({
-    summary: "Update user's role in a team",
-    description: "Only an Admin or Owner can update a member's role.",
-  })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        role: {
-          type: "string",
-          enum: ["OWNER", "ADMIN", "MEMBER"],
-          example: "ADMIN",
-        },
-      },
-      required: ["role"],
-    },
-  })
-  async updateRoleInTeam(
-    @Param("teamId") teamId: string,
-    @Param("userId") userId: string,
-    @Body() body: { role: string },
-    @Res() res: FastifyReply,
-  ) {
-    const data = await this.teamUserService.updateMemberRole(
-      userId,
-      body.role,
-      teamId,
-    );
-    const responseData = new ApiResponseService(
-      "User role updated successfully",
-      HttpStatusCode.OK,
-      data,
-    );
-    return res.status(responseData.httpStatusCode).send(responseData);
-  }
 }

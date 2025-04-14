@@ -22,7 +22,6 @@ import { ConfigService } from "@nestjs/config";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { TeamDto } from "../payloads/team.payload";
 import { v4 as uuidv4 } from "uuid";
-import { User } from "@src/modules/common/models/user.model";
 /**
  * Team User Service
  */
@@ -331,10 +330,12 @@ export class TeamUserService {
 
     const userDetails = await this.userRepository.getUserById(payload.userId);
 
+    const role = TeamRole.ADMIN;
     await this.addAdminEmail(
       teamData.name,
       userDetails.name.split(" ")[0],
       userDetails.email,
+      role,
     );
 
     return response;
@@ -346,6 +347,7 @@ export class TeamUserService {
     const teamData = await this.teamRepository.findTeamByTeamId(
       new ObjectId(payload.teamId),
     );
+    console.log("This is the payload we are getting", payload);
     await this.teamService.isTeamOwnerOrAdmin(new ObjectId(payload.teamId));
     const updatedTeamAdmins = teamData.admins.filter(
       (id) => id !== payload.userId,
@@ -388,12 +390,13 @@ export class TeamUserService {
 
     const userDetails = await this.userRepository.getUserById(payload.userId);
 
+    const role = TeamRole.MEMBER;
     await this.demoteTeamAdminEmail(
       teamData.name,
       userDetails.name,
       userDetails.email,
+      role,
     );
-
     return response;
   }
 
@@ -760,6 +763,7 @@ export class TeamUserService {
    * @param {string} teamName - The name of the team from which the user is being demoted.
    * @param {string} userName - The name of the user who is being demoted.
    * @param {string} email - The email address of the user who is being demoted.
+   * @param {string} role - The role of the user who is being promoted.
    * @returns {Promise<void>} A promise that resolves when the email has been sent.
    *
    * @throws {Error} Throws an error if there is an issue with sending the email.
@@ -768,9 +772,10 @@ export class TeamUserService {
     teamName: string,
     userName: string,
     email: string,
+    role?: string,
   ): Promise<void> {
     const transporter = this.emailService.createTransporter();
-
+    const sender = this.contextService.get("user");
     const mailOptions = {
       from: this.configService.get("app.senderEmail"),
       to: email,
@@ -784,8 +789,10 @@ export class TeamUserService {
         sparrowWebsiteName: this.configService.get(
           "support.sparrowWebsiteName",
         ),
+        role: role,
+        senderName: sender.name,
       },
-      subject: `Your Role in ${teamName} has been updated.`,
+      subject: `Your Role in ${teamName} on Sparrow Has Been Updated`,
     };
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
@@ -798,6 +805,7 @@ export class TeamUserService {
    * @param {string} teamName - The name of the team to which the user is being promoted.
    * @param {string} userName - The name of the user who is being promoted.
    * @param {string} email - The email address of the user who is being promoted.
+   * @param {string} role - The role of the user who is being promoted.
    * @returns {Promise<void>} A promise that resolves when the email has been sent.
    *
    * @throws {Error} Throws an error if there is an issue with sending the email.
@@ -806,7 +814,9 @@ export class TeamUserService {
     teamName: string,
     userName: string,
     email: string,
+    role?: string,
   ): Promise<void> {
+    const sender = this.contextService.get("user");
     const transporter = this.emailService.createTransporter();
 
     const mailOptions = {
@@ -822,8 +832,10 @@ export class TeamUserService {
         sparrowWebsiteName: this.configService.get(
           "support.sparrowWebsiteName",
         ),
+        role: role,
+        senderName: sender.name,
       },
-      subject: `Your Role in ${teamName} has been updated.`,
+      subject: `Your Role in ${teamName} on Sparrow Has Been Updated`,
     };
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
