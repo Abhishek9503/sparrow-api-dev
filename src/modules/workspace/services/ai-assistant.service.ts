@@ -372,6 +372,7 @@ export class AiAssistantService {
             thread_Id: threadId,
             tab_id: tabId,
           }));
+          continue;
         }
         
         // Validate user input
