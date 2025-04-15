@@ -1009,11 +1009,7 @@ export class TeamUserService {
     const teamFilter = payload.teamId;
     // check if inviter is admin or owner
     const sender = this.contextService.get("user");
-    const isOwnerOrAdmin = sender.teams.some(
-      (team: any) =>
-        (team.id === payload.teamId && team.role === TeamRole.ADMIN) ||
-        team.role === TeamRole.OWNER,
-    );
+    const isOwnerOrAdmin = this.isCheckOwnerOrAdmin(sender, payload.teamId);
     if (!isOwnerOrAdmin) {
       throw new UnauthorizedException(
         "Access Denied: Only an Admin or Owner can send the invitation.",
@@ -1202,6 +1198,18 @@ export class TeamUserService {
     return new Date(expiresAt) < now;
   }
 
+  public isCheckOwnerOrAdmin(sender: any, teamId: string): boolean {
+    if (!sender.teams || sender.teams.length === 0) {
+      return false;
+    }
+    const isOwnerOrAdmin = sender.teams.some(
+      (team: any) =>
+        (team.id === teamId && team.role === TeamRole.ADMIN) ||
+        team.role === TeamRole.OWNER,
+    );
+    return isOwnerOrAdmin;
+  }
+
   async removeInviteById(teamId: string, inviteId: string) {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
@@ -1226,6 +1234,12 @@ export class TeamUserService {
       throw new NotFoundException("Team not found");
     }
     const sender = this.contextService.get("user");
+    const isOwnerOrAdmin = this.isCheckOwnerOrAdmin(sender, teamId);
+    if (!isOwnerOrAdmin) {
+      throw new UnauthorizedException(
+        "Access Denied: Only an Admin or Owner can send the invitation.",
+      );
+    }
     const invites = teamData.invites || [];
     const inviteIndex = invites.findIndex(
       (invite: any) => invite.inviteId === inviteId,

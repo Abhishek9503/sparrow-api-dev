@@ -407,11 +407,10 @@ export class TeamController {
     @Param("inviteId") inviteId: string,
     @Res() res: FastifyReply,
   ) {
-    const data = await this.teamUserService.removeInviteById(teamId, inviteId);
+    await this.teamUserService.removeInviteById(teamId, inviteId);
     const responseData = new ApiResponseService(
       "Removed Invite from hub",
       HttpStatusCode.OK,
-      data,
     );
 
     return res.status(responseData.httpStatusCode).send(responseData);
