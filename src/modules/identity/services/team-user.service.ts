@@ -1045,6 +1045,7 @@ export class TeamUserService {
     const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
 
     if (hasExpired) {
+      await this.removeTeamInvite(teamId, matchedInvite.email);
       throw new NotFoundException("The invitation has expired.");
     }
     if (!matchedInvite) {
