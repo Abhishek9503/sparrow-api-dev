@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { TeamRepository } from "../repositories/team.repository";
 import {
@@ -879,7 +880,7 @@ export class TeamUserService {
       return false;
     });
     if (teamMember) {
-      throw new Error("Team Member already Exist.");
+      throw new BadRequestException("Team Member already Exist.");
     }
 
     // need to check, if user already exist in the invites array
@@ -889,7 +890,9 @@ export class TeamUserService {
       );
 
       if (emailAlreadyInvited) {
-        throw new Error("An invite has already been sent to this email.");
+        throw new BadRequestException(
+          "An invite has already been sent to this email.",
+        );
       }
     }
 
@@ -1012,7 +1015,7 @@ export class TeamUserService {
         team.role === TeamRole.OWNER,
     );
     if (!isOwnerOrAdmin) {
-      throw new Error(
+      throw new UnauthorizedException(
         "Access Denied: Only an Admin or Owner can send the invitation.",
       );
     }
@@ -1199,7 +1202,7 @@ export class TeamUserService {
     return new Date(expiresAt) < now;
   }
 
-  async removeInviteByInviteId(teamId: string, inviteId: string) {
+  async removeInviteById(teamId: string, inviteId: string) {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
@@ -1220,7 +1223,7 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new Error("Team not found");
+      throw new NotFoundException("Team not found");
     }
     const sender = this.contextService.get("user");
     const invites = teamData.invites || [];
@@ -1228,7 +1231,7 @@ export class TeamUserService {
       (invite: any) => invite.inviteId === inviteId,
     );
     if (inviteIndex === -1) {
-      throw new Error("Invite not found");
+      throw new NotFoundException("Invite not found");
     }
     // Store the email of the matching invite
     const inviteEmail = invites[inviteIndex].email;
