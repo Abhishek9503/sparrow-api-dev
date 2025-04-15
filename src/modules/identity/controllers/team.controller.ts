@@ -402,6 +402,7 @@ export class TeamController {
   })
   @ApiResponse({ status: 400, description: "Failed to Remove Invitation." })
   @ApiResponse({ status: 404, description: "Team or Request not Found." })
+  @UseGuards(JwtAuthGuard)
   async removeNewInvite(
     @Param("teamId") teamId: string,
     @Param("email") email: string,
@@ -427,6 +428,7 @@ export class TeamController {
   })
   @ApiResponse({ status: 400, description: "Failed to Remove Invitation." })
   @ApiResponse({ status: 404, description: "Team or Request not Found." })
+  @UseGuards(JwtAuthGuard)
   async resendNewInvite(
     @Param("teamId") teamId: string,
     @Param("email") email: string,
