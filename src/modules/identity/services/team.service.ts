@@ -257,6 +257,20 @@ export class TeamService {
 
       teams.push(teamData);
     }
+    const teamIds = user.teamInvites.teamIds;
+    if (teamIds) {
+      for (const teamId of teamIds) {
+        const teamData: WithId<TeamWithNewInviteTag> = await this.get(teamId);
+
+        const team: any = {
+          logo: teamData.logo,
+          name: teamData.name,
+          hubUrl: teamData.hubUrl,
+        };
+
+        teams.push(team);
+      }
+    }
     return teams;
   }
 
