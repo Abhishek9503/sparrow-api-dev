@@ -263,6 +263,7 @@ export class TeamService {
         const teamData: WithId<TeamWithNewInviteTag> = await this.get(teamId);
 
         const team: any = {
+          _id: teamId,
           logo: teamData.logo,
           name: teamData.name,
           hubUrl: teamData.hubUrl,
