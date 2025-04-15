@@ -376,4 +376,43 @@ export class TeamController {
 
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  @Delete(":teamId/invite/not-accepted/:inviteId")
+  @ApiOperation({
+    summary: "Remove the Invite",
+    description: "",
+  })
+  async removeNewInvite(
+    @Param("teamId") teamId: string,
+    @Param("inviteId") inviteId: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.teamUserService.removeInviteByInviteId(teamId, inviteId);
+    const responseData = new ApiResponseService(
+      "Removed Invite from hub",
+      HttpStatusCode.OK,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Post(":teamId/invite/resend/:inviteId")
+  @ApiOperation({
+    summary: "Resend Invite",
+    description: "",
+  })
+  async resendNewInvite(
+    @Param("teamId") teamId: string,
+    @Param("inviteId") inviteId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.teamUserService.resendInvite(teamId, inviteId);
+    const responseData = new ApiResponseService(
+      "Resend Invite to the hub",
+      HttpStatusCode.OK,
+      data,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }

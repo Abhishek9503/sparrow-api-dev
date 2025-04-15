@@ -883,12 +883,14 @@ export class TeamUserService {
     }
 
     // need to check, if user already exist in the invites array
-    const emailAlreadyInvited = team.invites.some(
-      (invite) => invite.email === email,
-    );
+    if (team.invites) {
+      const emailAlreadyInvited = team.invites.some(
+        (invite) => invite.email === email,
+      );
 
-    if (emailAlreadyInvited) {
-      throw new Error("An invite has already been sent to this email.");
+      if (emailAlreadyInvited) {
+        throw new Error("An invite has already been sent to this email.");
+      }
     }
 
     const userInvite = {
@@ -1195,5 +1197,112 @@ export class TeamUserService {
   public isInviteExpired(expiresAt: Date): boolean {
     const now = new Date();
     return new Date(expiresAt) < now;
+  }
+
+  async removeInviteByInviteId(teamId: string, inviteId: string) {
+    const teamObjectId = new ObjectId(teamId);
+    const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
+    if (!teamData) {
+      throw new NotFoundException("Team not found");
+    }
+    const allInvites = teamData.invites || [];
+    const matchedInvite = allInvites.find(
+      (invite: any) => invite.inviteId === inviteId,
+    );
+    if (!matchedInvite) {
+      throw new NotFoundException("Invite not found");
+    }
+    const data = await this.removeTeamInvite(teamId, matchedInvite.email);
+    return data;
+  }
+
+  async resendInvite(teamId: string, inviteId: string) {
+    const teamObjectId = new ObjectId(teamId);
+    const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
+    if (!teamData) {
+      throw new Error("Team not found");
+    }
+    const sender = this.contextService.get("user");
+    const invites = teamData.invites || [];
+    const inviteIndex = invites.findIndex(
+      (invite: any) => invite.inviteId === inviteId,
+    );
+    if (inviteIndex === -1) {
+      throw new Error("Invite not found");
+    }
+    // Store the email of the matching invite
+    const inviteEmail = invites[inviteIndex].email;
+    const userData = await this.userRepository.getUserByEmail(inviteEmail);
+    // Apply remaining changes
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(now.getDate() + 7);
+    invites[inviteIndex] = {
+      ...invites[inviteIndex],
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: expiresAt,
+    };
+    const updatedData: Partial<TeamDto> = {
+      invites,
+    };
+    const response = await this.teamRepository.updateTeamById(
+      teamObjectId,
+      updatedData,
+    );
+    if (userData) {
+      // registered user
+      const transporter = this.emailService.createTransporter();
+      const mailOptions = {
+        from: this.configService.get("app.senderEmail"),
+        to: inviteEmail,
+        text: "Team Invite Acceptance",
+        template: "teamInviteRegisteredReciever",
+        context: {
+          teamName: teamData.name,
+          userName: userData?.name || inviteEmail,
+          sparrowEmail: this.configService.get("support.sparrowEmail"),
+          sparrowWebsite: this.configService.get("support.sparrowWebsite"),
+          sparrowWebsiteName: this.configService.get(
+            "support.sparrowWebsiteName",
+          ),
+          authUrl: this.configService.get("auth.baseURL"),
+          inviteId: inviteId,
+          teamId: teamId,
+          email: inviteEmail,
+        },
+        subject: `${sender.name} has invited you to the hub “${teamData.name}”`,
+      };
+
+      const promise = [this.emailService.sendEmail(transporter, mailOptions)];
+      await Promise.all(promise);
+    } else {
+      // non registered user
+      const transporter = this.emailService.createTransporter();
+      const mailOptions = {
+        from: this.configService.get("app.senderEmail"),
+        to: inviteEmail,
+        text: "Team Invite Acceptance",
+        template: "teamInviteNonRegisteredReciever",
+        context: {
+          teamName: teamData.name,
+          userName: userData?.name || inviteEmail,
+          sparrowEmail: this.configService.get("support.sparrowEmail"),
+          sparrowWebsite: this.configService.get("support.sparrowWebsite"),
+          sparrowWebsiteName: this.configService.get(
+            "support.sparrowWebsiteName",
+          ),
+          marketingUrl: this.configService.get("marketing.baseURL"),
+          inviteId: inviteId,
+          teamId: teamId,
+          email: inviteEmail,
+        },
+        subject: `You’ve Been Invited to Join Sparrow – Power Up Your API Workflow`,
+      };
+
+      const promise = [this.emailService.sendEmail(transporter, mailOptions)];
+      await Promise.all(promise);
+    }
+    return response;
   }
 }
