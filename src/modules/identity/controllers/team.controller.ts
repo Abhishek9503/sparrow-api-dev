@@ -197,8 +197,16 @@ export class TeamController {
     summary: "Sends multiple invites to users within a team.",
     description: "This will add multiple users in your Team",
   })
-  @ApiResponse({ status: 201, description: "Users Added Successfully" })
-  @ApiResponse({ status: 400, description: "Failed to add users" })
+  @ApiResponse({
+    status: 201,
+    description: "Invite has been sent successfully.",
+  })
+  @ApiResponse({ status: 404, description: "Team not Found." })
+  @ApiResponse({
+    status: 401,
+    description: "Only an Admin or Owner can send the invite.",
+  })
+  @ApiResponse({ status: 400, description: "Failed to add users." })
   async addUserInTeam(
     @Param("teamId") teamId: string,
     @Body() addTeamUserDto: AddTeamUserDto,
@@ -362,6 +370,12 @@ export class TeamController {
     summary: "Create a Invite",
     description: "",
   })
+  @ApiResponse({
+    status: 201,
+    description: "Invite successfully accepted and added to the team.",
+  })
+  @ApiResponse({ status: 400, description: "Failed to Accept Invite." })
+  @ApiResponse({ status: 404, description: "Team or Request not Found." })
   async createNewInvite(
     @Param("teamId") teamId: string,
     @Param("inviteId") inviteId: string,
@@ -370,6 +384,57 @@ export class TeamController {
     const data = await this.teamUserService.acceptInvite(inviteId, teamId);
     const responseData = new ApiResponseService(
       "User joined the hub",
+      HttpStatusCode.OK,
+      data,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Delete(":teamId/invite/not-accepted/:inviteId")
+  @ApiOperation({
+    summary: "Remove the Invite",
+    description: "",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Invitation Removed from Team Successfully",
+  })
+  @ApiResponse({ status: 400, description: "Failed to Remove Invitation." })
+  @ApiResponse({ status: 404, description: "Team or Request not Found." })
+  async removeNewInvite(
+    @Param("teamId") teamId: string,
+    @Param("inviteId") inviteId: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.teamUserService.removeInviteById(teamId, inviteId);
+    const responseData = new ApiResponseService(
+      "Removed Invite from hub",
+      HttpStatusCode.OK,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Post(":teamId/invite/resend/:inviteId")
+  @ApiOperation({
+    summary: "Resend Invite",
+    description: "",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Invite resent successfully!",
+  })
+  @ApiResponse({ status: 400, description: "Failed to Remove Invitation." })
+  @ApiResponse({ status: 404, description: "Team or Request not Found." })
+  async resendNewInvite(
+    @Param("teamId") teamId: string,
+    @Param("inviteId") inviteId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.teamUserService.resendInvite(teamId, inviteId);
+    const responseData = new ApiResponseService(
+      "Resend Invite to the hub",
       HttpStatusCode.OK,
       data,
     );
