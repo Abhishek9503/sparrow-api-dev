@@ -459,7 +459,7 @@ export class AiAssistantService {
     } catch (error) {
       console.error("Error in WebSocket loop:", error);
       if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ event: "error", message: "An error occurred." }));
+        client.send(JSON.stringify({ event: "error", message: "Some Issue Occurred in Processing your Request. Please try again" }));
       }
     }
   }
