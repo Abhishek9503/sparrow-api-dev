@@ -108,6 +108,25 @@ export class AppService {
     return curlCommand;
   }
 
+  /**
+   * Fallback function to extract query parameters from a given URL.
+   *
+   * This method manually parses the URL and returns a key-value map of query parameters.
+   * It is primarily used when curlconverter fails to extract the query string properly
+   * from complex or encoded curl commands.
+   *
+   * @param url - The full URL string from which to extract query parameters.
+   * @returns An object where each key is a query parameter name and its value is the corresponding parameter value.
+   */
+  extractQueryParamsFromUrl = (url: string): Record<string, string> => {
+    const urlObj = new URL(url);
+    const params: Record<string, string> = {};
+    urlObj.searchParams.forEach((value, key) => {
+      params[key] = value;
+    });
+    return params;
+  };
+
   async parseCurl(req: string): Promise<TransformedRequest> {
     try {
       const curlconverter = await this.importCurlConverter();
@@ -120,17 +139,10 @@ export class AppService {
       const stringifiedCurl = toJsonString(updatedCurl);
       const parsedCurl = JSON.parse(stringifiedCurl);
 
-      // Extracting query params
-      const urlString = parsedCurl.url;
-      const urlObj = new URL(urlString);
-      const queries = Array.from(urlObj.searchParams.entries()).map(
-        ([key, value]) => ({
-          key,
-          value,
-          checked: true,
-        }),
-      );
-      parsedCurl.queries = queries;
+      // Fallback: Manually extracting query params, in case "curlConverter" isn't able to process query params
+      if (!parsedCurl.queries || parsedCurl.url.includes("?")) {
+        parsedCurl.queries = this.extractQueryParamsFromUrl(parsedCurl.url);
+      }
 
       // Match all -F flags with their key-value pairs
       const formDataMatches = curl.match(/-F\s+'([^=]+)=@([^;]+)/g);
@@ -231,15 +243,15 @@ export class AppService {
     // Handle URL with query parameters
     if (requestObject.queries) {
       const queryParams = [];
-      for (const param of requestObject.queries) {
-        queryParams.push({ key: param.key, value: param.value, checked: true });
+      for (const [key, value] of Object.entries(requestObject.queries)) {
+        queryParams.push({ key, value, checked: true });
         if (
-          param.key.toLowerCase() === "api-key" ||
-          param.key.toLowerCase() === "x-api-key"
+          key.toLowerCase() === "api-key" ||
+          key.toLowerCase() === "x-api-key"
         ) {
           transformedObject.request.auth.apiKey = {
-            authKey: param.key,
-            authValue: param.value,
+            authKey: key,
+            authValue: value,
             addTo: AddTo.QueryParameter,
           };
           transformedObject.request.selectedRequestAuthType =
