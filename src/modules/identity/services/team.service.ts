@@ -262,6 +262,7 @@ export class TeamService {
     const existingTeams = await this.userInvitesRepository.getByEmail(
       user.email,
     );
+    const sender = this.contextService.get("user");
     const teamIds = existingTeams?.teamIds || [];
     if (teamIds) {
       for (const teamId of teamIds) {
@@ -271,6 +272,7 @@ export class TeamService {
           logo: teamData.logo,
           name: teamData.name,
           hubUrl: teamData.hubUrl,
+          description: sender.name,
         };
 
         teams.push(team);
