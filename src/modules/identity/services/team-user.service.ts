@@ -1015,6 +1015,7 @@ export class TeamUserService {
       return true;
     });
     await this.removeUserTeamInvites(teamId, email);
+    await this.removeNonUserTeam(email, teamId);
     const updatedData: Partial<TeamDto> = {
       invites: updatedInvites,
     };
@@ -1132,20 +1133,20 @@ export class TeamUserService {
     );
     if (!user) {
       // non registered user
-      // const updatedInvites = allInvites.map((invite: any) => {
-      //   if (invite.inviteId === inviteId) {
-      //     invite.isAccepted = true;
-      //   }
-      //   return invite;
-      // });
-      // const updatedData: Partial<TeamDto> = {
-      //   invites: updatedInvites,
-      // };
-      // await this.teamRepository.updateTeamById(
-      //   new ObjectId(teamId),
-      //   updatedData,
-      // );
-      throw new NotFoundException("User doesn't exist");
+      const checkingTeamIds = await this.nonUserRepository.getByEmail(
+        matchedInvite.email,
+      );
+      if (checkingTeamIds.teamIds) {
+        const existingTeamId = checkingTeamIds.teamIds.filter(
+          (currentTeamId) => currentTeamId === teamId,
+        );
+        if (existingTeamId.length > 0) {
+          await this.removeNonUserTeam(
+            matchedInvite.email,
+            existingTeamId.toString(),
+          );
+        }
+      }
     }
     // Check if user already in the team
     const isAlreadyMember = teamData.users.some(
