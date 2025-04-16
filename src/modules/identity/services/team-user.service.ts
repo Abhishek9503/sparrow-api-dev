@@ -23,6 +23,8 @@ import { ConfigService } from "@nestjs/config";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { TeamDto } from "../payloads/team.payload";
 import { v4 as uuidv4 } from "uuid";
+import { NonUserRepository } from "../repositories/nonregisterduser.repository";
+import { threadId } from "worker_threads";
 /**
  * Team User Service
  */
@@ -30,6 +32,7 @@ import { v4 as uuidv4 } from "uuid";
 export class TeamUserService {
   constructor(
     private readonly teamRepository: TeamRepository,
+    private readonly nonUserRepository: NonUserRepository,
     private readonly contextService: ContextService,
     private readonly userRepository: UserRepository,
     private readonly producerService: ProducerService,
@@ -931,6 +934,8 @@ export class TeamUserService {
         },
       };
       await this.userRepository.updateUserById(userData._id, updateUserParams);
+    } else {
+      await this.addNonUserTeam(email, teamId);
     }
     const response = await this.teamRepository.updateTeamById(
       teamFilter,
@@ -1031,6 +1036,44 @@ export class TeamUserService {
       };
       await this.userRepository.updateUserById(userData._id, updateUserParams);
     }
+  }
+
+  async addNonUserTeam(email: string, teamId: string) {
+    const nonUserData = await this.nonUserRepository.getByEmail(email);
+    let response;
+    if (nonUserData) {
+      let existingTeamIds = nonUserData.teamIds || [];
+      if (!existingTeamIds.includes(teamId)) {
+        existingTeamIds.push(teamId);
+      }
+      const payload = {
+        email,
+        teamIds: existingTeamIds,
+      };
+      response = await this.nonUserRepository.update(payload);
+    } else {
+      const payload = {
+        email,
+        teamIds: [teamId],
+      };
+      response = await this.nonUserRepository.create(payload);
+    }
+    return response;
+  }
+
+  async removeNonUserTeam(email: string, teamId: string) {
+    const nonUserData = await this.nonUserRepository.getByEmail(email);
+    let response;
+    if (nonUserData) {
+      let existingTeamIds = nonUserData.teamIds || [];
+      const updatedTeamIds = existingTeamIds.filter((id) => id !== teamId);
+      const payload = {
+        email,
+        teamIds: updatedTeamIds,
+      };
+      response = await this.nonUserRepository.update(payload);
+    }
+    return response;
   }
 
   /**
