@@ -918,18 +918,20 @@ export class TeamUserService {
       invites: updatedInvites,
     };
 
-    const existingTeamIds = userData.teamInvites?.teamIds || [];
-    const shouldAddTeamId = !existingTeamIds.includes(teamId);
-    const updatedTeamIds = shouldAddTeamId
-      ? [...existingTeamIds, teamId]
-      : existingTeamIds;
-    const updateUserParams = {
-      teamInvites: {
-        email: userData.email,
-        teamIds: updatedTeamIds,
-      },
-    };
-    await this.userRepository.updateUserById(userData._id, updateUserParams);
+    if (userData) {
+      const existingTeamIds = userData.teamInvites?.teamIds || [];
+      const shouldAddTeamId = !existingTeamIds.includes(teamId);
+      const updatedTeamIds = shouldAddTeamId
+        ? [...existingTeamIds, teamId]
+        : existingTeamIds;
+      const updateUserParams = {
+        teamInvites: {
+          email: userData.email,
+          teamIds: updatedTeamIds,
+        },
+      };
+      await this.userRepository.updateUserById(userData._id, updateUserParams);
+    }
     const response = await this.teamRepository.updateTeamById(
       teamFilter,
       updatedData,
