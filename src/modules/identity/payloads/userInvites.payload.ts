@@ -1,6 +1,6 @@
 import { IsEmail, IsOptional, IsArray, IsString } from "class-validator";
 
-export class CreateNonUser {
+export class CreateInviteUser {
   @IsEmail()
   @IsOptional()
   email?: string;
@@ -10,7 +10,7 @@ export class CreateNonUser {
   teamIds: string[];
 }
 
-export class UpdateNonUser {
+export class UpdateInviteUser {
   @IsEmail()
   @IsOptional()
   email?: string;

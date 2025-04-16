@@ -1,6 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Db, InsertOneResult, UpdateResult } from "mongodb";
-import { CreateNonUser, UpdateNonUser } from "../payloads/userInvites.payload";
+import {
+  CreateInviteUser,
+  UpdateInviteUser,
+} from "../payloads/userInvites.payload";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 import { UserInvites } from "@src/modules/common/models/user-invites.model";
 
@@ -13,10 +16,10 @@ export class UserInvitesRepository {
 
   /**
    * Creates a new unregistered user in the database
-   * @param payload {CreateNonUser}
+   * @param payload {CreateInviteUser}
    * @returns {Promise<InsertOneResult>} result of the insert operation
    */
-  async create(payload: CreateNonUser): Promise<InsertOneResult> {
+  async create(payload: CreateInviteUser): Promise<InsertOneResult> {
     const { email, teamIds } = payload;
     const UserInvites = {
       email,
@@ -31,10 +34,10 @@ export class UserInvitesRepository {
 
   /**
    * Updates a non-user's teamIds by pushing all provided teamIds
-   * @param payload {UpdateNonUser}
+   * @param payload {UpdateInviteUser}
    * @returns {Promise<UpdateResult>}
    */
-  async update(payload: UpdateNonUser): Promise<UpdateResult | any> {
+  async update(payload: UpdateInviteUser): Promise<UpdateResult | any> {
     const { email, teamIds } = payload;
     if (teamIds.length === 0) {
       const reponse = await this.removeByEmail(email);
