@@ -11,7 +11,7 @@ import { UserController } from "./controllers/user.controller";
 import { TeamService } from "./services/team.service";
 import { TeamUserService } from "./services/team-user.service";
 import { TeamRepository } from "./repositories/team.repository";
-import { NonUserRepository } from "./repositories/nonregisterduser.repository";
+import { UserInvitesRepository } from "./repositories/userInvites.repository";
 import { TeamController } from "./controllers/team.controller";
 import { RefreshTokenStrategy } from "./strategies/refresh-token.strategy";
 import { HubSpotService } from "./services/hubspot.service";
@@ -62,7 +62,7 @@ import { GoogleStrategy } from "./strategies/google.strategy";
       inject: [ConfigService],
     },
     HubSpotService,
-    NonUserRepository,
+    UserInvitesRepository,
   ],
   exports: [
     PassportModule.register({ defaultStrategy: "jwt" }),
@@ -72,7 +72,7 @@ import { GoogleStrategy } from "./strategies/google.strategy";
     TeamService,
     TeamUserService,
     TeamRepository,
-    NonUserRepository,
+    UserInvitesRepository,
     HubSpotService,
   ],
   controllers: [AuthController, UserController, TeamController],

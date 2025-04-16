@@ -1,11 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Db, InsertOneResult, UpdateResult } from "mongodb";
-import { CreateNonUser, UpdateNonUser } from "../payloads/nonUser.payload";
+import { CreateNonUser, UpdateNonUser } from "../payloads/userInvites.payload";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
-import { UnregisteredUser } from "@src/modules/common/models/nonregistered-users.model";
+import { UserInvites } from "@src/modules/common/models/user-invites.model";
 
 @Injectable()
-export class NonUserRepository {
+export class UserInvitesRepository {
   constructor(
     @Inject("DATABASE_CONNECTION")
     private readonly db: Db,
@@ -18,14 +18,14 @@ export class NonUserRepository {
    */
   async create(payload: CreateNonUser): Promise<InsertOneResult> {
     const { email, teamIds } = payload;
-    const unregisteredUser = {
+    const UserInvites = {
       email,
       teamIds,
       createdAt: new Date(),
     };
     const result = await this.db
-      .collection<UnregisteredUser>(Collections.NONREGISTEREDUSER)
-      .insertOne(unregisteredUser);
+      .collection<UserInvites>(Collections.NONREGISTEREDUSER)
+      .insertOne(UserInvites);
     return result;
   }
 
@@ -37,19 +37,19 @@ export class NonUserRepository {
   async update(payload: UpdateNonUser): Promise<UpdateResult> {
     const { email, teamIds } = payload;
     const result = await this.db
-      .collection<UnregisteredUser>(Collections.NONREGISTEREDUSER)
-      .updateOne({ email }, { $addToSet: { teamIds: { $each: teamIds } } });
+      .collection<UserInvites>(Collections.NONREGISTEREDUSER)
+      .updateOne({ email }, { $set: { teamIds: teamIds } });
     return result;
   }
 
   /**
    * Retrieves a non-user by their email
    * @param email {string}
-   * @returns {Promise<UnregisteredUser | null>}
+   * @returns {Promise<UserInvites | null>}
    */
-  async getByEmail(email: string): Promise<UnregisteredUser | null> {
+  async getByEmail(email: string): Promise<UserInvites | null> {
     return this.db
-      .collection<UnregisteredUser>(Collections.NONREGISTEREDUSER)
+      .collection<UserInvites>(Collections.NONREGISTEREDUSER)
       .findOne({ email });
   }
 }

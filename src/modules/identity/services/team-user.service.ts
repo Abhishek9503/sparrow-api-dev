@@ -23,7 +23,7 @@ import { ConfigService } from "@nestjs/config";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { TeamDto } from "../payloads/team.payload";
 import { v4 as uuidv4 } from "uuid";
-import { NonUserRepository } from "../repositories/nonregisterduser.repository";
+import { UserInvitesRepository } from "../repositories/userInvites.repository";
 import { threadId } from "worker_threads";
 /**
  * Team User Service
@@ -32,7 +32,7 @@ import { threadId } from "worker_threads";
 export class TeamUserService {
   constructor(
     private readonly teamRepository: TeamRepository,
-    private readonly nonUserRepository: NonUserRepository,
+    private readonly UserInvitesRepository: UserInvitesRepository,
     private readonly contextService: ContextService,
     private readonly userRepository: UserRepository,
     private readonly producerService: ProducerService,
@@ -934,9 +934,8 @@ export class TeamUserService {
         },
       };
       await this.userRepository.updateUserById(userData._id, updateUserParams);
-    } else {
-      await this.addNonUserTeam(email, teamId);
     }
+    await this.addNonUserTeam(email, teamId);
     const response = await this.teamRepository.updateTeamById(
       teamFilter,
       updatedData,
@@ -965,6 +964,7 @@ export class TeamUserService {
           inviteId: inviteId,
           teamId: teamId,
           email: email,
+          role: role,
         },
         subject: `${sender.name} has invited you to the hub “${team.name}”`,
       };
@@ -1040,7 +1040,7 @@ export class TeamUserService {
   }
 
   async addNonUserTeam(email: string, teamId: string) {
-    const nonUserData = await this.nonUserRepository.getByEmail(email);
+    const nonUserData = await this.UserInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
       let existingTeamIds = nonUserData.teamIds || [];
@@ -1051,19 +1051,19 @@ export class TeamUserService {
         email,
         teamIds: existingTeamIds,
       };
-      response = await this.nonUserRepository.update(payload);
+      response = await this.UserInvitesRepository.update(payload);
     } else {
       const payload = {
         email,
         teamIds: [teamId],
       };
-      response = await this.nonUserRepository.create(payload);
+      response = await this.UserInvitesRepository.create(payload);
     }
     return response;
   }
 
   async removeNonUserTeam(email: string, teamId: string) {
-    const nonUserData = await this.nonUserRepository.getByEmail(email);
+    const nonUserData = await this.UserInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
       let existingTeamIds = nonUserData.teamIds || [];
@@ -1072,7 +1072,7 @@ export class TeamUserService {
         email,
         teamIds: updatedTeamIds,
       };
-      response = await this.nonUserRepository.update(payload);
+      response = await this.UserInvitesRepository.update(payload);
     }
     return response;
   }
@@ -1133,20 +1133,7 @@ export class TeamUserService {
     );
     if (!user) {
       // non registered user
-      const checkingTeamIds = await this.nonUserRepository.getByEmail(
-        matchedInvite.email,
-      );
-      if (checkingTeamIds.teamIds) {
-        const existingTeamId = checkingTeamIds.teamIds.filter(
-          (currentTeamId) => currentTeamId === teamId,
-        );
-        if (existingTeamId.length > 0) {
-          await this.removeNonUserTeam(
-            matchedInvite.email,
-            existingTeamId.toString(),
-          );
-        }
-      }
+      throw new NotFoundException("User doesn't exist");
     }
     // Check if user already in the team
     const isAlreadyMember = teamData.users.some(

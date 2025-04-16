@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, IsArray, IsDateString } from "class-validator";
 
-export class UnregisteredUser {
+export class UserInvites {
   @IsString()
   @IsNotEmpty()
   email: string;
