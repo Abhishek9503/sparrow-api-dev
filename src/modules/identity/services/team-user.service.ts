@@ -24,7 +24,6 @@ import { EmailService } from "@src/modules/common/services/email.service";
 import { TeamDto } from "../payloads/team.payload";
 import { v4 as uuidv4 } from "uuid";
 import { UserInvitesRepository } from "../repositories/userInvites.repository";
-import { threadId } from "worker_threads";
 /**
  * Team User Service
  */
@@ -32,7 +31,7 @@ import { threadId } from "worker_threads";
 export class TeamUserService {
   constructor(
     private readonly teamRepository: TeamRepository,
-    private readonly UserInvitesRepository: UserInvitesRepository,
+    private readonly userInvitesRepository: UserInvitesRepository,
     private readonly contextService: ContextService,
     private readonly userRepository: UserRepository,
     private readonly producerService: ProducerService,
@@ -920,22 +919,7 @@ export class TeamUserService {
     const updatedData: Partial<TeamDto> = {
       invites: updatedInvites,
     };
-
-    if (userData) {
-      const existingTeamIds = userData.teamInvites?.teamIds || [];
-      const shouldAddTeamId = !existingTeamIds.includes(teamId);
-      const updatedTeamIds = shouldAddTeamId
-        ? [...existingTeamIds, teamId]
-        : existingTeamIds;
-      const updateUserParams = {
-        teamInvites: {
-          email: userData.email,
-          teamIds: updatedTeamIds,
-        },
-      };
-      await this.userRepository.updateUserById(userData._id, updateUserParams);
-    }
-    await this.addNonUserTeam(email, teamId);
+    await this.addInvite(email, teamId);
     const response = await this.teamRepository.updateTeamById(
       teamFilter,
       updatedData,
@@ -1014,33 +998,15 @@ export class TeamUserService {
       }
       return true;
     });
-    await this.removeUserTeamInvites(teamId, email);
-    await this.removeNonUserTeam(email, teamId);
+    await this.removeInvite(email, teamId);
     const updatedData: Partial<TeamDto> = {
       invites: updatedInvites,
     };
     await this.teamRepository.updateTeamById(team._id, updatedData);
   }
 
-  async removeUserTeamInvites(teamId: string, email: string) {
-    const userData = await this.userRepository.getUserByEmail(email);
-    if (userData?.teamInvites) {
-      const existingTeamIds = userData.teamInvites?.teamIds || [];
-      const updatedTeamIds = existingTeamIds.filter(
-        (id: string) => id !== teamId,
-      );
-      const updateUserParams = {
-        teamInvites: {
-          email: userData.email,
-          teamIds: updatedTeamIds,
-        },
-      };
-      await this.userRepository.updateUserById(userData._id, updateUserParams);
-    }
-  }
-
-  async addNonUserTeam(email: string, teamId: string) {
-    const nonUserData = await this.UserInvitesRepository.getByEmail(email);
+  async addInvite(email: string, teamId: string) {
+    const nonUserData = await this.userInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
       let existingTeamIds = nonUserData.teamIds || [];
@@ -1051,19 +1017,19 @@ export class TeamUserService {
         email,
         teamIds: existingTeamIds,
       };
-      response = await this.UserInvitesRepository.update(payload);
+      response = await this.userInvitesRepository.update(payload);
     } else {
       const payload = {
         email,
         teamIds: [teamId],
       };
-      response = await this.UserInvitesRepository.create(payload);
+      response = await this.userInvitesRepository.create(payload);
     }
     return response;
   }
 
-  async removeNonUserTeam(email: string, teamId: string) {
-    const nonUserData = await this.UserInvitesRepository.getByEmail(email);
+  async removeInvite(email: string, teamId: string) {
+    const nonUserData = await this.userInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
       let existingTeamIds = nonUserData.teamIds || [];
@@ -1072,7 +1038,7 @@ export class TeamUserService {
         email,
         teamIds: updatedTeamIds,
       };
-      response = await this.UserInvitesRepository.update(payload);
+      response = await this.userInvitesRepository.update(payload);
     }
     return response;
   }

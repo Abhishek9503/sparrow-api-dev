@@ -24,7 +24,7 @@ export class UserInvitesRepository {
       createdAt: new Date(),
     };
     const result = await this.db
-      .collection<UserInvites>(Collections.NONREGISTEREDUSER)
+      .collection<UserInvites>(Collections.USERINVITES)
       .insertOne(UserInvites);
     return result;
   }
@@ -34,10 +34,14 @@ export class UserInvitesRepository {
    * @param payload {UpdateNonUser}
    * @returns {Promise<UpdateResult>}
    */
-  async update(payload: UpdateNonUser): Promise<UpdateResult> {
+  async update(payload: UpdateNonUser): Promise<UpdateResult | any> {
     const { email, teamIds } = payload;
+    if (teamIds.length === 0) {
+      const reponse = await this.removeByEmail(email);
+      return reponse;
+    }
     const result = await this.db
-      .collection<UserInvites>(Collections.NONREGISTEREDUSER)
+      .collection<UserInvites>(Collections.USERINVITES)
       .updateOne({ email }, { $set: { teamIds: teamIds } });
     return result;
   }
@@ -49,7 +53,19 @@ export class UserInvitesRepository {
    */
   async getByEmail(email: string): Promise<UserInvites | null> {
     return this.db
-      .collection<UserInvites>(Collections.NONREGISTEREDUSER)
+      .collection<UserInvites>(Collections.USERINVITES)
       .findOne({ email });
+  }
+
+  /**
+   * Removes a user invite completely by email
+   * @param email {string}
+   * @returns {Promise<any>}
+   */
+  async removeByEmail(email: string): Promise<any> {
+    const result = await this.db
+      .collection<UserInvites>(Collections.USERINVITES)
+      .deleteOne({ email });
+    return result;
   }
 }
