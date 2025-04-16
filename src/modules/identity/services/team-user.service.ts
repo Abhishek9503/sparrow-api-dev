@@ -1009,7 +1009,7 @@ export class TeamUserService {
     const nonUserData = await this.userInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
-      let existingTeamIds = nonUserData.teamIds || [];
+      const existingTeamIds = nonUserData.teamIds || [];
       if (!existingTeamIds.includes(teamId)) {
         existingTeamIds.push(teamId);
       }
@@ -1032,7 +1032,7 @@ export class TeamUserService {
     const nonUserData = await this.userInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
-      let existingTeamIds = nonUserData.teamIds || [];
+      const existingTeamIds = nonUserData.teamIds || [];
       const updatedTeamIds = existingTeamIds.filter((id) => id !== teamId);
       const payload = {
         email,
