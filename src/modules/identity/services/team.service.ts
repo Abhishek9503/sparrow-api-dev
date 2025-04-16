@@ -262,19 +262,27 @@ export class TeamService {
     const existingTeams = await this.userInvitesRepository.getByEmail(
       user.email,
     );
-    const sender = this.contextService.get("user");
     const teamIds = existingTeams?.teamIds || [];
     if (teamIds) {
       for (const teamId of teamIds) {
         const teamData: WithId<TeamWithNewInviteTag> = await this.get(teamId);
+        // Find the invite that matches the user's email (or another criterion)
+        const specificInvite = teamData.invites.find(
+          (invite) => invite.email === user.email,
+        );
+        let createdById = null;
+        if (specificInvite) {
+          createdById = specificInvite.createdBy.toString();
+        }
+        const senderData = await this.userRepository.getUserById(createdById);
         const team: any = {
           _id: teamId,
           logo: teamData.logo,
           name: teamData.name,
           hubUrl: teamData.hubUrl,
-          description: sender.name,
+          description: senderData.name || "No creator found",
         };
-
+        // Add the team object to the teams array
         teams.push(team);
       }
     }
