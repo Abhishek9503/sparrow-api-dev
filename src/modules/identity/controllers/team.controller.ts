@@ -410,7 +410,7 @@ export class TeamController {
     @Param("teamId") teamId: string,
     @Res() res: FastifyReply,
   ) {
-    const data = await this.teamUserService.acceptInvite(teamId);
+    const data = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "User joined the hub",
       HttpStatusCode.OK,
