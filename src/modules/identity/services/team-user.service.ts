@@ -850,7 +850,7 @@ export class TeamUserService {
    * @param {string} email - This is the Email receive Invitation.
    * @param {string} role - The Role select by the Inviter.
    * @param {ObjectId} teamId - We will send this TeamId a Invite
-   * @param {ObjectId} senderId - We will send this TeamId a Invite
+   * @param {SelectedWorkspaces} workspaces - we will send required workspaces.
    *
    */
   async createInvite(
@@ -882,7 +882,7 @@ export class TeamUserService {
       return false;
     });
     if (teamMember) {
-      throw new BadRequestException("Team Member already Exist.");
+      throw new BadRequestException("Hub Member already Exist.");
     }
 
     // need to check, if user already exist in the invites array
@@ -1134,7 +1134,7 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new NotFoundException("Team not found");
+      throw new NotFoundException("Hub not found");
     }
     const sender = this.contextService.get("user");
     const allInvites = teamData.invites || [];
@@ -1162,7 +1162,7 @@ export class TeamUserService {
       (u: any) => u.id === user._id.toString(),
     );
     if (isAlreadyMember) {
-      throw new BadRequestException("User is already a member of the team");
+      throw new BadRequestException("User is already a member of the Hub");
     }
     // add user to the team
     await this.addUser({
@@ -1190,7 +1190,7 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new Error("Team not found");
+      throw new Error("Hub not found");
     }
     const invites = teamData.invites || [];
     const inviteIndex = invites.findIndex(
