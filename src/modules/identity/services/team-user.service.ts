@@ -864,7 +864,7 @@ export class TeamUserService {
 
     const team = await this.teamRepository.get(teamFilter.toString());
     if (!team) {
-      return "Team not Found";
+      throw new NotFoundException("Hub not Found");
     }
     const now = new Date();
     const inviteId = uuidv4();
@@ -934,7 +934,7 @@ export class TeamUserService {
       const mailOptions = {
         from: this.configService.get("app.senderEmail"),
         to: email,
-        text: "Team Invite Acceptance",
+        text: "Hub Invite Acceptance",
         template: "teamInviteRegisteredReciever",
         context: {
           teamName: team.name,
@@ -961,7 +961,7 @@ export class TeamUserService {
       const mailOptions = {
         from: this.configService.get("app.senderEmail"),
         to: email,
-        text: "Team Invite Acceptance",
+        text: "Hub Invite Acceptance",
         template: "teamInviteNonRegisteredReciever",
         context: {
           teamName: team.name,
@@ -989,7 +989,7 @@ export class TeamUserService {
   async removeTeamInvite(teamId: string, email: string) {
     const team = await this.teamRepository.get(teamId);
     if (!team) {
-      return "Team not Found";
+      throw new NotFoundException("Hub not Found");
     }
     const teamInvites = team.invites || [];
     const updatedInvites = teamInvites.filter((invite) => {
@@ -1239,7 +1239,7 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new NotFoundException("Team not found");
+      throw new NotFoundException("Hub not found");
     }
     const sender = this.contextService.get("user");
     const isOwnerOrAdmin = this.isCheckOwnerOrAdmin(sender, teamId);
@@ -1263,7 +1263,7 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new NotFoundException("Team not found");
+      throw new NotFoundException("Hub not found");
     }
     const sender = this.contextService.get("user");
     const allInvites = teamData.invites || [];
@@ -1281,7 +1281,7 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new NotFoundException("Team not found");
+      throw new NotFoundException("Hub not found");
     }
     const sender = this.contextService.get("user");
     const isOwnerOrAdmin = this.isCheckOwnerOrAdmin(sender, teamId);
@@ -1324,7 +1324,7 @@ export class TeamUserService {
       const mailOptions = {
         from: this.configService.get("app.senderEmail"),
         to: inviteEmail,
-        text: "Team Invite Acceptance",
+        text: "Hub resend Invite",
         template: "teamInviteRegisteredReciever",
         context: {
           teamName: teamData.name,
@@ -1350,7 +1350,7 @@ export class TeamUserService {
       const mailOptions = {
         from: this.configService.get("app.senderEmail"),
         to: inviteEmail,
-        text: "Team Invite Acceptance",
+        text: "Hub resend Invite",
         template: "teamInviteNonRegisteredReciever",
         context: {
           teamName: teamData.name,
