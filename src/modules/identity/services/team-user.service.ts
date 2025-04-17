@@ -1079,12 +1079,17 @@ export class TeamUserService {
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
-      throw new NotFoundException("Team not found");
+      throw new NotFoundException("Hub not found");
     }
     const allInvites = teamData.invites || [];
     const matchedInvite = allInvites.find(
       (invite: any) => invite.inviteId === inviteId,
     );
+    if (!matchedInvite) {
+      throw new BadRequestException(
+        "User already Exist or Declined the Invite.",
+      );
+    }
     const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
 
     if (hasExpired) {
@@ -1141,6 +1146,11 @@ export class TeamUserService {
     const matchedInvite = allInvites.find(
       (invite: any) => invite.email === sender.email,
     );
+    if (!matchedInvite) {
+      throw new BadRequestException(
+        "User already Exist or Declined the Invite.",
+      );
+    }
     const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
 
     if (hasExpired) {
