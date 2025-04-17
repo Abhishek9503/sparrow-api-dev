@@ -11,6 +11,7 @@ import {
 import { Type } from "class-transformer";
 import { WorkspaceDto } from "@src/modules/common/models/workspace.model";
 import { UserDto } from "@src/modules/common/models/user.model";
+import { Invite } from "@src/modules/common/models/team.model";
 
 export class logoDto {
   @IsString()
@@ -80,6 +81,10 @@ export class TeamDto {
   @IsArray()
   @IsOptional()
   admins?: string[];
+
+  @IsArray()
+  @IsOptional()
+  invites?: Invite[];
 }
 
 export class UpdateTeamDto {
