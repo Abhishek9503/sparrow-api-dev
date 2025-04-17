@@ -279,6 +279,7 @@ export class WorkspaceService {
       team: {
         id: teamData._id.toString(),
         name: teamData.name,
+        hubUrl: teamData?.hubUrl || "",
       },
       users: usersInfo,
       admins: adminInfo,
@@ -331,7 +332,7 @@ export class WorkspaceService {
       );
     }
     await Promise.all(userDataPromises);
-    const updateMessage = `New workspace "${workspaceData.name}" is created under "${teamData.name}" team`;
+    const updateMessage = `New workspace "${workspaceData.name}" is created under "${teamData.name}" hub`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
@@ -344,7 +345,7 @@ export class WorkspaceService {
 
     if (!workspaceData?.firstWorkspace) {
       await this.newWorkspaceEmail(
-        userDetails.name,
+        userDetails.name.split(" ")[0],
         workspaceData.name,
         teamData.name,
         userDetails.email,
@@ -881,7 +882,7 @@ export class WorkspaceService {
           "support.sparrowWebsiteName",
         ),
       },
-      subject: `Workspace Update: New Workspace is created under ${teamName} team.`,
+      subject: `Workspace Update: New Workspace is created under ${teamName} hub.`,
     };
 
     const promise = [this.emailService.sendEmail(transporter, mailOptions)];
