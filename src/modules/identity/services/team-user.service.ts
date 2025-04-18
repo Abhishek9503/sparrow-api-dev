@@ -875,7 +875,7 @@ export class TeamUserService {
     // need to check, if user already exist in the team
     // add your code here
     const teamMember = team.users.some((user) => {
-      if (user.email === email) {
+      if (user.email === email.toLowerCase()) {
         return true;
       }
       return false;
@@ -1053,7 +1053,7 @@ export class TeamUserService {
     await this.teamService.isTeamOwnerOrAdmin(new ObjectId(payload.teamId));
     for (const userEmail of payload.users) {
       await this.createInvite(
-        userEmail,
+        userEmail.toLowerCase(),
         payload.role,
         payload.workspaces,
         teamFilter,
