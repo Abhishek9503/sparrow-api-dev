@@ -1028,6 +1028,7 @@ export class TeamUserService {
   }
 
   async removeInvite(email: string, teamId: string) {
+    email = email.trim().toLowerCase();
     const nonUserData = await this.userInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
@@ -1229,6 +1230,10 @@ export class TeamUserService {
   }
 
   async removeInviteByOwner(teamId: string, email?: string) {
+    if (!email) {
+      throw new BadRequestException("Email is required");
+    }
+    email = email.trim().toLowerCase();
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
@@ -1265,6 +1270,10 @@ export class TeamUserService {
   }
 
   async resendInvite(teamId: string, email: string) {
+    if (!email) {
+      throw new BadRequestException("Email is required");
+    }
+    email = email.trim().toLowerCase();
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
