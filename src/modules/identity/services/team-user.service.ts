@@ -1052,8 +1052,10 @@ export class TeamUserService {
     // check if inviter is admin or owner
     await this.teamService.isTeamOwnerOrAdmin(new ObjectId(payload.teamId));
     for (const userEmail of payload.users) {
+      // Trim spaces and convert the email to lowercase
+      const sanitizedEmail = userEmail.trim().toLowerCase();
       await this.createInvite(
-        userEmail.toLowerCase(),
+        sanitizedEmail,
         payload.role,
         payload.workspaces,
         teamFilter,
