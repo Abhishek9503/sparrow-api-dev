@@ -54,21 +54,21 @@
 
                         <div style="margin-bottom: 5%">
                             <h2 class="email-text-style">
-                                Hi {{userName}},
+                                Hi {{senderName}},
                             </h2>
 
                             <p class="email-text-style">
-                                The invite you sent to [Receiver Name] for the [Hub Name] has expired without a response.
+                                The invite you sent to {{userName}} for the {{teamName}} has expired without a response.
                             </p>
 
 
-                            <p class="email-text-style">Invite Sent: [Invite Date]<br/>Expired On: [Expiry Date]
+                            <p class="email-text-style">Invite Sent: {{inviteDate}}<br/>Expired On: {{expiredDate}}
                             </p>
 
                             <p class="email-text-style">No worries — you can resend the invite anytime to bring them into your hub.
                             </p>
                             
-                            <a href="{{authUrl}}/accept-team-invite/{{teamId}}/{{inviteId}}/{{email}}"
+                            <a href="{{authUrl}}/resend-invite/{{teamId}}/{{inviteId}}"
                                 style="display: inline-block; background-color: #3670F7; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
                                 Resend Invite
                             </a>
