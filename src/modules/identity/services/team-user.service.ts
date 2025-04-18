@@ -1078,34 +1078,35 @@ export class TeamUserService {
     const matchedInvite = allInvites.find(
       (invite: any) => invite.inviteId === inviteId,
     );
-    if (!matchedInvite) {
-      throw new BadRequestException(
-        "User already Exist or Declined the Invite.",
-      );
-    }
-    const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
-
-    if (hasExpired) {
-      await this.removeTeamInvite(teamId, matchedInvite.email);
-      throw new NotFoundException("The invitation has expired.");
-    }
-    if (!matchedInvite) {
-      throw new NotFoundException("Invite not found");
-    }
     const user = await this.userRepository.getUserByEmail(
       matchedInvite.email.toLowerCase(),
     );
     if (!user) {
-      // non registered user
       throw new NotFoundException("User doesn't exist");
     }
-    // Check if user already in the team
+    // Check if user already in the team.
     const isAlreadyMember = teamData.users.some(
       (u: any) => u.id === user._id.toString(),
     );
     if (isAlreadyMember) {
       throw new BadRequestException("User is already a member of the team");
     }
+    //check of user already Declined.
+    if (!matchedInvite) {
+      throw new BadRequestException("User already Declined the Invite.");
+    }
+    const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
+    if (hasExpired) {
+      await this.sendInviteExpirationEmail(matchedInvite, teamData, teamId);
+      // await this.removeTeamInvite(teamId, matchedInvite.email);
+      throw new NotFoundException("The invitation has expired.");
+    }
+    //checking workspaces in the users are matching.
+    const allWorkspaces = matchedInvite.workspaces.filter((inviteWs) =>
+      teamData.workspaces.some(
+        (teamWs) => teamWs.id.toString() === inviteWs.id,
+      ),
+    );
     // add user to the team
     await this.addUser({
       teamId: teamId,
@@ -1119,7 +1120,7 @@ export class TeamUserService {
       teamId: teamId,
       email: matchedInvite.email,
       role: matchedInvite.role,
-      workspaces: matchedInvite.workspaces,
+      workspaces: allWorkspaces,
     };
   }
 
@@ -1144,15 +1145,6 @@ export class TeamUserService {
         "User already Exist or Declined the Invite.",
       );
     }
-    const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
-
-    if (hasExpired) {
-      await this.removeTeamInvite(teamId, matchedInvite.email);
-      throw new NotFoundException("The invitation has expired.");
-    }
-    if (!matchedInvite) {
-      throw new NotFoundException("Invite not found");
-    }
     const user = await this.userRepository.getUserByEmail(
       matchedInvite.email.toLowerCase(),
     );
@@ -1167,12 +1159,28 @@ export class TeamUserService {
     if (isAlreadyMember) {
       throw new BadRequestException("User is already a member of the Hub");
     }
+    const hasExpired = this.isInviteExpired(matchedInvite.expiresAt);
+    if (hasExpired) {
+      await this.sendInviteExpirationEmail(matchedInvite, teamData, teamId);
+      // await this.removeTeamInvite(teamId, matchedInvite.email);
+      throw new NotFoundException("The invitation has expired");
+    }
+    if (!matchedInvite) {
+      throw new NotFoundException("Invite not found");
+    }
+    //checking workspaces in the users are matching.
+    const allWorkspaces = matchedInvite.workspaces.filter((inviteWs) =>
+      teamData.workspaces.some(
+        (teamWs) => teamWs.id.toString() === inviteWs.id,
+      ),
+    );
+
     // add user to the team
     await this.addUser({
       teamId: teamId,
       users: [matchedInvite.email],
       role: matchedInvite.role,
-      workspaces: matchedInvite.workspaces,
+      workspaces: allWorkspaces,
     });
     // now remove it from invites array
     await this.removeTeamInvite(teamId, matchedInvite.email);
@@ -1268,7 +1276,16 @@ export class TeamUserService {
     if (!teamData) {
       throw new NotFoundException("Hub not found");
     }
+    const userData = await this.userRepository.getUserByEmail(email);
+    const isAlreadyMember = teamData.users.some(
+      (u: any) => u.id === userData._id.toString(),
+    );
+    if (isAlreadyMember) {
+      throw new BadRequestException("User is already a member of the Hub");
+    }
+    let senderName = "";
     const sender = this.contextService.get("user");
+    senderName = sender.name;
 
     await this.teamService.isTeamOwnerOrAdmin(new ObjectId(teamId));
     const invites = teamData.invites || [];
@@ -1281,13 +1298,14 @@ export class TeamUserService {
     }
     // Store the email of the matching invite
     const inviteEmail = invites[inviteIndex].email;
-    const userData = await this.userRepository.getUserByEmail(inviteEmail);
     // Apply remaining changes
     const now = new Date();
+    const newInviteId = uuidv4();
     const expiresAt = new Date(now);
     expiresAt.setDate(now.getDate() + 7);
     invites[inviteIndex] = {
       ...invites[inviteIndex],
+      inviteId: newInviteId,
       createdAt: now,
       updatedAt: now,
       expiresAt: expiresAt,
@@ -1316,11 +1334,11 @@ export class TeamUserService {
             "support.sparrowWebsiteName",
           ),
           authUrl: this.configService.get("auth.baseURL"),
-          inviteId: matchInvite,
+          inviteId: newInviteId,
           teamId: teamId,
           email: inviteEmail,
         },
-        subject: `${sender.name} has invited you to the hub “${teamData.name}”`,
+        subject: `${senderName} has invited you to the hub “${teamData.name}”`,
       };
 
       const promise = [this.emailService.sendEmail(transporter, mailOptions)];
@@ -1342,7 +1360,7 @@ export class TeamUserService {
             "support.sparrowWebsiteName",
           ),
           marketingUrl: this.configService.get("marketing.baseURL"),
-          inviteId: matchInvite,
+          inviteId: newInviteId,
           teamId: teamId,
           email: inviteEmail,
         },
@@ -1353,5 +1371,128 @@ export class TeamUserService {
       await Promise.all(promise);
     }
     return response;
+  }
+
+  async resendInviteByInviteId(teamId: string, inviteId: string) {
+    const teamObjectId = new ObjectId(teamId);
+    const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
+    if (!teamData) {
+      throw new NotFoundException("Hub not found");
+    }
+    const inviteIndex = teamData.invites.findIndex(
+      (invite: any) => invite.inviteId === inviteId,
+    );
+    if (inviteIndex === -1) {
+      throw new NotFoundException("Invite not found");
+    }
+    const inviteEmail = teamData.invites[inviteIndex]?.email;
+    if (!inviteEmail) {
+      throw new NotFoundException("Invite email not found");
+    }
+    const isAlreadyMember = teamData.users.some(
+      (u: any) => u.email === inviteEmail,
+    );
+    if (isAlreadyMember) {
+      throw new BadRequestException("User is already a member of the Hub");
+    }
+    const now = new Date();
+    const newInviteId = uuidv4();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(now.getDate() + 7);
+    teamData.invites[inviteIndex] = {
+      ...teamData.invites[inviteIndex],
+      inviteId: newInviteId,
+      createdAt: now,
+      updatedAt: now,
+      expiresAt,
+    };
+    const updatedData: Partial<TeamDto> = {
+      invites: teamData.invites,
+    };
+    const response = await this.teamRepository.updateTeamById(
+      teamObjectId,
+      updatedData,
+    );
+    const userData = await this.userRepository.getUserByEmail(inviteEmail);
+    const senderName = userData?.name || "Someone";
+    const transporter = this.emailService.createTransporter();
+    const isRegistered = !!userData;
+    const mailOptions = {
+      from: this.configService.get("app.senderEmail"),
+      to: inviteEmail,
+      text: "Hub resend Invite",
+      template: isRegistered
+        ? "teamInviteRegisteredReciever"
+        : "teamInviteNonRegisteredReciever",
+      context: {
+        teamName: teamData.name,
+        userName: userData?.name || inviteEmail,
+        sparrowEmail: this.configService.get("support.sparrowEmail"),
+        sparrowWebsite: this.configService.get("support.sparrowWebsite"),
+        sparrowWebsiteName: this.configService.get(
+          "support.sparrowWebsiteName",
+        ),
+        ...(isRegistered
+          ? {
+              authUrl: this.configService.get("auth.baseURL"),
+            }
+          : {
+              marketingUrl: this.configService.get("marketing.baseURL"),
+            }),
+        inviteId: newInviteId,
+        teamId: teamId,
+        email: inviteEmail,
+      },
+      subject: isRegistered
+        ? `${senderName} has invited you to the hub “${teamData.name}”`
+        : `You’ve Been Invited to Join Sparrow – Power Up Your API Workflow`,
+    };
+    await this.emailService.sendEmail(transporter, mailOptions);
+    return response;
+  }
+
+  public formatDate(isoDate: string): string {
+    const dateObj = new Date(isoDate);
+    return dateObj.toLocaleString();
+  }
+
+  async sendInviteExpirationEmail(
+    invite: Invite,
+    teamData: Team,
+    teamId: string,
+  ): Promise<void> {
+    const transporter = this.emailService.createTransporter();
+    const matchedUser = teamData.users.find(
+      (user) => String(user.id) === String(invite.createdBy),
+    );
+    const senderName = matchedUser?.name || "Sparrow Team";
+    const mailOptions = {
+      from: this.configService.get<string>("app.senderEmail"),
+      to: invite.email,
+      subject: `Invite to ${invite.name} Has Expired`,
+      text: "Hub resend Invite",
+      template: "expireInviteEmail",
+      context: {
+        teamName: teamData.name,
+        userName: invite.name || invite.email,
+        sparrowEmail: this.configService.get<string>("support.sparrowEmail"),
+        sparrowWebsite: this.configService.get<string>(
+          "support.sparrowWebsite",
+        ),
+        sparrowWebsiteName: this.configService.get<string>(
+          "support.sparrowWebsiteName",
+        ),
+        marketingUrl: this.configService.get<string>("marketing.baseURL"),
+        authUrl: this.configService.get<string>("auth.baseURL"),
+        email: invite.email,
+        inviteDate: this.formatDate(invite.createdAt.toString()),
+        expiredDate: this.formatDate(invite.expiresAt.toString()),
+        teamId,
+        inviteId: invite.inviteId,
+        senderName,
+      },
+    };
+
+    await this.emailService.sendEmail(transporter, mailOptions);
   }
 }

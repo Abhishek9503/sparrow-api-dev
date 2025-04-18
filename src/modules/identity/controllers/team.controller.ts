@@ -501,4 +501,33 @@ export class TeamController {
 
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  @Post(":teamId/resend-invite/:inviteId")
+  @ApiOperation({
+    summary: "Resend Invite thorugh Email.",
+    description: "",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Invite resent successfully!",
+  })
+  @ApiResponse({ status: 400, description: "Failed to Remove Invitation." })
+  @ApiResponse({ status: 404, description: "Team or Request not Found." })
+  async resendNewInviteByEmail(
+    @Param("teamId") teamId: string,
+    @Param("inviteId") inviteId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.teamUserService.resendInviteByInviteId(
+      teamId,
+      inviteId,
+    );
+    const responseData = new ApiResponseService(
+      "Resend Invite to the hub",
+      HttpStatusCode.OK,
+      data,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }
