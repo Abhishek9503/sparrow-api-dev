@@ -1108,9 +1108,6 @@ export class TeamUserService {
       // await this.removeTeamInvite(teamId, matchedInvite.email);
       throw new NotFoundException("The invitation has expired.");
     }
-    if (!matchedInvite) {
-      throw new NotFoundException("Invite not found");
-    }
     //checking workspaces in the users are matching.
     const allWorkspaces = matchedInvite.workspaces.filter((inviteWs) =>
       teamData.workspaces.some(
@@ -1420,6 +1417,12 @@ export class TeamUserService {
     const inviteEmail = teamData.invites[inviteIndex]?.email;
     if (!inviteEmail) {
       throw new NotFoundException("Invite email not found");
+    }
+    const isAlreadyMember = teamData.users.some(
+      (u: any) => u.email === inviteEmail,
+    );
+    if (isAlreadyMember) {
+      throw new BadRequestException("User is already a member of the Hub");
     }
     const now = new Date();
     const newInviteId = uuidv4();
