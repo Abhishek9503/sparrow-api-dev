@@ -875,7 +875,7 @@ export class TeamUserService {
     // need to check, if user already exist in the team
     // add your code here
     const teamMember = team.users.some((user) => {
-      if (user.email === email) {
+      if (user.email === email.toLowerCase()) {
         return true;
       }
       return false;
@@ -1028,6 +1028,7 @@ export class TeamUserService {
   }
 
   async removeInvite(email: string, teamId: string) {
+    email = email.trim().toLowerCase();
     const nonUserData = await this.userInvitesRepository.getByEmail(email);
     let response;
     if (nonUserData) {
@@ -1052,8 +1053,10 @@ export class TeamUserService {
     // check if inviter is admin or owner
     await this.teamService.isTeamOwnerOrAdmin(new ObjectId(payload.teamId));
     for (const userEmail of payload.users) {
+      // Trim spaces and convert the email to lowercase
+      const sanitizedEmail = userEmail.trim().toLowerCase();
       await this.createInvite(
-        userEmail,
+        sanitizedEmail,
         payload.role,
         payload.workspaces,
         teamFilter,
@@ -1235,6 +1238,10 @@ export class TeamUserService {
   }
 
   async removeInviteByOwner(teamId: string, email?: string) {
+    if (!email) {
+      throw new BadRequestException("Email is required");
+    }
+    email = email.trim().toLowerCase();
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
@@ -1271,6 +1278,10 @@ export class TeamUserService {
   }
 
   async resendInvite(teamId: string, email: string) {
+    if (!email) {
+      throw new BadRequestException("Email is required");
+    }
+    email = email.trim().toLowerCase();
     const teamObjectId = new ObjectId(teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamObjectId);
     if (!teamData) {
