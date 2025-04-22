@@ -152,23 +152,23 @@ export class TeamController {
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
-  @Delete(":teamId")
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({
-    summary: "Delete a team",
-    description: "This will delete a team",
-  })
-  @ApiResponse({ status: 200, description: "Team Deleted Successfully" })
-  @ApiResponse({ status: 400, description: "Delete Team Failed" })
-  async deleteTeam(@Param("teamId") teamId: string, @Res() res: FastifyReply) {
-    const data = await this.teamService.delete(teamId);
-    const responseData = new ApiResponseService(
-      "Team Deleted",
-      HttpStatusCode.OK,
-      data,
-    );
-    return res.status(responseData.httpStatusCode).send(responseData);
-  }
+  // @Delete(":teamId")
+  // @UseGuards(JwtAuthGuard)
+  // @ApiOperation({
+  //   summary: "Delete a team",
+  //   description: "This will delete a team",
+  // })
+  // @ApiResponse({ status: 200, description: "Team Deleted Successfully" })
+  // @ApiResponse({ status: 400, description: "Delete Team Failed" })
+  // async deleteTeam(@Param("teamId") teamId: string, @Res() res: FastifyReply) {
+  //   const data = await this.teamService.delete(teamId);
+  //   const responseData = new ApiResponseService(
+  //     "Team Deleted",
+  //     HttpStatusCode.OK,
+  //     data,
+  //   );
+  //   return res.status(responseData.httpStatusCode).send(responseData);
+  // }
 
   @Get("user/:userId")
   @UseGuards(JwtAuthGuard)
