@@ -948,6 +948,7 @@ export class TeamUserService {
           teamId: teamId,
           email: email,
           role: role,
+          senderName: sender.name,
         },
         subject: `${sender.name} has invited you to the hub “${team.name}”`,
       };
@@ -1105,7 +1106,7 @@ export class TeamUserService {
       throw new NotFoundException("The invitation has expired.");
     }
     //checking workspaces in the users are matching.
-    const allWorkspaces = matchedInvite.workspaces?.filter((inviteWs) =>
+    const allWorkspaces = matchedInvite?.workspaces?.filter((inviteWs) =>
       teamData.workspaces.some(
         (teamWs) => teamWs.id.toString() === inviteWs.id,
       ),
@@ -1172,7 +1173,7 @@ export class TeamUserService {
       throw new NotFoundException("Invite not found");
     }
     //checking workspaces in the users are matching.
-    const allWorkspaces = matchedInvite.workspaces?.filter((inviteWs) =>
+    const allWorkspaces = matchedInvite?.workspaces?.filter((inviteWs) =>
       teamData.workspaces.some(
         (teamWs) => teamWs.id.toString() === inviteWs.id,
       ),
