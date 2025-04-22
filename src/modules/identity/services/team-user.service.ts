@@ -1105,15 +1105,11 @@ export class TeamUserService {
       throw new NotFoundException("The invitation has expired.");
     }
     //checking workspaces in the users are matching.
-    let allWorkspaces: SelectedWorkspaces[] = [];
-
-    if (matchedInvite?.workspaces?.length > 0) {
-      allWorkspaces = matchedInvite.workspaces.filter((inviteWs) =>
-        teamData.workspaces.some(
-          (teamWs) => teamWs.id.toString() === inviteWs.id,
-        ),
-      );
-    }
+    const allWorkspaces = matchedInvite.workspaces?.filter((inviteWs) =>
+      teamData.workspaces.some(
+        (teamWs) => teamWs.id.toString() === inviteWs.id,
+      ),
+    );
     // add user to the team
     await this.addUser({
       teamId: teamId,
@@ -1176,15 +1172,11 @@ export class TeamUserService {
       throw new NotFoundException("Invite not found");
     }
     //checking workspaces in the users are matching.
-    let allWorkspaces: SelectedWorkspaces[] = [];
-
-    if (matchedInvite?.workspaces?.length > 0) {
-      allWorkspaces = matchedInvite.workspaces.filter((inviteWs) =>
-        teamData.workspaces.some(
-          (teamWs) => teamWs.id.toString() === inviteWs.id,
-        ),
-      );
-    }
+    const allWorkspaces = matchedInvite.workspaces?.filter((inviteWs) =>
+      teamData.workspaces.some(
+        (teamWs) => teamWs.id.toString() === inviteWs.id,
+      ),
+    );
 
     // add user to the team
     await this.addUser({
