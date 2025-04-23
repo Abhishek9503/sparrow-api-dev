@@ -290,6 +290,11 @@ spec:
                 secretKeyRef:
                   name: release-api-v1-secret
                   key: MARKETING_BASE_URL
+            - name: WHITELIST_USER_EMAILS
+              valueFrom:
+                secretKeyRef:
+                  name: release-api-v1-secret
+                  key: WHITELIST_USER_EMAILS
 
 ---
 apiVersion: v1

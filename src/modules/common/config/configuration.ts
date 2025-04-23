@@ -107,4 +107,7 @@ export default () => ({
   testing: {
     whitelistEmail: process.env.WHITELIST_EMAIL_LIST,
   },
+  whitelist: {
+    userEmails: process.env.WHITELIST_USER_EMAILS,
+  },
 });

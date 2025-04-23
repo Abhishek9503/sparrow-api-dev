@@ -311,6 +311,11 @@ spec:
                 secretKeyRef:
                   name: sparrow-api-secret
                   key: WHITELIST_EMAIL_LIST
+            - name: WHITELIST_USER_EMAILS
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: WHITELIST_USER_EMAILS
 
       imagePullSecrets:
         - name: acr-secret
