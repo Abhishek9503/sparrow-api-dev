@@ -306,6 +306,11 @@ spec:
                 secretKeyRef:
                   name: sparrow-api-secret
                   key: MARKETING_BASE_URL
+            - name: WHITELIST_EMAIL_LIST
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: WHITELIST_EMAIL_LIST
 
       imagePullSecrets:
         - name: acr-secret
