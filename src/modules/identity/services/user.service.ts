@@ -240,6 +240,21 @@ export class UserService {
     await Promise.all(promise);
   }
 
+  parseEmailList(str: string) {
+    // Replace single quotes with double quotes to make it valid JSON
+    const jsonCompatible = str.replace(/'/g, '"');
+
+    try {
+      const emailArray = JSON.parse(jsonCompatible);
+      if (Array.isArray(emailArray)) {
+        return emailArray;
+      }
+    } catch (err) {
+      console.log("Failed to parse email list:", err);
+      return [];
+    }
+  }
+
   /**
    * Sends a email to the user with the magic code to login.
    * The email includes a magic code and other necessary information.
@@ -275,7 +290,7 @@ export class UserService {
     );
     let parsedWhiteListEmails: string[] = [];
     if (whitelistEmails) {
-      parsedWhiteListEmails = JSON.parse(whitelistEmails) || [];
+      parsedWhiteListEmails = this.parseEmailList(whitelistEmails) || [];
     }
 
     let magicCode;
