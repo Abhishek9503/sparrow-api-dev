@@ -104,4 +104,7 @@ export default () => ({
     beehiivApiKey: process.env.BEEHIIV_API_KEY,
     beehiivPublicationId: process.env.BEEHIIV_PUBLICATION_ID,
   },
+  testing: {
+    whitelistEmail: process.env.WHITELIST_EMAIL_LIST,
+  },
 });

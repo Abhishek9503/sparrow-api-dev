@@ -30,7 +30,8 @@ export class PostmanParserService {
     const user = await this.contextService.get("user");
 
     // Destructure the 'info' and 'item' properties from the Postman collection
-    const { info, item: items } = postmanCollection;
+    const { info, item: items } =
+      postmanCollection.collection ?? postmanCollection;
 
     // Convert the items of the Postman collection into a specific format
     // Majorly responsible for converting the folder and request structure of postman into Sparrow's structure
