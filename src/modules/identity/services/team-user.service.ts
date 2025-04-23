@@ -1125,7 +1125,7 @@ export class TeamUserService {
       users: [matchedInvite.email],
       role: matchedInvite.role,
       workspaces: matchedInvite.workspaces,
-      senderEmail: sender.email,
+      senderEmail: sender?.email,
     });
     // now remove it from invites array
     await this.removeTeamInvite(teamId, matchedInvite.email);
@@ -1187,6 +1187,9 @@ export class TeamUserService {
         (teamWs) => teamWs.id.toString() === inviteWs.id,
       ),
     );
+    const inviteBy = await this.userRepository.findUserByUserId(
+      matchedInvite.updatedBy,
+    );
 
     // add user to the team
     await this.addUser({
@@ -1194,6 +1197,7 @@ export class TeamUserService {
       users: [matchedInvite.email],
       role: matchedInvite.role,
       workspaces: allWorkspaces,
+      senderEmail: inviteBy?.email,
     });
     // now remove it from invites array
     await this.removeTeamInvite(teamId, matchedInvite.email);
