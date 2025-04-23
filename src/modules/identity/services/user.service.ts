@@ -270,8 +270,20 @@ export class UserService {
     }
     // Create an email transporter using the email service
     const transporter = this.emailService.createTransporter();
+    const whitelistEmails = await this.configService.get(
+      "testing.whitelistEmail",
+    );
+    let parsedWhiteListEmails: string[] = [];
+    if (whitelistEmails) {
+      parsedWhiteListEmails = JSON.parse(whitelistEmails) || [];
+    }
 
-    const magicCode = this.generateEmailVerificationCode().toUpperCase();
+    let magicCode;
+    if (parsedWhiteListEmails.includes(emailPayload.email)) {
+      magicCode = "000000";
+    } else {
+      magicCode = this.generateEmailVerificationCode().toUpperCase();
+    }
 
     const mailOptions = {
       from: this.configService.get("app.senderEmail"),
