@@ -94,6 +94,10 @@ export class AddTeamUserDto {
   @ApiProperty({ type: [SelectedWorkspaces] })
   @ValidateNested({ each: true })
   workspaces?: SelectedWorkspaces[];
+
+  @IsString()
+  @IsOptional()
+  senderEmail?: string;
 }
 
 export class TeamInviteMailDto {

@@ -72,14 +72,18 @@ export class TeamUserService {
     );
   }
 
-  async inviteUserInTeamEmail(payload: TeamInviteMailDto, role: string) {
+  async inviteUserInTeamEmail(
+    payload: TeamInviteMailDto,
+    role: string,
+    senderEmail: string,
+  ) {
     const currentUser = await this.contextService.get("user");
     const transporter = this.emailService.createTransporter();
     const promiseArray = [];
     for (const user of payload.users) {
       const mailOptions = {
         from: this.configService.get("app.senderEmail"),
-        to: user.email,
+        to: senderEmail,
         text: "User Invited",
         template: "inviteTeamEmail",
         context: {
@@ -197,6 +201,7 @@ export class TeamUserService {
         teamName: teamData.name,
       },
       payload.role,
+      payload?.senderEmail,
     );
     const response = {
       nonExistingUsers: usersNotExist,
@@ -1111,12 +1116,16 @@ export class TeamUserService {
         (teamWs) => teamWs.id.toString() === inviteWs.id,
       ),
     );
+    const sender = await this.userRepository.findUserByUserId(
+      matchedInvite.updatedBy,
+    );
     // add user to the team
     await this.addUser({
       teamId: teamId,
       users: [matchedInvite.email],
       role: matchedInvite.role,
       workspaces: matchedInvite.workspaces,
+      senderEmail: sender.email,
     });
     // now remove it from invites array
     await this.removeTeamInvite(teamId, matchedInvite.email);
@@ -1289,11 +1298,13 @@ export class TeamUserService {
       throw new NotFoundException("Hub not found");
     }
     const userData = await this.userRepository.getUserByEmail(email);
-    const isAlreadyMember = teamData.users.some(
-      (u: any) => u.id === userData._id.toString(),
-    );
-    if (isAlreadyMember) {
-      throw new BadRequestException("User is already a member of the Hub");
+    if (userData) {
+      const isAlreadyMember = teamData.users.some(
+        (u: any) => u.id === userData?._id.toString(),
+      );
+      if (isAlreadyMember) {
+        throw new BadRequestException("User is already a member of the Hub");
+      }
     }
     let senderName = "";
     const sender = this.contextService.get("user");
@@ -1310,6 +1321,7 @@ export class TeamUserService {
     }
     // Store the email of the matching invite
     const inviteEmail = invites[inviteIndex].email;
+    const invitedRole = invites[inviteIndex].role;
     // Apply remaining changes
     const now = new Date();
     const newInviteId = uuidv4();
@@ -1348,6 +1360,7 @@ export class TeamUserService {
           authUrl: this.configService.get("auth.baseURL"),
           inviteId: newInviteId,
           teamId: teamId,
+          role: invitedRole,
           email: inviteEmail,
         },
         subject: `${senderName} has invited you to the hub “${teamData.name}”`,
