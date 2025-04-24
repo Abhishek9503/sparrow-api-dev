@@ -6,6 +6,7 @@ import {
 import { TeamRepository } from "../repositories/team.repository";
 import {
   AddTeamUserDto,
+  AddTeamUserWithSenderDto,
   CreateOrUpdateTeamUserDto,
   SelectedWorkspaces,
   TeamInviteMailDto,
@@ -109,7 +110,7 @@ export class TeamUserService {
    * @param {CreateOrUpdateTeamUserDto} payload
    * @returns {Promise<InsertOneWriteOpResult<Team>>} result of the insert operation
    */
-  async addUser(payload: AddTeamUserDto): Promise<object> {
+  async addUser(payload: AddTeamUserWithSenderDto): Promise<object> {
     const teamFilter = new ObjectId(payload.teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamFilter);
     const usersExist = [];
