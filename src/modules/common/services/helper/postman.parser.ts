@@ -288,7 +288,7 @@ function convertRequestBody(body: any): SparrowRequestBody {
  */
 function filterAndMap(data: any[], type: string): any[] {
   const result = (data || [])
-    .filter((item) => item.type === type)
+    // .filter((item) => item.type === type)
     .map((item) => ({
       key: item.key || "",
       value: type === "file" ? "" : item.value || "",
