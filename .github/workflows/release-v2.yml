@@ -1,14 +1,14 @@
-name: Release-V1
+name: Release-V2
 on:
   push:
     branches:
-      - release-v1
+      - release-v2
 
 jobs:
   release:
     uses: ./.github/workflows/reusable-release-deploy.yml
     with:
-      version: 'v1'
+      version: 'v2'
     secrets:
       REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
       REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
