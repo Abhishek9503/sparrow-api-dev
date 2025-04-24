@@ -143,6 +143,7 @@ export class AiAssistantService {
         stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
         !parsedWhiteListEmails.includes(user?.email)) ||
       (stat?.tokenStats &&
+        stat.tokenStats?.yearMonth === currentYearMonth &&
         parsedWhiteListEmails.includes(user?.email) &&
         stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
     ) {
@@ -392,6 +393,7 @@ export class AiAssistantService {
             stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
             !parsedWhiteListEmails.includes(emailId)) ||
           (stat?.tokenStats &&
+            stat.tokenStats?.yearMonth === currentYearMonth &&
             parsedWhiteListEmails.includes(emailId) &&
             stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
         ) {
