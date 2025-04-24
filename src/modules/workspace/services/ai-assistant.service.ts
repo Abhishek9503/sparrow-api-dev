@@ -130,10 +130,20 @@ export class AiAssistantService {
       user?._id?.toString(),
     );
     const currentYearMonth = this.chatbotStatsService.getCurrentYearMonth();
+    const whitelistEmails = await this.configService.get(
+      "whitelist.userEmails",
+    );
+    let parsedWhiteListEmails: string[] = [];
+    if (whitelistEmails) {
+      parsedWhiteListEmails = parseWhitelistedEmailList(whitelistEmails) || [];
+    }
     if (
-      stat?.tokenStats &&
-      stat.tokenStats?.yearMonth === currentYearMonth &&
-      stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
+      (stat?.tokenStats &&
+        stat.tokenStats?.yearMonth === currentYearMonth &&
+        stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
+        !parsedWhiteListEmails.includes(user?.email)) ||
+      (parsedWhiteListEmails.includes(user?.email) &&
+        stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
     ) {
       throw new BadRequestException("Limit reached");
     }
