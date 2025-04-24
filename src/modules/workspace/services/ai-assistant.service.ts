@@ -48,6 +48,7 @@ export class AiAssistantService {
   private maxTokens: number;
   private assistantsClient: AzureOpenAI;
   private monthlyTokenLimit: number;
+  private whiteListUserTokenLimit: number;
   private assistantId: string;
   // Default assistant configuration
   private assistant = {
@@ -75,6 +76,7 @@ export class AiAssistantService {
     this.maxTokens = this.configService.get("ai.maxTokens");
     this.monthlyTokenLimit = this.configService.get("ai.monthlyTokenLimit");
     this.assistantId = this.configService.get("ai.assistantId");
+    this.whiteListUserTokenLimit - 100000;
 
     // Initialize the AzureOpenAI client
     try {
@@ -128,10 +130,20 @@ export class AiAssistantService {
       user?._id?.toString(),
     );
     const currentYearMonth = this.chatbotStatsService.getCurrentYearMonth();
+    const whitelistEmails = await this.configService.get(
+      "whitelist.userEmails",
+    );
+    let parsedWhiteListEmails: string[] = [];
+    if (whitelistEmails) {
+      parsedWhiteListEmails = parseWhitelistedEmailList(whitelistEmails) || [];
+    }
     if (
-      stat?.tokenStats &&
-      stat.tokenStats?.yearMonth === currentYearMonth &&
-      stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
+      (stat?.tokenStats &&
+        stat.tokenStats?.yearMonth === currentYearMonth &&
+        stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
+        !parsedWhiteListEmails.includes(user?.email)) ||
+      (parsedWhiteListEmails.includes(user?.email) &&
+        stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
     ) {
       throw new BadRequestException("Limit reached");
     }
@@ -374,10 +386,12 @@ export class AiAssistantService {
 
         // Check if user exceeded token limit
         if (
-          stat?.tokenStats &&
-          stat.tokenStats?.yearMonth === currentYearMonth &&
-          stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
-          !parsedWhiteListEmails.includes(emailId)
+          (stat?.tokenStats &&
+            stat.tokenStats?.yearMonth === currentYearMonth &&
+            stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
+            !parsedWhiteListEmails.includes(emailId)) ||
+          (parsedWhiteListEmails.includes(emailId) &&
+            stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
         ) {
           client.send(
             JSON.stringify({
