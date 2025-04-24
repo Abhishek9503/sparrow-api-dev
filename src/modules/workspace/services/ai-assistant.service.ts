@@ -142,7 +142,9 @@ export class AiAssistantService {
         stat.tokenStats?.yearMonth === currentYearMonth &&
         stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
         !parsedWhiteListEmails.includes(user?.email)) ||
-      (parsedWhiteListEmails.includes(user?.email) &&
+      (stat?.tokenStats &&
+        stat.tokenStats?.yearMonth === currentYearMonth &&
+        parsedWhiteListEmails.includes(user?.email) &&
         stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
     ) {
       throw new BadRequestException("Limit reached");
@@ -390,7 +392,9 @@ export class AiAssistantService {
             stat.tokenStats?.yearMonth === currentYearMonth &&
             stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
             !parsedWhiteListEmails.includes(emailId)) ||
-          (parsedWhiteListEmails.includes(emailId) &&
+          (stat?.tokenStats &&
+            stat.tokenStats?.yearMonth === currentYearMonth &&
+            parsedWhiteListEmails.includes(emailId) &&
             stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
         ) {
           client.send(
