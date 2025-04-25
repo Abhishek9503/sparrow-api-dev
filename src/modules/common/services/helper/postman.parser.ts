@@ -293,7 +293,6 @@ function filterAndMap(data: any[], type: string): any[] {
       key: item.key || "",
       value: type === "file" ? "" : item.value || "",
       checked: false,
-      base: "",
     }));
 
   // Push empty key-value pair at the end
@@ -301,7 +300,6 @@ function filterAndMap(data: any[], type: string): any[] {
     key: "",
     value: "",
     checked: false,
-    base: "",
   });
 
   return result;
