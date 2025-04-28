@@ -8,7 +8,7 @@ import { Socket } from "socket.io";
 import { Server, WebSocket, MessageEvent } from "ws";
 
 // ---- OpenAI
-import { AzureOpenAI } from "openai";
+import { OpenAI , AzureOpenAI } from "openai";
 import {
   Assistant,
   AssistantCreateParams,
@@ -45,7 +45,8 @@ export class AiAssistantService {
   private deployment: string;
   private apiVersion: string;
   private maxTokens: number;
-  private assistantsClient: AzureOpenAI;
+  private gptAssistantsClient: AzureOpenAI;
+  // private deepseekClient: OpenAI;
   private monthlyTokenLimit: number;
   private assistantId: string;
   // Default assistant configuration
@@ -77,10 +78,16 @@ export class AiAssistantService {
 
     // Initialize the AzureOpenAI client
     try {
-      this.assistantsClient = this.getClient();
+      this.gptAssistantsClient = this.getGPTClient();
     } catch (e) {
       console.error(e);
     }
+
+    // try {
+    //   this.deepseekClient = this.getDeepSeekClient();
+    // } catch (e) {
+    //   console.error(e);
+    // }
   }
 
   /**
@@ -88,14 +95,23 @@ export class AiAssistantService {
    *
    * @returns  A new instance of the AzureOpenAI client.
    */
-  private getClient = (): AzureOpenAI => {
-    const assistantsClient = new AzureOpenAI({
+  private getGPTClient = (): AzureOpenAI => {
+    const gptAssistantsClient = new AzureOpenAI({
       endpoint: this.endpoint,
       apiVersion: this.apiVersion,
       apiKey: this.apiKey,
     });
-    return assistantsClient;
+    return gptAssistantsClient;
   };
+
+  // private getDeepSeekClient = (): AzureOpenAI => {
+  //   const deepseekClient = new AzureOpenAI({
+  //     endpoint: this.endpoint,
+  //     apiVersion: this.apiVersion,
+  //     apiKey: this.apiKey,
+  //   });
+  //   return deepseekClient;
+  // };
 
   /**
    * Asynchronously creates a new assistant with given instructions.
@@ -111,7 +127,7 @@ export class AiAssistantService {
     };
     // Create an assistant
     const assistantResponse: Assistant =
-      await this.assistantsClient.beta.assistants.create(options);
+      await this.gptAssistantsClient.beta.assistants.create(options);
     return assistantResponse.id;
   };
 
@@ -148,12 +164,12 @@ export class AiAssistantService {
     if (!currentThreadId) {
       // Create an thread if it does not exist
       const assistantThread: Thread =
-        await this.assistantsClient.beta.threads.create({});
+        await this.gptAssistantsClient.beta.threads.create({});
       currentThreadId = assistantThread.id;
     }
 
     // Add a user question to the existing thread
-    await this.assistantsClient.beta.threads.messages.create(currentThreadId, {
+    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
       role,
       content: message,
     });
@@ -161,7 +177,7 @@ export class AiAssistantService {
     // Run the thread and poll it until it is in a terminal state
 
     const pollRunner =
-      await this.assistantsClient.beta.threads.runs.createAndPoll(
+      await this.gptAssistantsClient.beta.threads.runs.createAndPoll(
         currentThreadId,
         {
           assistant_id: assistantId,
@@ -175,7 +191,7 @@ export class AiAssistantService {
      * Can be used in future iterations for real-time data streaming
      */
     // Run the thread and stream the responses
-    // const stream = await this.assistantsClient.beta.threads.runs.stream(
+    // const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
     //   currentThreadId,
     //   {
     //     assistant_id: assistantId,
@@ -199,7 +215,7 @@ export class AiAssistantService {
 
     // Get the messages
     const messageList: MessagesPage =
-      await this.assistantsClient.beta.threads.messages.list(currentThreadId);
+      await this.gptAssistantsClient.beta.threads.messages.list(currentThreadId);
     const kafkaMessage = {
       userId: this.contextService.get("user")._id,
       tokenCount: pollRunner.usage.total_tokens,
@@ -243,20 +259,20 @@ export class AiAssistantService {
 
     // Create thread
     if (!currentThreadId) {
-      const assistantThread = await this.assistantsClient.beta.threads.create(
+      const assistantThread = await this.gptAssistantsClient.beta.threads.create(
         {},
       );
       currentThreadId = assistantThread.id;
     }
 
     // Send message in thread
-    await this.assistantsClient.beta.threads.messages.create(currentThreadId, {
+    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
       role: "user",
       content: prompt,
     });
 
     // Create Stream for the run in thread
-    const stream = await this.assistantsClient.beta.threads.runs.stream(
+    const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
       currentThreadId,
       {
         assistant_id: assistantId,
@@ -321,6 +337,206 @@ export class AiAssistantService {
     });
   }
 
+
+  /**
+   * Handles interaction with the GPT model.
+   * @param client - The WebSocket client connection.
+   * @param emailId - The email ID of the user.
+   * @param text - The input text for the model.
+   * @param apiData - Additional API data for the model.
+   * @param tabId - The ID of the tab where the interaction is taking place.
+   * @param threadId - Optional thread ID for the interaction.
+   */
+  // private async handleGptModelInteraction(
+  //   client: WebSocket,
+  //   emailId: string,
+  //   text: string,
+  //   apiData: string,
+  //   tabId: string,
+  //   threadId?: string
+  // ): Promise<void> {
+  //   // Fetch user details
+  //   const user = await this.userService.getUserByEmail(emailId);
+  //   const stat = await this.chatbotStatsService.getIndividualStat(user?._id?.toString());
+  //   const currentYearMonth = this.chatbotStatsService.getCurrentYearMonth();
+  
+  //   // Check if user exceeded token limit
+  //   if (
+  //     stat?.tokenStats &&
+  //     stat.tokenStats?.yearMonth === currentYearMonth &&
+  //     stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
+  //   ) {
+  //     client.send(JSON.stringify({
+  //       messages: "Limit Reached. Please try again later.",
+  //       thread_Id: threadId,
+  //       tab_id: tabId,
+  //     }));
+  //     return;
+  //   }
+  
+  //   // Validate input
+  //   if (!text) {
+  //     throw new BadRequestException("Invalid input: 'text' field is required.");
+  //   }
+  
+  //   if (!this.gptAssistantsClient) {
+  //     throw new InternalServerErrorException("AI assistant client is not initialized.");
+  //   }
+  
+  //   if (!threadId) {
+  //     const assistantThread = await this.gptAssistantsClient.beta.threads.create({});
+  //     threadId = assistantThread.id;
+  //   }
+  
+  //   await this.gptAssistantsClient.beta.threads.messages.create(threadId, {
+  //     role: "user",
+  //     content: `{Text: ${text}, API data: ${apiData}}`,
+  //   });
+  
+  //   client.send(JSON.stringify({
+  //     messages: "",
+  //     thread_Id: threadId,
+  //     tab_id: tabId,
+  //     stream_status: "start",
+  //   }));
+  
+  //   this.gptAssistantsClient.beta.threads.runs.stream(threadId, {
+  //     assistant_id: this.assistantId,
+  //   })
+  //     .on('textDelta', (textDelta) => {
+  //       const chunk = textDelta.value;
+  //       client.send(JSON.stringify({
+  //         messages: chunk,
+  //         thread_Id: threadId,
+  //         tab_id: tabId,
+  //         stream_status: "streaming",
+  //       }));
+  //     })
+  //     .on('end', async () => {
+  //       try {
+  //         client.send(JSON.stringify({
+  //           messages: "",
+  //           thread_Id: threadId,
+  //           tab_id: tabId,
+  //           stream_status: "end",
+  //         }));
+  
+  //         const runsList = await this.gptAssistantsClient.beta.threads.runs.list(threadId);
+  //         const latestRun = runsList.data[0];
+  
+  //         if (latestRun?.usage) {
+  //           const tokenUsage = latestRun.usage.total_tokens;
+  
+  //           const kafkaMessage = {
+  //             userId: user._id.toString(),
+  //             tokenCount: tokenUsage,
+  //           };
+  
+  //           await this.producerService.produce(
+  //             TOPIC.AI_RESPONSE_GENERATED_TOPIC,
+  //             {
+  //               value: JSON.stringify(kafkaMessage),
+  //             },
+  //           );
+  //         } else {
+  //           console.warn("Run usage not yet available.");
+  //         }
+  //       } catch (err) {
+  //         console.error("Error handling usage after stream:", err);
+  //       }
+  //     })
+  //     .on('error', () => {
+  //       client.send(JSON.stringify({
+  //         messages: "Some issue occurred while processing your request. Please try again.",
+  //         thread_Id: threadId,
+  //         tab_id: tabId,
+  //       }));
+  //     });
+  // }
+
+
+  /**
+   * Handles interaction with the Deepseek model.
+   * @param client - The WebSocket client connection.
+   * @param emailId - The email ID of the user.
+   * @param text - The input text for the model.
+   * @param apiData - Additional API data for the model.
+   * @param tabId - The ID of the tab where the interaction is taking place.
+   * @param threadId - Optional thread ID for the interaction.
+   */
+  // private async handleDeepseekModelInteraction(
+  //   client: WebSocket,
+  //   emailId: string,
+  //   text: string,
+  //   apiData: string,
+  //   tabId: string,
+  //   threadId?: string,
+  //   conversation?: string
+  // ): Promise<void> {
+  
+    
+  //   // Fetch user details and token usage (if applicable for DeepSeek too)
+  //   const user = await this.userService.getUserByEmail(emailId);
+  //   const stat = await this.chatbotStatsService.getIndividualStat(user?._id?.toString());
+  //   const currentYearMonth = this.chatbotStatsService.getCurrentYearMonth();
+    
+  //   if (
+  //     stat?.tokenStats &&
+  //     stat.tokenStats?.yearMonth === currentYearMonth &&
+  //     stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
+  //   ) {
+  //     client.send(JSON.stringify({
+  //       messages: "Limit Reached. Please try again later.",
+  //       thread_Id: threadId,
+  //       tab_id: tabId,
+  //     }));
+  //     return;
+  //   }
+    
+  //   // Validate user input
+  //   if (!text) {
+  //     throw new BadRequestException("Invalid input: 'text' field is required.");
+  //   }
+
+  //   if (!this.deepseekClient) {
+  //     throw new InternalServerErrorException("DeepSeek AI client is not initialized.");
+  //   }
+
+  //   // Call your DeepSeek model (assumed async function/method)
+  //   try {
+  //     client.send(JSON.stringify({
+  //       messages: "",
+  //       thread_Id: threadId,
+  //       tab_id: tabId,
+  //       stream_status: "start",
+  //     }));
+  
+  //     const stream = await this.deepseekClient.chat.completions.create({
+  //       messages: [{ role: "system", content: "You are a helpful assistant." }],
+  //       model: "deepseek-chat",
+  //       stream: true
+  //     });
+  
+      
+  
+  //     client.send(JSON.stringify({
+  //       messages: "",
+  //       thread_Id: threadId,
+  //       tab_id: tabId,
+  //       stream_status: "end",
+  //     }));
+  
+  //     // Optional: Track usage if you can estimate tokens
+  //   } catch (error) {
+  //     console.error("DeepSeek error:", error);
+  //     client.send(JSON.stringify({
+  //       messages: "Some issue occurred while processing your request. Please try again.",
+  //       thread_Id: threadId,
+  //       tab_id: tabId,
+  //     }));
+  //   }
+  // }
+    
   /**
    * Generates stream wise response based on a given prompt using an assistant.
    * @param data - Prompt input data to generate a response.
@@ -355,6 +571,19 @@ export class AiAssistantService {
         const tabId = parsedData.tabId;
         const emailId = parsedData.emailId;
         const apiData = parsedData.apiData || "Data not available";
+        const model = parsedData.model || "deepseek";
+        // const conversation = parsedData.conversation || "";
+
+        // if (model === "gpt") {
+        //   console.log("GPT-4o model is selected.");
+        //   await this.handleGptModelInteraction(client, emailId, text, apiData, tabId, threadId);
+        //   continue;
+        // }
+        // else{
+        //   console.log("Deepseek model is selected.");
+        //   await this.handleDeepseekModelInteraction(client, emailId, text, apiData, tabId, threadId, conversation);
+        //   continue;
+        // }
 
         // Fetch user details
         const user = await this.userService.getUserByEmail(emailId);
@@ -380,16 +609,16 @@ export class AiAssistantService {
           throw new BadRequestException("Invalid input: 'text' field is required.");
         }
         
-        if (!this.assistantsClient) {
+        if (!this.gptAssistantsClient) {
           throw new InternalServerErrorException("AI assistant client is not initialized.");
         }
         
         if (!threadId) {
-          const assistantThread = await this.assistantsClient.beta.threads.create({});
+          const assistantThread = await this.gptAssistantsClient.beta.threads.create({});
           threadId = assistantThread.id;
         }
   
-        await this.assistantsClient.beta.threads.messages.create(threadId, {
+        await this.gptAssistantsClient.beta.threads.messages.create(threadId, {
           role: "user",
           content: `{Text: ${text}, API data: ${apiData}}`,
         });
@@ -401,7 +630,7 @@ export class AiAssistantService {
           stream_status: "start",
         }));
 
-        this.assistantsClient.beta.threads.runs.stream(threadId, {
+        this.gptAssistantsClient.beta.threads.runs.stream(threadId, {
           assistant_id: this.assistantId,
         })
         .on('textDelta', (textDelta) => {
@@ -424,7 +653,7 @@ export class AiAssistantService {
               stream_status: "end",
             }));
             // Get latest run for Token Usage
-            const runsList = await this.assistantsClient.beta.threads.runs.list(threadId);
+            const runsList = await this.gptAssistantsClient.beta.threads.runs.list(threadId);
             const latestRun = runsList.data[0];
   
             if (latestRun?.usage) {
@@ -433,6 +662,7 @@ export class AiAssistantService {
               const kafkaMessage = {
                 userId: user._id.toString(),
                 tokenCount: tokenUsage,
+                model: model,
               };
   
               await this.producerService.produce(
@@ -485,7 +715,7 @@ export class AiAssistantService {
         { role: "user", content: userMessage },
       ];
       
-      const response = await this.assistantsClient.chat.completions.create({
+      const response = await this.gptAssistantsClient.chat.completions.create({
         model: "sparrow",
         messages: messages,
         temperature: 0.7,

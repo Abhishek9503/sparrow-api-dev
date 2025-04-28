@@ -38,7 +38,8 @@ export class ChatbotTokenHandler implements OnModuleInit {
         const data = JSON.parse(message.value.toString());
         const tokenCount = data.tokenCount;
         const userId = data.userId.toString();
-        await this.chatbotStatsService.updateToken({ userId, tokenCount });
+        const model = data.model.toString();
+        await this.chatbotStatsService.updateToken({ userId, tokenCount, model });
       },
       onError: async (error) => {
         throw new BadRequestException(error);

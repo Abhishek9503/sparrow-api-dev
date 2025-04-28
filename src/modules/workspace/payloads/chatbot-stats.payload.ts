@@ -35,16 +35,58 @@ export class TokenDto {
   @IsNotEmpty()
   @IsString()
   userId: string;
+  
+
+  /**
+   * The model used for generating the response.
+   */
+  @ApiProperty()
+  @IsString() 
+  @IsNotEmpty()
+  model: string;
+
 }
+
+
+/**
+ * TokenUsageModel class is used to store the monthly token usage of user.
+ */
+export class TokenUsageModel {
+  /**
+   * The year and month for which the token usage is recorded.
+   * Format: YYYY-MM (e.g., 2024-09).
+   */
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  yearMonth?: string;
+
+  /**
+   * The total number of GPT tokens used during the specified year and month.
+  */
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  'gpt'?: number;
+
+  /**
+   * The total number of Deep Seek tokens used during the specified year and month.
+  */
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  'deepseek'?: number;
+}
+
 
 export class UpdateChatbotDto {
   /**
    * The count of tokens used.
    */
-  @ApiProperty()
-  @IsNumber()
-  @IsOptional()
-  tokenCount?: number;
+  // @ApiProperty()
+  // @IsNumber()
+  // @IsOptional()
+  // tokenCount?: number;
 
   /**
    * The unique identifier of the user who interacted with the chatbot.
@@ -60,11 +102,20 @@ export class UpdateChatbotDto {
    * An object holding the current month's token usage statistics.
    * This field is optional.
    */
-  @ApiProperty({ type: TokenStats })
-  @ValidateNested()
-  @Type(() => TokenStats)
+  // @ApiProperty({ type: TokenStats })
+  // @ValidateNested()
+  // @Type(() => TokenStats)
+  // @IsOptional()
+  // tokenStats?: TokenStats;
+
+  /**
+   * The unique identifier for the thread associated with the feedback.
+   * This field is optional.
+   */
+  @ApiProperty({ type: TokenUsageModel })
+  @Type(() => TokenUsageModel)
   @IsOptional()
-  tokenStats?: TokenStats;
+  aiModel?: TokenUsageModel;
 
   /**
    * An array of feedback entries provided by users on chatbot messages.
