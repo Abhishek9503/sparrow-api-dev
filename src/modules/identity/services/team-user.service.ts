@@ -288,7 +288,7 @@ export class TeamUserService {
     teamAdmins.push(payload.userId);
     const teamUsers = teamData.users;
     for (let index = 0; index < teamUsers.length; index++) {
-      if (teamUsers[index].id === payload.userId) {
+      if (teamUsers[index].id.toString() === payload.userId.toString()) {
         teamUsers[index].role = TeamRole.ADMIN;
       }
     }
@@ -361,7 +361,7 @@ export class TeamUserService {
     );
     const teamUsers = [...teamData.users];
     for (let index = 0; index < teamUsers.length; index++) {
-      if (teamUsers[index].id === payload.userId) {
+      if (teamUsers[index].id.toString() === payload.userId.toString()) {
         teamUsers[index].role = TeamRole.MEMBER;
       }
     }
