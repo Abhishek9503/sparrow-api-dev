@@ -391,11 +391,13 @@ export class AiAssistantService {
         if (
           (stat?.aiModel &&
             stat.aiModel?.yearMonth === currentYearMonth &&
+            stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
             (stat.aiModel.gpt + stat.aiModel.deepseek) > (this.monthlyTokenLimit || 0) &&
             !parsedWhiteListEmails.includes(emailId)) ||
-          (stat?.tokenStats &&
-            stat.tokenStats?.yearMonth === currentYearMonth &&
+          (stat?.aiModel &&
+            stat.aiModel?.yearMonth === currentYearMonth &&
             parsedWhiteListEmails.includes(emailId) &&
+            stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit &&
             (stat.aiModel.gpt + stat.aiModel.deepseek) > this.whiteListUserTokenLimit)
         ) {
           client.send(
