@@ -1,3 +1,4 @@
+import "./modules/common/services/instrument.service";
 import { NestFactory } from "@nestjs/core";
 import {
   FastifyAdapter,
