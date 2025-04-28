@@ -33,6 +33,7 @@ import { UserService } from "../../identity/services/user.service";
 
 // ---- Enums
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
+import { parseWhitelistedEmailList } from "@src/modules/common/util/email.parser.util";
 
 /**
  * Service for managing AI Assistant interactions.
@@ -48,6 +49,7 @@ export class AiAssistantService {
   private gptAssistantsClient: AzureOpenAI;
   // private deepseekClient: OpenAI;
   private monthlyTokenLimit: number;
+  private whiteListUserTokenLimit: number;
   private assistantId: string;
   // Default assistant configuration
   private assistant = {
@@ -75,6 +77,7 @@ export class AiAssistantService {
     this.maxTokens = this.configService.get("ai.maxTokens");
     this.monthlyTokenLimit = this.configService.get("ai.monthlyTokenLimit");
     this.assistantId = this.configService.get("ai.assistantId");
+    this.whiteListUserTokenLimit - 100000;
 
     // Initialize the AzureOpenAI client
     try {
@@ -143,10 +146,22 @@ export class AiAssistantService {
       user?._id?.toString(),
     );
     const currentYearMonth = this.chatbotStatsService.getCurrentYearMonth();
+    const whitelistEmails = await this.configService.get(
+      "whitelist.userEmails",
+    );
+    let parsedWhiteListEmails: string[] = [];
+    if (whitelistEmails) {
+      parsedWhiteListEmails = parseWhitelistedEmailList(whitelistEmails) || [];
+    }
     if (
-      stat?.tokenStats &&
-      stat.tokenStats?.yearMonth === currentYearMonth &&
-      stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
+      (stat?.tokenStats &&
+        stat.tokenStats?.yearMonth === currentYearMonth &&
+        stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
+        !parsedWhiteListEmails.includes(user?.email)) ||
+      (stat?.tokenStats &&
+        stat.tokenStats?.yearMonth === currentYearMonth &&
+        parsedWhiteListEmails.includes(user?.email) &&
+        stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
     ) {
       throw new BadRequestException("Limit reached");
     }
@@ -543,12 +558,10 @@ export class AiAssistantService {
    * @returns A promise that resolves with the generated text, thread ID, and message ID.
    * @throws BadRequestException if the assistant cannot be created.
    */
-  
+
   public async generateTextChatBot(client: WebSocket): Promise<void> {
     try {
-
       while (client.readyState === WebSocket.OPEN) {
-
         // Receive message from the client
         const message: string = await new Promise((resolve) => {
           const onMessage = (event: MessageEvent) => {
@@ -557,12 +570,14 @@ export class AiAssistantService {
           };
           client.addEventListener("message", onMessage);
         });
-  
+
         let parsedData: ChatBotPayload;
         try {
           parsedData = JSON.parse(message);
         } catch (err) {
-          client.send(JSON.stringify({ event: "error", message: "Invalid JSON format." }));
+          client.send(
+            JSON.stringify({ event: "error", message: "Invalid JSON format." }),
+          );
           continue;
         }
 
@@ -587,109 +602,147 @@ export class AiAssistantService {
 
         // Fetch user details
         const user = await this.userService.getUserByEmail(emailId);
-        const stat = await this.chatbotStatsService.getIndividualStat(user?._id?.toString());
+        const stat = await this.chatbotStatsService.getIndividualStat(
+          user?._id?.toString(),
+        );
         const currentYearMonth = this.chatbotStatsService.getCurrentYearMonth();
+        const whitelistEmails = await this.configService.get(
+          "whitelist.userEmails",
+        );
+        let parsedWhiteListEmails: string[] = [];
+        if (whitelistEmails) {
+          parsedWhiteListEmails =
+            parseWhitelistedEmailList(whitelistEmails) || [];
+        }
 
         // Check if user exceeded token limit
         if (
-          stat?.tokenStats &&
-          stat.tokenStats?.yearMonth === currentYearMonth &&
-          stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0)
+          (stat?.tokenStats &&
+            stat.tokenStats?.yearMonth === currentYearMonth &&
+            stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
+            !parsedWhiteListEmails.includes(emailId)) ||
+          (stat?.tokenStats &&
+            stat.tokenStats?.yearMonth === currentYearMonth &&
+            parsedWhiteListEmails.includes(emailId) &&
+            stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
         ) {
-          client.send(JSON.stringify({
-            messages: "Limit Reached. Please try again later.",
-            thread_Id: threadId,
-            tab_id: tabId,
-          }));
+          client.send(
+            JSON.stringify({
+              messages: "Limit Reached. Please try again later.",
+              thread_Id: threadId,
+              tab_id: tabId,
+            }),
+          );
           continue;
         }
-        
+
         // Validate user input
         if (!text) {
-          throw new BadRequestException("Invalid input: 'text' field is required.");
+          throw new BadRequestException(
+            "Invalid input: 'text' field is required.",
+          );
         }
-        
-        if (!this.gptAssistantsClient) {
-          throw new InternalServerErrorException("AI assistant client is not initialized.");
+
+        if (!this.assistantsClient) {
+          throw new InternalServerErrorException(
+            "AI assistant client is not initialized.",
+          );
         }
-        
+
         if (!threadId) {
-          const assistantThread = await this.gptAssistantsClient.beta.threads.create({});
+          const assistantThread =
+            await this.assistantsClient.beta.threads.create({});
           threadId = assistantThread.id;
         }
-  
-        await this.gptAssistantsClient.beta.threads.messages.create(threadId, {
+
+        await this.assistantsClient.beta.threads.messages.create(threadId, {
           role: "user",
           content: `{Text: ${text}, API data: ${apiData}}`,
         });
-  
-        client.send(JSON.stringify({
-          messages: "",
-          thread_Id: threadId,
-          tab_id: tabId,
-          stream_status: "start",
-        }));
 
-        this.gptAssistantsClient.beta.threads.runs.stream(threadId, {
-          assistant_id: this.assistantId,
-        })
-        .on('textDelta', (textDelta) => {
-          const chunk = textDelta.value;
-  
-          // Send the chunk to the client at the same time (Streaming the Response)
-          client.send(JSON.stringify({
-            messages: chunk,
+        client.send(
+          JSON.stringify({
+            messages: "",
             thread_Id: threadId,
             tab_id: tabId,
-            stream_status: "streaming",
-          }));
-        })
-        .on('end', async () => {
-          try {
-            client.send(JSON.stringify({
-              messages: "",
-              thread_Id: threadId,
-              tab_id: tabId,
-              stream_status: "end",
-            }));
-            // Get latest run for Token Usage
-            const runsList = await this.gptAssistantsClient.beta.threads.runs.list(threadId);
-            const latestRun = runsList.data[0];
-  
-            if (latestRun?.usage) {
-              const tokenUsage = latestRun.usage.total_tokens;
-  
-              const kafkaMessage = {
-                userId: user._id.toString(),
-                tokenCount: tokenUsage,
-                model: model,
-              };
-  
-              await this.producerService.produce(
-                TOPIC.AI_RESPONSE_GENERATED_TOPIC,
-                {
-                  value: JSON.stringify(kafkaMessage),
-                },
+            stream_status: "start",
+          }),
+        );
+
+        this.assistantsClient.beta.threads.runs
+          .stream(threadId, {
+            assistant_id: this.assistantId,
+          })
+          .on("textDelta", (textDelta) => {
+            const chunk = textDelta.value;
+
+            // Send the chunk to the client at the same time (Streaming the Response)
+            client.send(
+              JSON.stringify({
+                messages: chunk,
+                thread_Id: threadId,
+                tab_id: tabId,
+                stream_status: "streaming",
+              }),
+            );
+          })
+          .on("end", async () => {
+            try {
+              client.send(
+                JSON.stringify({
+                  messages: "",
+                  thread_Id: threadId,
+                  tab_id: tabId,
+                  stream_status: "end",
+                }),
               );
-            } else {
-              console.warn("Run usage not yet available.");
+              // Get latest run for Token Usage
+              const runsList =
+                await this.assistantsClient.beta.threads.runs.list(threadId);
+              const latestRun = runsList.data[0];
+
+              if (latestRun?.usage) {
+                const tokenUsage = latestRun.usage.total_tokens;
+
+                const kafkaMessage = {
+                  userId: user._id.toString(),
+                  tokenCount: tokenUsage,
+                };
+
+                await this.producerService.produce(
+                  TOPIC.AI_RESPONSE_GENERATED_TOPIC,
+                  {
+                    value: JSON.stringify(kafkaMessage),
+                  },
+                );
+              } else {
+                console.warn("Run usage not yet available.");
+              }
+            } catch (err) {
+              console.error("Error handling usage after stream:", err);
             }
-          } catch (err) {
-            console.error("Error handling usage after stream:", err);
-          }
-        })
-        .on('error', (error) => {
-          client.send(JSON.stringify({
-            messages: "Some issue occurred while processing your request. Please try again.",
-            thread_Id: threadId,
-            tab_id: tabId,
-          }));
-        });
+          })
+          .on("error", (error) => {
+            client.send(
+              JSON.stringify({
+                messages:
+                  "Some issue occurred while processing your request. Please try again.",
+                thread_Id: threadId,
+                tab_id: tabId,
+              }),
+            );
+          });
       }
     } catch (error) {
       console.error("Error in WebSocket loop:", error);
       if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ event: "error", message: "Some Issue Occurred in Processing your Request. Please try again" }));
+        client.send(
+          JSON.stringify({
+            event: "error",
+            message:
+              "Some Issue Occurred in Processing your Request. Please try again",
+          }),
+        );
       }
     }
   }
@@ -701,29 +754,29 @@ export class AiAssistantService {
           "Invalid input: 'text' field is required.",
         );
       }
-      
+
       const curl = text.curl;
       const error = text.error;
-      
+
       const prompt =
-      "You are provided with two things. One is cURL and second is the error message. You need to provide the solution for the error message.";
-      
+        "You are provided with two things. One is cURL and second is the error message. You need to provide the solution for the error message.";
+
       const userMessage = `This is the cURL: ${curl} and this is the Error: ${error}`;
-      
+
       const messages: { role: "system" | "user"; content: string }[] = [
         { role: "system", content: prompt },
         { role: "user", content: userMessage },
       ];
-      
-      const response = await this.gptAssistantsClient.chat.completions.create({
+
+      const response = await this.assistantsClient.chat.completions.create({
         model: "sparrow",
         messages: messages,
         temperature: 0.7,
         max_tokens: this.maxTokens,
       });
-      
+
       const result =
-      response.choices[response.choices.length - 1].message.content.trim();
+        response.choices[response.choices.length - 1].message.content.trim();
       return result;
     } catch (error) {
       console.error("Error processing specificError:", error);
@@ -731,5 +784,5 @@ export class AiAssistantService {
         "An error occurred while processing the request.",
       );
     }
-  } 
+  }
 }

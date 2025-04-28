@@ -240,6 +240,21 @@ export class UserService {
     await Promise.all(promise);
   }
 
+  parseEmailList(str: string) {
+    // Replace single quotes with double quotes to make it valid JSON
+    const jsonCompatible = str.replace(/'/g, '"');
+
+    try {
+      const emailArray = JSON.parse(jsonCompatible);
+      if (Array.isArray(emailArray)) {
+        return emailArray;
+      }
+    } catch (err) {
+      console.log("Failed to parse email list:", err);
+      return [];
+    }
+  }
+
   /**
    * Sends a email to the user with the magic code to login.
    * The email includes a magic code and other necessary information.
@@ -270,8 +285,20 @@ export class UserService {
     }
     // Create an email transporter using the email service
     const transporter = this.emailService.createTransporter();
+    const whitelistEmails = await this.configService.get(
+      "testing.whitelistEmail",
+    );
+    let parsedWhiteListEmails: string[] = [];
+    if (whitelistEmails) {
+      parsedWhiteListEmails = this.parseEmailList(whitelistEmails) || [];
+    }
 
-    const magicCode = this.generateEmailVerificationCode().toUpperCase();
+    let magicCode;
+    if (parsedWhiteListEmails.includes(emailPayload.email)) {
+      magicCode = "000000";
+    } else {
+      magicCode = this.generateEmailVerificationCode().toUpperCase();
+    }
 
     const mailOptions = {
       from: this.configService.get("app.senderEmail"),
