@@ -128,7 +128,10 @@ export class ChatBotStats {
   @IsOptional()
   tokenStats?: TokenStats;
 
-  
+  /**
+   * An object holding the AI model used for the interaction.
+   * This field is optional.
+   */
   @ApiProperty({ type: TokenUsageModel })
   @Type(() => TokenUsageModel)
   @IsOptional()

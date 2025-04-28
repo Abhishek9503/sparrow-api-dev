@@ -83,10 +83,10 @@ export class UpdateChatbotDto {
   /**
    * The count of tokens used.
    */
-  // @ApiProperty()
-  // @IsNumber()
-  // @IsOptional()
-  // tokenCount?: number;
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  tokenCount?: number;
 
   /**
    * The unique identifier of the user who interacted with the chatbot.
@@ -102,11 +102,11 @@ export class UpdateChatbotDto {
    * An object holding the current month's token usage statistics.
    * This field is optional.
    */
-  // @ApiProperty({ type: TokenStats })
-  // @ValidateNested()
-  // @Type(() => TokenStats)
-  // @IsOptional()
-  // tokenStats?: TokenStats;
+  @ApiProperty({ type: TokenStats })
+  @ValidateNested()
+  @Type(() => TokenStats)
+  @IsOptional()
+  tokenStats?: TokenStats;
 
   /**
    * The unique identifier for the thread associated with the feedback.
