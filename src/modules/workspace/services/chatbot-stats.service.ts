@@ -71,7 +71,6 @@ export class ChatbotStatsService {
         userStat?.aiModel &&
         userStat?.aiModel?.yearMonth === currentYearMonth
       ) {
-        monthlyToken = userStat.tokenStats.tokenUsage + payload.tokenCount;
         if (model === "gpt") {
           aiToken = userStat.aiModel.gpt + aiToken;
         } else if (model === "deepseek") {
@@ -82,10 +81,6 @@ export class ChatbotStatsService {
         userStat._id,
         {
           tokenCount: token,
-          tokenStats: {
-            yearMonth: currentYearMonth,
-            tokenUsage: monthlyToken,
-          },
           aiModel: {
             yearMonth: currentYearMonth,
             gpt: payload.model === "gpt" ? aiToken : userStat.aiModel.gpt,

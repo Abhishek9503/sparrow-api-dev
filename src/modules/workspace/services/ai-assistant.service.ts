@@ -370,7 +370,7 @@ export class AiAssistantService {
         const tabId = parsedData.tabId;
         const emailId = parsedData.emailId;
         const apiData = parsedData.apiData || "Data not available";
-        const model = parsedData.model || "deepseek";
+        const model = parsedData.model || "gpt";
 
         // Fetch user details
         const user = await this.userService.getUserByEmail(emailId);
@@ -391,13 +391,11 @@ export class AiAssistantService {
         if (
           (stat?.aiModel &&
             stat.aiModel?.yearMonth === currentYearMonth &&
-            stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
             (stat.aiModel.gpt + stat.aiModel.deepseek) > (this.monthlyTokenLimit || 0) &&
             !parsedWhiteListEmails.includes(emailId)) ||
           (stat?.aiModel &&
             stat.aiModel?.yearMonth === currentYearMonth &&
             parsedWhiteListEmails.includes(emailId) &&
-            stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit &&
             (stat.aiModel.gpt + stat.aiModel.deepseek) > this.whiteListUserTokenLimit)
         ) {
           client.send(
