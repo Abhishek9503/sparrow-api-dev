@@ -24,7 +24,10 @@ import {
 import { EnvironmentRepository } from "../repositories/environment.repository";
 import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
 import { WorkspaceRepository } from "../repositories/workspace.repository";
-import { Workspace } from "@src/modules/common/models/workspace.model";
+import {
+  Workspace,
+  WorkspaceType,
+} from "@src/modules/common/models/workspace.model";
 import { WorkspaceRole } from "@src/modules/common/enum/roles.enum";
 import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
@@ -141,6 +144,25 @@ export class EnvironmentService {
     await this.checkPermission(id, user._id);
 
     const workspace = await this.workspaceReposistory.get(id);
+    const environments = [];
+    for (let i = 0; i < workspace.environments?.length; i++) {
+      const environment = await this.environmentRepository.get(
+        workspace.environments[i].id.toString(),
+      );
+      environments.push(environment);
+    }
+    return environments;
+  }
+
+  /**
+   * Fetches all the environment corresponding to a public workspace.
+   * @param id - Workspace id you want to get their environments.
+   */
+  async getAllPublicEnvironments(id: string): Promise<WithId<Environment>[]> {
+    const workspace = await this.workspaceReposistory.get(id);
+    if (workspace.workspaceType !== WorkspaceType.PUBLIC) {
+      throw new BadRequestException("Workspace is not public.");
+    }
     const environments = [];
     for (let i = 0; i < workspace.environments?.length; i++) {
       const environment = await this.environmentRepository.get(
