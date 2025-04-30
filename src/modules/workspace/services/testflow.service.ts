@@ -25,7 +25,10 @@ import { WorkspaceRepository } from "../repositories/workspace.repository";
 import { TestflowRepository } from "../repositories/testflow.repository";
 
 // ---- Model & Payload
-import { Workspace } from "@src/modules/common/models/workspace.model";
+import {
+  Workspace,
+  WorkspaceType,
+} from "@src/modules/common/models/workspace.model";
 import {
   CreateTestflowDto,
   UpdateTestflowDto,
@@ -140,6 +143,25 @@ export class TestflowService {
     await this.checkPermission(id, user._id);
 
     const workspace = await this.workspaceService.get(id);
+    const testflows = [];
+    for (let i = 0; i < workspace.testflows?.length; i++) {
+      const testflow = await this.testflowRepository.get(
+        workspace.testflows[i].id.toString(),
+      );
+      testflows.push(testflow);
+    }
+    return testflows;
+  }
+
+  /**
+   * Fetches all the testflows corresponding to a public workspace.
+   * @param id - Workspace id you want to get their testflows.
+   */
+  async getAllPublicTestflows(id: string): Promise<WithId<Testflow>[]> {
+    const workspace = await this.workspaceService.get(id);
+    if (workspace.workspaceType !== WorkspaceType.PUBLIC) {
+      throw new BadRequestException("Workspace is not public.");
+    }
     const testflows = [];
     for (let i = 0; i < workspace.testflows?.length; i++) {
       const testflow = await this.testflowRepository.get(

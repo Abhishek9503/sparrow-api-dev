@@ -1,10 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { AdminDto } from "@src/modules/common/models/workspace.model";
+import {
+  AdminDto,
+  WorkspaceType,
+} from "@src/modules/common/models/workspace.model";
 import {
   IsArray,
   IsBoolean,
   IsDateString,
   IsEmail,
+  IsEnum,
   IsMongoId,
   IsNotEmpty,
   IsOptional,
@@ -139,4 +143,12 @@ export class workspaceUsersResponseDto {
   @IsMongoId()
   @IsNotEmpty()
   workspaceId: string;
+}
+
+export class UpdateWorkspaceTypeDto {
+  @ApiProperty({ enum: WorkspaceType })
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(WorkspaceType)
+  workspaceType: WorkspaceType;
 }
