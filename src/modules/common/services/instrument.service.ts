@@ -9,7 +9,7 @@ export class InstrumentService {
     const sentryDsn = this.configService.get<string>("sentry.dsn");
     const sentryEnvironment = this.configService.get<string>("sentry.environment");
 
-    if (sentryEnvironment !== "LOCAL-BE") {
+    if (sentryEnvironment !== "LOCAL-BE" && (sentryDsn && sentryEnvironment)) {
       Sentry.init({
         dsn: sentryDsn,
         environment: sentryEnvironment,
