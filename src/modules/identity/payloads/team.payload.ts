@@ -50,6 +50,18 @@ export class CreateOrUpdateTeamDto {
   @IsOptional()
   hubUrl?: string;
 
+  @IsString()
+  @IsOptional()
+  githubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  xUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  linkedinUrl?: string;
+
   @IsBoolean()
   @IsOptional()
   firstTeam?: boolean;
@@ -100,6 +112,27 @@ export class UpdateTeamDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    example: "github url",
+  })
+  @IsString()
+  @IsOptional()
+  githubUrl?: string;
+
+  @ApiProperty({
+    example: "x url",
+  })
+  @IsString()
+  @IsOptional()
+  xUrl?: string;
+
+  @ApiProperty({
+    example: "LinkedIn url",
+  })
+  @IsString()
+  @IsOptional()
+  linkedinUrl?: string;
 
   @IsOptional()
   @IsObject()
