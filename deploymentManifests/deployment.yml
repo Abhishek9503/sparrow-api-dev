@@ -316,6 +316,16 @@ spec:
                 secretKeyRef:
                   name: sparrow-api-secret
                   key: WHITELIST_USER_EMAILS
+            - name: SENTRY_DSN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: SENTRY_DSN_KEY
+            - name: SENTRY_APP_ENVIRONMENT
+              valueFrom:
+                secretKeyRef:
+                  name: sparrow-api-secret
+                  key: SENTRY_APP_ENVIRONMENT
 
       imagePullSecrets:
         - name: acr-secret
