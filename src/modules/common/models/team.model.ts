@@ -49,6 +49,18 @@ export class Team {
   @IsOptional()
   hubUrl?: string;
 
+  @IsString()
+  @IsOptional()
+  githubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  xUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  linkedinUrl?: string;
+
   @IsOptional()
   @IsObject()
   logo?: logoDto;
