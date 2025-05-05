@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 
 import {
   CreateCollectionDto,
@@ -34,6 +38,7 @@ import { ProducerService } from "@src/modules/common/services/kafka/producer.ser
 import { PostmanParserService } from "@src/modules/common/services/postman.parser.service";
 import { v4 as uuidv4 } from "uuid";
 import { AddTo } from "@src/modules/common/models/collection.rxdb.model";
+import { WorkspaceType } from "@src/modules/common/models/workspace.model";
 @Injectable()
 export class CollectionService {
   constructor(
@@ -368,6 +373,23 @@ export class CollectionService {
     await this.checkPermission(id, user._id);
 
     const workspace = await this.workspaceRepository.get(id);
+    const collections = [];
+    for (let i = 0; i < workspace.collection?.length; i++) {
+      const collection = await this.collectionRepository.get(
+        workspace.collection[i].id.toString(),
+      );
+      collections.push(collection);
+    }
+    return collections;
+  }
+
+  async getAllPublicWorkspaceCollections(
+    id: string,
+  ): Promise<WithId<Collection>[]> {
+    const workspace = await this.workspaceRepository.get(id);
+    if (workspace.workspaceType !== WorkspaceType.PUBLIC) {
+      throw new BadRequestException("Workspace is not public.");
+    }
     const collections = [];
     for (let i = 0; i < workspace.collection?.length; i++) {
       const collection = await this.collectionRepository.get(

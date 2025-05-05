@@ -22,9 +22,11 @@ import {
 } from "@willsoto/nestjs-prometheus";
 import { CustomMetricsMiddleware } from "./middleware/metrics.middleware";
 import { AppRepository } from "./app.repository";
+import { SentryModule } from "@sentry/nestjs/setup";
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     PrometheusModule.register({
       path: "/metrics",
       defaultMetrics: {

@@ -7,7 +7,7 @@ import {
   UpdateResult,
   WithId,
 } from "mongodb";
-import { Workspace } from "../../common/models/workspace.model";
+import { Workspace, WorkspaceType } from "../../common/models/workspace.model";
 import { Collections } from "../../common/enum/database.collection.enum";
 import {
   UpdateWorkspaceDto,
@@ -47,6 +47,18 @@ export class WorkspaceRepository {
       throw new BadRequestException("Not Found");
     }
     return data;
+  }
+
+  async getPublicWorkspace(id: string): Promise<WithId<Workspace>> {
+    const _id = new ObjectId(id);
+    const data = await this.db
+      .collection<Workspace>(Collections.WORKSPACE)
+      .findOne({ _id });
+
+    return {
+      ...data,
+      users: [],
+    };
   }
 
   async addWorkspace(params: Workspace): Promise<InsertOneResult<Document>> {
@@ -269,5 +281,22 @@ export class WorkspaceRepository {
         { $set: { "testflows.$.name": name } },
       );
     return response;
+  }
+
+  async updateWorkspaceTypeById(
+    id: ObjectId,
+    workspaceType: WorkspaceType,
+  ): Promise<WithId<Workspace>> {
+    const response = await this.db
+      .collection<Workspace>(Collections.WORKSPACE)
+      .findOneAndUpdate(
+        { _id: id },
+        {
+          $set: { workspaceType: workspaceType },
+        },
+        { returnDocument: "after" }, // ensures you get the updated doc
+      );
+
+    return response.value;
   }
 }

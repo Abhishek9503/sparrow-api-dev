@@ -110,4 +110,9 @@ export default () => ({
   whitelist: {
     userEmails: process.env.WHITELIST_USER_EMAILS,
   },
+  sentry: {
+    dsn: process.env.SENTRY_DSN_KEY,
+    environment: process.env.SENTRY_APP_ENVIRONMENT,
+  },
+
 });

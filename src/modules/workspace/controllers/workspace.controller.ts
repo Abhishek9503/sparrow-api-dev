@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Req,
@@ -21,6 +22,7 @@ import { WorkspaceService } from "../services/workspace.service";
 import {
   CreateWorkspaceDto,
   UpdateWorkspaceDto,
+  UpdateWorkspaceTypeDto,
 } from "../payloads/workspace.payload";
 import {
   AddUsersWithRolesInWorkspaceDto,
@@ -50,7 +52,6 @@ import { BodyModeEnum } from "@src/modules/common/models/collection.model";
 @ApiBearerAuth()
 @ApiTags("workspace")
 @Controller("api/workspace")
-@UseGuards(JwtAuthGuard)
 export class WorkSpaceController {
   constructor(
     private readonly workspaceService: WorkspaceService,
@@ -63,6 +64,7 @@ export class WorkSpaceController {
     summary: "Create a new User Workspace",
     description: "This will create a new Workspace for User",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Workspace Created Successfully" })
   @ApiResponse({ status: 400, description: "Create Workspace Failed" })
   async createWorkspace(
@@ -87,6 +89,7 @@ export class WorkSpaceController {
     summary: "Retrieve a Workspace",
     description: "This will retrieve a workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Fetch Workspace Request Received" })
   @ApiResponse({ status: 400, description: "Fetch Workspace Request Failed" })
   async getWorkspace(
@@ -107,6 +110,7 @@ export class WorkSpaceController {
     summary: "Retreive all User's Workspaces",
     description: "This will retrieve all workspaces of a user",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 200,
     description: "All Workspace Of User Received Successfully",
@@ -133,6 +137,7 @@ export class WorkSpaceController {
     summary: "Retreive all workspace users",
     description: "This will retrieve all the User's of a single Workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 200,
     description: "All Users of a workspace fetched Successfully",
@@ -159,6 +164,7 @@ export class WorkSpaceController {
     summary: "Retreive Team's all Workspaces",
     description: "This will retrieve Team's all Workspaces",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 200,
     description: "All Workspaces Of a Team Received Successfully",
@@ -185,6 +191,7 @@ export class WorkSpaceController {
     summary: "Update a Workspace",
     description: "This will update User's Workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Workspace Updated Successfully" })
   @ApiResponse({ status: 400, description: "Update Workspace Failed" })
   async updateWorkspace(
@@ -208,6 +215,7 @@ export class WorkSpaceController {
     summary: "Delete a Workspace",
     description: "This will delete a User's Workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Workspace Deleted Successfully" })
   @ApiResponse({ status: 400, description: "Delete Workspace Failed" })
   async deleteWorkspace(
@@ -228,6 +236,7 @@ export class WorkSpaceController {
     summary: "Add Users in Workspace",
     description: "You can add multiple users to your Workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Users Added Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Add Users" })
   async addUserWorkspace(
@@ -270,6 +279,7 @@ export class WorkSpaceController {
     summary: "Add Users with roles in Workspace",
     description: "You can add multiple users with multiple to your Workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Users Added Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Add Users" })
   async addUsersWithRolesInWorkspace(
@@ -301,6 +311,7 @@ export class WorkSpaceController {
     description:
       "You can change role of user in your Workspace from editor to viewer or vice-versa",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "User Role Change Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Change Role" })
   async changeUserRoleInWorkspace(
@@ -329,6 +340,7 @@ export class WorkSpaceController {
     summary: "Remove A User From Workspace",
     description: "You can remove a another user from your Workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Removed User Successfully" })
   @ApiResponse({ status: 400, description: "Failed to remove user" })
   async removerUserWorkspace(
@@ -355,6 +367,7 @@ export class WorkSpaceController {
     summary: "Import a Collection From A File",
     description: "You can import a collection from a json or ymal file",
   })
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor("file"))
   @ApiResponse({ status: 201, description: "Collection Import Successfull" })
   @ApiResponse({ status: 400, description: "Failed to Import  Collection" })
@@ -392,6 +405,7 @@ export class WorkSpaceController {
     summary: "Import a Collection from a url",
     description: "You can import a collection from url",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Collection Import Successfull" })
   @ApiResponse({ status: 400, description: "Failed to Import  Collection" })
   async importCollections(
@@ -435,6 +449,7 @@ export class WorkSpaceController {
     summary: "Import a Collection From A JsonObj",
     description: "You can import a collection from jsonObj",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 201,
     description: "Collection json Import Successfull",
@@ -474,6 +489,7 @@ export class WorkSpaceController {
     description:
       "This will disable new invite tag of workspace and return information about workspace",
   })
+  @UseGuards(JwtAuthGuard)
   async disableWorkspaceNewInvite(
     @Param("userId") userId: string,
     @Param("workspaceId") workspaceId: string,
@@ -487,6 +503,61 @@ export class WorkSpaceController {
       "Success",
       HttpStatusCode.OK,
       data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Get("public/:workspaceId")
+  @ApiOperation({
+    summary: "Retrieve a Public Workspace",
+    description: "This will retrieve a public workspace",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Fetch Public Workspace Request Received",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Fetch Public Workspace Request Failed",
+  })
+  async getPublicWorkspace(
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.workspaceService.getPublicWorkspace(workspaceId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Patch(":workspaceId")
+  @ApiOperation({
+    summary: "Update a Workspace Type",
+    description: "This will update Workspace's Type",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 200,
+    description: "Workspace Type Updated Successfully",
+  })
+  @ApiResponse({ status: 400, description: "Update Workspace Type Failed" })
+  async updateWorkspaceType(
+    @Param("workspaceId") workspaceId: string,
+    @Body() payload: UpdateWorkspaceTypeDto,
+    @Res() res: FastifyReply,
+  ) {
+    await this.workspaceService.updateWorkspaceType(
+      workspaceId,
+      payload.workspaceType,
+    );
+    const workspace = await this.workspaceService.get(workspaceId);
+    const responseData = new ApiResponseService(
+      "Workspace Type Updated",
+      HttpStatusCode.OK,
+      workspace,
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
