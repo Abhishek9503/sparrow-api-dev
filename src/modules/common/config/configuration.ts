@@ -110,4 +110,7 @@ export default () => ({
   whitelist: {
     userEmails: process.env.WHITELIST_USER_EMAILS,
   },
+  admin: {
+    redirectUrl: process.env.ADMIN_REDIRECT_URL,
+  },
 });
