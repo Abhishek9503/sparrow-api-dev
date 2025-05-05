@@ -34,7 +34,5 @@ export class ChatBotStatsAiModelMigration implements OnModuleInit {
 
       console.log(`Updated ChatBotStats with _id: ${doc._id}`);
     }
-
-    console.log('✅ ChatBotStats aiModel migration completed');
   }
 }

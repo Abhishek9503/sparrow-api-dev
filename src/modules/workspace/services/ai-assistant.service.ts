@@ -15,7 +15,6 @@ import {
 } from "openai/resources/beta/assistants";
 import { MessagesPage } from "openai/resources/beta/threads/messages";
 import { Thread } from "openai/resources/beta/threads/threads";
-
 // ---- Payload
 import {
   AIResponseDto,
@@ -371,6 +370,7 @@ export class AiAssistantService {
         const emailId = parsedData.emailId;
         const apiData = parsedData.apiData || "Data not available";
         const model = parsedData.model || "gpt";
+        const activity = parsedData.activity || "chat";
 
         // Fetch user details
         const user = await this.userService.getUserByEmail(emailId);
@@ -488,6 +488,23 @@ export class AiAssistantService {
                     value: JSON.stringify(kafkaMessage),
                   },
                 );
+
+                const activityLog = {
+                  userId: user._id.toString(),
+                  activity: activity,
+                  model: model,
+                  tokenConsumed: tokenUsage,
+                  threadId: threadId,
+                }
+                
+                // Send activity log to Kafka topic
+                await this.producerService.produce(
+                  TOPIC.AI_ACTIVITY_LOG_TOPIC,
+                  {
+                    value: JSON.stringify(activityLog),
+                  },
+                );  
+
               } else {
                 console.warn("Run usage not yet available.");
               }

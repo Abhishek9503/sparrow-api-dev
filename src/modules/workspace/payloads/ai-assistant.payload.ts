@@ -164,6 +164,14 @@ export class ChatBotPayload {
   @ApiProperty({ required: true, example: '[{"role": "user", "content": "Hello!"}, {"role": "assistant", "content": "Hi there! How can I help you?"}]' })
   conversation: string;
 
+  /**
+   * User Activity.
+   */
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ required: true, example: "user activity" })
+  activity: string;
+
 }
 
 export class ErrorResponsePayload {
