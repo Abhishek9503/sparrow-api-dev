@@ -20,6 +20,7 @@ import { EmailService } from "./services/email.service";
 import { InsightsService } from "./services/insights.service";
 import { PostmanParserService } from "./services/postman.parser.service";
 import { CreateUserMigration } from "migrations/create-test-user.migration";
+import { InstrumentService } from "./services/instrument.service";
 
 /**
  * Common Module provides global services and configurations used across the application.
@@ -83,6 +84,7 @@ import { CreateUserMigration } from "migrations/create-test-user.migration";
     ConsumerService,
     BlobStorageService,
     EmailService,
+    InstrumentService,
   ],
   exports: [
     "DATABASE_CONNECTION",
@@ -97,6 +99,7 @@ import { CreateUserMigration } from "migrations/create-test-user.migration";
     BlobStorageService,
     EmailService,
     InsightsService,
+    InstrumentService,
   ],
 })
 export class CommonModule {}

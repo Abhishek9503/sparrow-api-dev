@@ -110,12 +110,18 @@ export class TeamService {
         description: teamData.description ?? "",
         logo: logo,
         hubUrl: dynamicUrl,
+        linkedinUrl: "",
+        xUrl: "",
+        githubUrl: "",
       };
     } else {
       team = {
         name: teamData.name,
         description: teamData.description ?? "",
         hubUrl: dynamicUrl,
+        linkedinUrl: "",
+        xUrl: "",
+        githubUrl: "",
       };
     }
     const createdTeam = await this.teamRepository.create(team);
@@ -200,11 +206,17 @@ export class TeamService {
         name: teamData.name ?? teamDetails.name,
         description: teamData.description ?? teamDetails.description,
         logo: logo,
+        githubUrl: teamData?.githubUrl ?? teamDetails.githubUrl,
+        linkedinUrl: teamData?.linkedinUrl ?? teamDetails.linkedinUrl,
+        xUrl: teamData?.xUrl ?? teamDetails.xUrl,
       };
     } else {
       team = {
         name: teamData.name ?? teamDetails.name,
         description: teamData.description ?? teamDetails.description,
+        githubUrl: teamData?.githubUrl ?? teamDetails.githubUrl,
+        linkedinUrl: teamData?.linkedinUrl ?? teamDetails.linkedinUrl,
+        xUrl: teamData?.xUrl ?? teamDetails.xUrl,
       };
     }
     const data = await this.teamRepository.update(id, team);
