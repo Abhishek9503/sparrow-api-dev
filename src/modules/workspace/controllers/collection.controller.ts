@@ -48,7 +48,6 @@ import {
 @ApiBearerAuth()
 @ApiTags("collection")
 @Controller("api/collection")
-@UseGuards(JwtAuthGuard)
 export class collectionController {
   constructor(
     private readonly collectionService: CollectionService,
@@ -63,6 +62,7 @@ export class collectionController {
     description:
       "This will create a collection and add this collection in user's workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Collection Created Successfully" })
   @ApiResponse({ status: 400, description: "Create Collection Failed" })
   async createCollection(
@@ -92,6 +92,7 @@ export class collectionController {
     summary: "Get All Collections",
     description: "This will get all collection of a workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 200,
     description: "Fetch Collection Request Received",
@@ -111,11 +112,38 @@ export class collectionController {
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
+  @Get("public/:workspaceId")
+  @ApiOperation({
+    summary: "Get All Public Collections",
+    description: "This will get all collection of a public workspace",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Fetch Collection Request Received",
+  })
+  @ApiResponse({ status: 400, description: "Fetch Collection Request Failed" })
+  async getPublicWorkspaceCollection(
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const collection =
+      await this.collectionService.getAllPublicWorkspaceCollections(
+        workspaceId,
+      );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
   @Put(":collectionId/workspace/:workspaceId")
   @ApiOperation({
     summary: "Update A  Collections",
     description: "This will update a collection ",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Collection Updated Successfully" })
   @ApiResponse({ status: 400, description: "Update Collection Failed" })
   async updateCollection(
@@ -148,6 +176,7 @@ export class collectionController {
     summary: "Delete a Collections",
     description: "This will delete a collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Removed Collection Successfully" })
   @ApiResponse({ status: 400, description: "Failed to remove Collection" })
   async deleteCollection(
@@ -177,6 +206,7 @@ export class collectionController {
     summary: "Add a Folder",
     description: "This will add a folder inside collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Request saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save request" })
   async addFolder(
@@ -203,6 +233,7 @@ export class collectionController {
     summary: "Update a Folder",
     description: "This will update a Folder from a Collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Request saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save request" })
   async updateFolder(
@@ -231,6 +262,7 @@ export class collectionController {
     summary: "Delete a Folder",
     description: "This will delete a folder from a collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Request saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save request" })
   async deleteFolder(
@@ -261,6 +293,7 @@ export class collectionController {
     description:
       "This will add a request which will be individual request or  folder based request in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Request Updated Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Update a request" })
   async addRequest(
@@ -297,6 +330,7 @@ export class collectionController {
     description:
       "This will update a request which will be individual request or  folder based request in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Request saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save request" })
   async updateRequest(
@@ -331,6 +365,7 @@ export class collectionController {
     description:
       "This will delete a request which will be individual request or  folder based request in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Request Deleted Successfully" })
   @ApiResponse({ status: 400, description: "Failed to delete request" })
   async deleteRequest(
@@ -368,6 +403,7 @@ export class collectionController {
     summary: "Get collection items as per the branch selected",
     description: "Switch branch to get collection of that branch",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Branch switched Successfully" })
   @ApiResponse({ status: 400, description: "Failed to switch branch" })
   async switchCollectionBranch(
@@ -399,6 +435,7 @@ export class collectionController {
     description:
       "This will add a websocket which will be individual websocket or folder based websocket in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Websocket Updated Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Update a websocket" })
   async addWebSocket(
@@ -428,6 +465,7 @@ export class collectionController {
     description:
       "This will update a websocket which will be individual websocket or folder based websocket in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Websocket saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save websocket" })
   async updateWebSocket(
@@ -461,6 +499,7 @@ export class collectionController {
     description:
       "This will delete a websocket which will be individual websocket or folder based websocket in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Websocket Deleted Successfully" })
   @ApiResponse({ status: 400, description: "Failed to delete websocket" })
   async deleteWebSocket(
@@ -500,6 +539,7 @@ export class collectionController {
     summary: "Import a collection From A Postman v2.1 collection JSON",
     description: "You can import a collection that is exported from postman",
   })
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor("file"))
   @ApiResponse({
     status: 201,
@@ -541,6 +581,7 @@ export class collectionController {
     description:
       "This will add a socketio which will be individual socketio or folder based socketio in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Socket.IO Updated Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Update a socketio" })
   async addSocketIO(
@@ -572,6 +613,7 @@ export class collectionController {
     description:
       "This will update a socketio which will be individual socketio or folder based socketio in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Socket.IO saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save socketio" })
   async updateSocketIO(
@@ -607,6 +649,7 @@ export class collectionController {
     description:
       "This will delete a socketio which will be individual socketio or folder based socketio in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Socket.IO Deleted Successfully" })
   @ApiResponse({ status: 400, description: "Failed to delete socketio" })
   async deleteSocketIO(
@@ -640,6 +683,7 @@ export class collectionController {
     description:
       "This will add a GraphQL which will be individual GraphQL or folder based GraphQL in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "GraphQL Updated Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Update a GraphQL" })
   async addGraphQL(
@@ -671,6 +715,7 @@ export class collectionController {
     description:
       "This will update a GraphQL which will be individual GraphQL or folder based GraphQL in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "GraphQL saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save GraphQL" })
   async updateGraphQL(
@@ -706,6 +751,7 @@ export class collectionController {
     description:
       "This will delete a GraphQL which will be individual GraphQL or folder based GraphQL in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "GraphQL Deleted Successfully" })
   @ApiResponse({ status: 400, description: "Failed to delete GraphQL" })
   async deleteGraphQL(
@@ -737,6 +783,7 @@ export class collectionController {
     summary: "Add A Response",
     description: "This will add a response inside request in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Response Added Successfully" })
   @ApiResponse({ status: 400, description: "Failed to add a response" })
   async addRequestResponse(
@@ -768,6 +815,7 @@ export class collectionController {
     summary: "Update a response",
     description: "This will update a response inside a request in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Response saved Successfully" })
   @ApiResponse({ status: 400, description: "Failed to save response" })
   async updateRequestResponse(
@@ -802,6 +850,7 @@ export class collectionController {
     summary: "Delete a Response",
     description: "This will delete a Response inside a Request in collection",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Response Deleted Successfully" })
   @ApiResponse({ status: 400, description: "Failed to delete Response" })
   async deleteRequestResponse(

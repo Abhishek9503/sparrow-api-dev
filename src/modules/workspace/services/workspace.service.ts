@@ -12,6 +12,7 @@ import {
 import {
   Workspace,
   WorkspaceDto,
+  WorkspaceType,
   WorkspaceWithNewInviteTag,
 } from "@src/modules/common/models/workspace.model";
 import { ContextService } from "@src/modules/common/services/context.service";
@@ -77,6 +78,17 @@ export class WorkspaceService {
     const data = await this.workspaceRepository.get(id);
     return data;
   }
+
+  async getPublicWorkspace(id: string): Promise<WithId<Workspace>> {
+    const data = await this.workspaceRepository.getPublicWorkspace(id);
+    if (!data) {
+      throw new BadRequestException("Workspace Not Found.");
+    } else if (data.workspaceType !== WorkspaceType.PUBLIC) {
+      throw new BadRequestException("Workspace is Not Public.");
+    }
+    return data;
+  }
+
   async getAllWorkSpaces(userId: string): Promise<Workspace[]> {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
@@ -283,6 +295,7 @@ export class WorkspaceService {
         name: teamData.name,
         hubUrl: teamData?.hubUrl || "",
       },
+      workspaceType: WorkspaceType.PRIVATE,
       users: usersInfo,
       admins: adminInfo,
       environments: [
@@ -1233,6 +1246,18 @@ export class WorkspaceService {
       notExistInTeam: usersNotExist,
       existInWorkspace: alreadyWorkspaceMember,
     };
+    return response;
+  }
+
+  async updateWorkspaceType(
+    workspaceId: string,
+    type: WorkspaceType,
+  ): Promise<WithId<Workspace>> {
+    await this.checkAdminRole(workspaceId);
+    const response = await this.workspaceRepository.updateWorkspaceTypeById(
+      new ObjectId(workspaceId),
+      type,
+    );
     return response;
   }
 }
