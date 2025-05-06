@@ -42,10 +42,9 @@ export class ChatBotStatsAiModelMigration implements OnModuleInit {
           { _id: new ObjectId(doc._id) },
           { $set: { aiModel } },
         );
-
-        console.log(`Updated ChatBotStats with _id: ${doc._id}`);
       }
 
+      console.log(`Updated ChatBotStats`);
       this.hasRun = true; // Set flag after successful execution
     } catch (error) {
       console.error("Error during ChatBotStats AI Model migration:", error);
