@@ -119,8 +119,8 @@ export class AiAssistantService {
   };
 
   private getDeepSeekClient = (): ReturnType<typeof ModelClient> => {
-    const endpoint = "https://DeepSeek-V3-ppcpc.eastus.models.ai.azure.com";
-    const apiKey = "PQuEIucmRNFZJg6oDnmLrg0nMib1kzhU";
+    const endpoint = this.deepseekEndpoint;
+    const apiKey = this.deepseekApiKey;
   
     const client = ModelClient(endpoint, new AzureKeyCredential(apiKey));
     return client;
