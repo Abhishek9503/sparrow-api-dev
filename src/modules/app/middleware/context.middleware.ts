@@ -7,7 +7,6 @@ export class ContextMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: any) {
     this.contextService.run(() => {
-      // Optionally set initial context data here
       next();
     });
   }
