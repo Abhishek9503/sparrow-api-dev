@@ -93,7 +93,10 @@
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.8.1",
     "uuid": "^9.0.1",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "@azure-rest/ai-inference": "latest",
+    "@azure/core-auth": "latest",
+    "@azure/core-sse": "latest"
   },
   "devDependencies": {
     "@compodoc/compodoc": "1.1.19",
