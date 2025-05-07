@@ -62,22 +62,29 @@ export class ChatbotStatsService {
     if (userStat) {
       // If stats exist, update the token count
       let token = userStat.tokenCount;
+      let aiToken = payload.tokenCount;
       token = payload.tokenCount + token;
       let monthlyToken = payload.tokenCount;
+      let model = payload.model;
       // If current month update the monthly token usage
       if (
-        userStat?.tokenStats &&
-        userStat?.tokenStats?.yearMonth === currentYearMonth
+        userStat?.aiModel &&
+        userStat?.aiModel?.yearMonth === currentYearMonth
       ) {
-        monthlyToken = userStat.tokenStats.tokenUsage + payload.tokenCount;
+        if (model === "gpt") {
+          aiToken = userStat.aiModel.gpt + aiToken;
+        } else if (model === "deepseek") {
+          aiToken = userStat.aiModel.deepseek + aiToken;
+        }
       }
       await this.chatbotStatsRepository.updateStats(
         userStat._id,
         {
           tokenCount: token,
-          tokenStats: {
+          aiModel: {
             yearMonth: currentYearMonth,
-            tokenUsage: monthlyToken,
+            gpt: payload.model === "gpt" ? aiToken : userStat.aiModel.gpt,
+            deepseek: payload.model === "deepseek" ? aiToken : userStat.aiModel.deepseek,
           },
         },
         payload.userId,
@@ -90,6 +97,11 @@ export class ChatbotStatsService {
         tokenStats: {
           yearMonth: currentYearMonth,
           tokenUsage: payload.tokenCount,
+        },
+        aiModel: {
+          yearMonth: currentYearMonth,
+          gpt: payload.model === "gpt" ? payload.tokenCount : 0,
+          deepseek: payload.model === "deepseek" ? payload.tokenCount : 0,
         },
         createdAt: new Date(),
         createdBy: this.contextService.get("user")?._id ?? payload.userId,
