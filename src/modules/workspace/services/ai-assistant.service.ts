@@ -624,7 +624,7 @@ export class AiAssistantService {
         thread_Id: null,
         tab_id: tabId,
         stream_status: "start",
-      }));
+      })); 
 
       const response = await this.deepseekClient.path("/chat/completions").post({
         body: {
