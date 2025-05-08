@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable, OnModuleInit } from "@nestjs/common";
 import { WorkspaceService } from "../services/workspace.service";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
-import { ConsumerService } from "@src/modules/common/services/kafka/consumer.service";
-import { SUBSCRIPTION } from "@src/modules/common/enum/subscription.enum";
+import { ConsumerService } from "@src/modules/common/services/event-consumer.service";
 import { ConfigService } from "@nestjs/config";
 import { CollectionService } from "../services/collection.service";
 import { EnvironmentService } from "../services/environment.service";
@@ -27,71 +26,67 @@ export class WorkspaceHandler implements OnModuleInit {
   async onModuleInit() {
     await this.consumerService.consume({
       topic: { topic: TOPIC.CREATE_USER_TOPIC },
-      config: { groupId: SUBSCRIPTION.CREATE_USER_SUBSCRIPTION },
       onMessage: async (message) => {
-        // This is a Hack for now, it needs to be rectified in future with any other method or library.
-        setTimeout(async () => {
-          const messageString = message.value.toString();
-          const messageJson = JSON.parse(messageString);
-          const workspace = await this.workspaceService.create(messageJson);
-          // const user = await this.contextService.get("user");
-          // const teams = await this.teamService.getTeams();
-          // for (const team of teams) {
-          //   const matchedInvite = team?.invites?.find(
-          //     (invite: any) =>
-          //       invite.email === user.email && invite.isAccepted === true,
-          //   );
-          //   if (!matchedInvite) {
-          //     continue;
-          //   }
+        const messageString = message.value.toString();
+        const messageJson = JSON.parse(messageString);
+        const workspace = await this.workspaceService.create(messageJson);
+        // const user = await this.contextService.get("user");
+        // const teams = await this.teamService.getTeams();
+        // for (const team of teams) {
+        //   const matchedInvite = team?.invites?.find(
+        //     (invite: any) =>
+        //       invite.email === user.email && invite.isAccepted === true,
+        //   );
+        //   if (!matchedInvite) {
+        //     continue;
+        //   }
 
-          //   await this.teamUserService.addUser({
-          //     teamId: team._id.toString(),
-          //     users: [matchedInvite.email],
-          //     role: matchedInvite.role,
-          //     workspaces: matchedInvite.workspaces,
-          //   });
-          // now remove it from invites array
-          // await this.teamUserService.removeTeamInvite(
-          //   team._id.toString(),
-          //   user.email,
-          // );
-          // }
-          const sampleEnvironment = {
-            name: "Sample Environment",
-            workspaceId: workspace.insertedId.toString(),
-            variable: [
-              {
-                key: "DEV",
-                value: "",
-                checked: true,
-              },
-              {
-                key: "",
-                value: "",
-                checked: false,
-              },
-            ],
-          };
-          const environment = await this.environmentService.createEnvironment(
-            sampleEnvironment,
-            EnvironmentType.LOCAL,
-          );
-          await this.workspaceService.addEnvironmentInWorkSpace(
-            workspace.insertedId.toString(),
+        //   await this.teamUserService.addUser({
+        //     teamId: team._id.toString(),
+        //     users: [matchedInvite.email],
+        //     role: matchedInvite.role,
+        //     workspaces: matchedInvite.workspaces,
+        //   });
+        // now remove it from invites array
+        // await this.teamUserService.removeTeamInvite(
+        //   team._id.toString(),
+        //   user.email,
+        // );
+        // }
+        const sampleEnvironment = {
+          name: "Sample Environment",
+          workspaceId: workspace.insertedId.toString(),
+          variable: [
             {
-              id: environment.insertedId,
-              name: sampleEnvironment.name,
-              type: EnvironmentType.LOCAL,
+              key: "DEV",
+              value: "",
+              checked: true,
             },
-          );
-          const collection =
-            await this.collectionService.createDefaultCollection();
-          await this.workspaceService.addCollectionInWorkSpace(
-            workspace.insertedId.toString(),
-            { id: collection.insertedId, name: "Sample Collection" },
-          );
-        }, this.configService.get("app.kafkaHitTimeInterval"));
+            {
+              key: "",
+              value: "",
+              checked: false,
+            },
+          ],
+        };
+        const environment = await this.environmentService.createEnvironment(
+          sampleEnvironment,
+          EnvironmentType.LOCAL,
+        );
+        await this.workspaceService.addEnvironmentInWorkSpace(
+          workspace.insertedId.toString(),
+          {
+            id: environment.insertedId,
+            name: sampleEnvironment.name,
+            type: EnvironmentType.LOCAL,
+          },
+        );
+        const collection =
+          await this.collectionService.createDefaultCollection();
+        await this.workspaceService.addCollectionInWorkSpace(
+          workspace.insertedId.toString(),
+          { id: collection.insertedId, name: "Sample Collection" },
+        );
       },
       onError: async (error) => {
         throw new BadRequestException(error);

@@ -17,10 +17,8 @@ import {
   TransformedRequest,
 } from "../common/models/collection.rxdb.model";
 import { ContextService } from "../common/services/context.service";
-import { Kafka } from "kafkajs";
 import axios from "axios";
 import { AppRepository } from "./app.repository";
-import { KafkajsProducer } from "../common/services/kafka/kafkajs.producer";
 
 /**
  * Application Service
@@ -28,7 +26,6 @@ import { KafkajsProducer } from "../common/services/kafka/kafkajs.producer";
 @Injectable()
 export class AppService {
   private curlconverterPromise: any = null;
-  private kafka: Kafka;
   /**
    * Constructor
    * @param {ConfigService} config configuration service
@@ -428,7 +425,7 @@ export class AppService {
       }
       // If files is an object with key-value pairs
       else {
-        for (const [key, filename] of Object.entries(requestObject.files)) {
+        for (const [key] of Object.entries(requestObject.files)) {
           transformedObject.request.body.formdata.text.push({
             key,
             value: "",
@@ -509,22 +506,6 @@ export class AppService {
     }
 
     return transformedObject;
-  }
-
-  /**
-   * Checks the connection to the Kafka broker.
-   *
-   * This method attempts to create an admin client and connect to the Kafka broker.
-   * If the connection is successful, the client is disconnected and the method returns `true`.
-   * If the connection fails, the error is logged, and the method returns `false`.
-   *
-   * @returns {Promise<boolean>} - A promise that resolves to `true` if the connection is successful, or `false` if it fails.
-   */
-  async checkKafkaConnection(): Promise<boolean> {
-    const kafkaBroker = [this.config.get("kafka.broker")];
-    const producer = new KafkajsProducer("health-check", kafkaBroker);
-    const isKafkaConnected = await producer.isKafkaConnected();
-    return isKafkaConnected;
   }
 
   /**

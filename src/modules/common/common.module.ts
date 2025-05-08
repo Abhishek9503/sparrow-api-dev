@@ -1,4 +1,10 @@
-import { Global, MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import {
+  Global,
+  Logger,
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+} from "@nestjs/common";
 import { MongoClient, Db } from "mongodb";
 import { ConfigService } from "@nestjs/config";
 import pino from "pino";
@@ -10,8 +16,8 @@ import { WorkspaceModule } from "../workspace/workspace.module";
 import { LoggingExceptionsFilter } from "./exception/logging.exception-filter";
 
 // ---- Services
-import { ProducerService } from "./services/kafka/producer.service";
-import { ConsumerService } from "./services/kafka/consumer.service";
+import { ProducerService } from "./services/event-producer.service";
+import { ConsumerService } from "./services/event-consumer.service";
 import { BlobStorageService } from "./services/blobStorage.service";
 import { ApiResponseService } from "./services/api-response.service";
 import { ParserService } from "./services/parser.service";
@@ -22,6 +28,7 @@ import { PostmanParserService } from "./services/postman.parser.service";
 import { CreateUserMigration } from "migrations/create-test-user.migration";
 import { InstrumentService } from "./services/instrument.service";
 import { ContextMiddleware } from "../app/middleware/context.middleware";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 
 /**
  * Common Module provides global services and configurations used across the application.
@@ -29,7 +36,7 @@ import { ContextMiddleware } from "../app/middleware/context.middleware";
  */
 @Global()
 @Module({
-  imports: [WorkspaceModule], // Import the Workspace Module
+  imports: [WorkspaceModule, EventEmitterModule.forRoot()], // Import the Workspace Module
   controllers: [],
   providers: [
     InsightsService,
@@ -41,12 +48,14 @@ import { ContextMiddleware } from "../app/middleware/context.middleware";
         configService: ConfigService,
         insightsService: InsightsService,
       ): Promise<Db> => {
+        const logger = new Logger("DatabaseConnection");
         try {
           // Connect to MongoDB using the URL from ConfigService
           const client = await MongoClient.connect(configService.get("db.url"));
           return client.db("sparrow");
         } catch (e) {
-          console.log("ERROR =====> ", e);
+          logger.error("Failed to connect to MongoDB", e.stack);
+
           const client = await insightsService.getClient();
           if (client) {
             client.trackException({
@@ -57,8 +66,10 @@ import { ContextMiddleware } from "../app/middleware/context.middleware";
               },
             });
           } else {
-            console.error("Application Insights client is not initialized.");
+            logger.error("Application Insights client is not initialized.");
           }
+          // Exit the application if the database connection fails
+          process.exit(1);
         }
       },
     },

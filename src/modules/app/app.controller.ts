@@ -185,7 +185,7 @@ export class AppController {
   @Get("health")
   @ApiOperation({
     summary: "Health Check",
-    description: "Checks the health of Kafka and MongoDB connections.",
+    description: "Checks the health of MongoDB connections.",
   })
   @ApiResponse({
     status: 200,
@@ -196,14 +196,12 @@ export class AppController {
     description: "Health check failed.",
   })
   async healthCheck(@Res() res: FastifyReply) {
-    const isKafkaConnected = await this.appService.checkKafkaConnection();
     const isMongoConnected = await this.appService.checkMongoConnection();
 
-    if (isKafkaConnected && isMongoConnected) {
+    if (isMongoConnected) {
       return res.status(HttpStatus.OK).send({
         statusCode: HttpStatus.OK,
         status: "healthy",
-        kafka: "connected",
         mongo: "connected",
       });
     }
@@ -211,7 +209,6 @@ export class AppController {
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       status: "unhealthy",
-      kafka: isKafkaConnected ? "connected" : "disconnected",
       mongo: isMongoConnected ? "connected" : "disconnected",
     });
   }

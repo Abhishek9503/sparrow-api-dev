@@ -16,7 +16,7 @@ import { ContextService } from "@src/modules/common/services/context.service";
 import { UserRepository } from "../repositories/user.repository";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { Invite, Team } from "@src/modules/common/models/team.model";
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { TeamService } from "./team.service";
 import { ConfigService } from "@nestjs/config";
@@ -1320,7 +1320,6 @@ export class TeamUserService {
     const inviteIndex = invites.findIndex(
       (invite: any) => invite.email === email,
     );
-    const matchInvite = teamData.invites[inviteIndex].inviteId;
     if (inviteIndex === -1) {
       throw new NotFoundException("Invite not found");
     }

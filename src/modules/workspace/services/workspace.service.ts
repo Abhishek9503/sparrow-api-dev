@@ -51,7 +51,7 @@ import { isString } from "class-validator";
 import { ConfigService } from "@nestjs/config";
 import { Team } from "@src/modules/common/models/team.model";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 import { UpdatesType } from "@src/modules/common/enum/updates.enum";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { TestflowInfoDto } from "@src/modules/common/models/testflow.model";
@@ -356,16 +356,16 @@ export class WorkspaceService {
       }),
     });
 
-    const userDetails = await this.userRepository.getUserById(teamData.owner);
+    // const userDetails = await this.userRepository.getUserById(teamData.owner);
 
-    if (!workspaceData?.firstWorkspace) {
-      await this.newWorkspaceEmail(
-        userDetails.name.split(" ")[0],
-        workspaceData.name,
-        teamData.name,
-        userDetails.email,
-      );
-    }
+    // if (!workspaceData?.firstWorkspace) {
+    //   await this.newWorkspaceEmail(
+    //     userDetails.name.split(" ")[0],
+    //     workspaceData.name,
+    //     teamData.name,
+    //     userDetails.email,
+    //   );
+    // }
 
     return response;
   }

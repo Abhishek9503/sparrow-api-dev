@@ -5,7 +5,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Socket } from "socket.io";
-import { Server, WebSocket, MessageEvent } from "ws";
+import { WebSocket, MessageEvent } from "ws";
 
 // ---- OpenAI
 import { AzureOpenAI } from "openai";
@@ -26,7 +26,7 @@ import {
 
 // ---- Services
 import { ContextService } from "@src/modules/common/services/context.service";
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 import { ChatbotStatsService } from "./chatbot-stats.service";
 import { UserService } from "../../identity/services/user.service";
 
@@ -58,7 +58,7 @@ export class AiAssistantService {
    * Constructor for AiAssistantService.
    * @param contextService - Context service to get current user information.
    * @param configService - Config service to retrieve environment variables.
-   * @param producerService - Kafka producer service to send messages to Kafka topics.
+   * @param producerService - NestJS Events producer service to send messages to NestJS Events topics.
    */
   constructor(
     private readonly contextService: ContextService,
@@ -167,10 +167,13 @@ export class AiAssistantService {
     }
 
     // Add a user question to the existing thread
-    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
-      role,
-      content: message,
-    });
+    await this.gptAssistantsClient.beta.threads.messages.create(
+      currentThreadId,
+      {
+        role,
+        content: message,
+      },
+    );
 
     // Run the thread and poll it until it is in a terminal state
 
@@ -213,13 +216,15 @@ export class AiAssistantService {
 
     // Get the messages
     const messageList: MessagesPage =
-      await this.gptAssistantsClient.beta.threads.messages.list(currentThreadId);
-    const kafkaMessage = {
+      await this.gptAssistantsClient.beta.threads.messages.list(
+        currentThreadId,
+      );
+    const eventMessage = {
       userId: this.contextService.get("user")._id,
       tokenCount: pollRunner.usage.total_tokens,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
-      value: JSON.stringify(kafkaMessage),
+      value: JSON.stringify(eventMessage),
     });
     for await (const message of messageList) {
       for (const item of message.content) {
@@ -257,17 +262,19 @@ export class AiAssistantService {
 
     // Create thread
     if (!currentThreadId) {
-      const assistantThread = await this.gptAssistantsClient.beta.threads.create(
-        {},
-      );
+      const assistantThread =
+        await this.gptAssistantsClient.beta.threads.create({});
       currentThreadId = assistantThread.id;
     }
 
     // Send message in thread
-    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
-      role: "user",
-      content: prompt,
-    });
+    await this.gptAssistantsClient.beta.threads.messages.create(
+      currentThreadId,
+      {
+        role: "user",
+        content: prompt,
+      },
+    );
 
     // Create Stream for the run in thread
     const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
@@ -326,15 +333,15 @@ export class AiAssistantService {
       }
     }
     // Save token details
-    const kafkaMessage = {
+    const eventMessage = {
       userId: this.contextService.get("user")._id,
       tokenCount: total_tokens,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
-      value: JSON.stringify(kafkaMessage),
+      value: JSON.stringify(eventMessage),
     });
   }
-    
+
   /**
    * Generates stream wise response based on a given prompt using an assistant.
    * @param data - Prompt input data to generate a response.
@@ -391,12 +398,14 @@ export class AiAssistantService {
         if (
           (stat?.aiModel &&
             stat.aiModel?.yearMonth === currentYearMonth &&
-            (stat.aiModel.gpt + stat.aiModel.deepseek) > (this.monthlyTokenLimit || 0) &&
+            stat.aiModel.gpt + stat.aiModel.deepseek >
+              (this.monthlyTokenLimit || 0) &&
             !parsedWhiteListEmails.includes(emailId)) ||
           (stat?.aiModel &&
             stat.aiModel?.yearMonth === currentYearMonth &&
             parsedWhiteListEmails.includes(emailId) &&
-            (stat.aiModel.gpt + stat.aiModel.deepseek) > this.whiteListUserTokenLimit)
+            stat.aiModel.gpt + stat.aiModel.deepseek >
+              this.whiteListUserTokenLimit)
         ) {
           client.send(
             JSON.stringify({
@@ -476,16 +485,16 @@ export class AiAssistantService {
               if (latestRun?.usage) {
                 const tokenUsage = latestRun.usage.total_tokens;
 
-                const kafkaMessage = {
+                const eventMessage = {
                   userId: user._id.toString(),
                   tokenCount: tokenUsage,
-                  model: model
+                  model: model,
                 };
 
                 await this.producerService.produce(
                   TOPIC.AI_RESPONSE_GENERATED_TOPIC,
                   {
-                    value: JSON.stringify(kafkaMessage),
+                    value: JSON.stringify(eventMessage),
                   },
                 );
 
@@ -495,16 +504,15 @@ export class AiAssistantService {
                   model: model,
                   tokenConsumed: tokenUsage,
                   threadId: threadId,
-                }
-                
-                // Send activity log to Kafka topic
+                };
+
+                // Send activity log to NestJS Events topic
                 await this.producerService.produce(
                   TOPIC.AI_ACTIVITY_LOG_TOPIC,
                   {
                     value: JSON.stringify(activityLog),
                   },
-                );  
-
+                );
               } else {
                 console.warn("Run usage not yet available.");
               }
@@ -512,7 +520,7 @@ export class AiAssistantService {
               console.error("Error handling usage after stream:", err);
             }
           })
-          .on("error", (error) => {
+          .on("error", () => {
             client.send(
               JSON.stringify({
                 messages:
