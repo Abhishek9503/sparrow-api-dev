@@ -1,4 +1,4 @@
-import { Global, MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 import { MongoClient, Db } from "mongodb";
 import { ConfigService } from "@nestjs/config";
 import pino from "pino";
@@ -21,7 +21,6 @@ import { InsightsService } from "./services/insights.service";
 import { PostmanParserService } from "./services/postman.parser.service";
 import { CreateUserMigration } from "migrations/create-test-user.migration";
 import { InstrumentService } from "./services/instrument.service";
-import { ContextMiddleware } from "../app/middleware/context.middleware";
 
 /**
  * Common Module provides global services and configurations used across the application.
@@ -103,8 +102,4 @@ import { ContextMiddleware } from "../app/middleware/context.middleware";
     InstrumentService,
   ],
 })
-export class CommonModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ContextMiddleware).forRoutes("*");
-  }
-}
+export class CommonModule {}
