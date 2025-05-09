@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Scope } from "@nestjs/common";
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class ContextService {
   private contextData: Record<string, any> = {};
 
