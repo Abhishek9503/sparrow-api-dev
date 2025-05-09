@@ -97,6 +97,7 @@ export class AiAssistantService {
       console.error(e);
     }
 
+    // Initialize the DeepSeek client
     try {
       this.deepseekClient = this.getDeepSeekClient();
     } catch (e) {
@@ -118,6 +119,11 @@ export class AiAssistantService {
     return gptAssistantsClient;
   };
 
+  /**
+   * Creates and returns a new instance of the DeepSeek client.
+   *
+   * @returns  A new instance of the DeepSeek client.
+   */
   private getDeepSeekClient = (): ReturnType<typeof ModelClient> => {
     const endpoint = this.deepseekEndpoint;
     const apiKey = this.deepseekApiKey;
@@ -545,10 +551,6 @@ export class AiAssistantService {
       content: string;
     };
 
-
-    
-  
-    
     // Fetch user details
     const user = await this.userService.getUserByEmail(emailId);
     const stat = await this.chatbotStatsService.getIndividualStat(
