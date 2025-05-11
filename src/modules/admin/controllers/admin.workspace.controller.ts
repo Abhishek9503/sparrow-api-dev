@@ -89,7 +89,7 @@ export class AdminWorkspaceController {
 
     const responseData = new ApiResponseService(
       "Hub workspaces generated",
-      200,
+      HttpStatusCode.OK,
       {
         ...data,
         sortBy: validatedSortBy,
@@ -98,7 +98,7 @@ export class AdminWorkspaceController {
       },
     );
 
-    return res.status(HttpStatusCode.OK).send(responseData);
+    return res.status(responseData.httpStatusCode).send(responseData);
   }
 
   @Post("create-workspace")
