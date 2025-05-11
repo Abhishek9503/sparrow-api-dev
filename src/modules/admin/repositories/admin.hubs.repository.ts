@@ -72,7 +72,6 @@ export class AdminHubsRepository {
     };
   }
 
-  // Light version — for dropdowns, etc.
   async findBasicTeamsByUserId(userId: string) {
     const userObjectId = new ObjectId(userId);
     const teams = await this.db
@@ -82,5 +81,9 @@ export class AdminHubsRepository {
       .toArray();
 
     return teams;
+  }
+
+  async findHubById(hubId: string) {
+    return this.db.collection("team").findOne({ _id: new ObjectId(hubId) });
   }
 }
