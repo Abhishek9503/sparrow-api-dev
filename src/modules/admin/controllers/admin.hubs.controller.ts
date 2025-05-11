@@ -22,7 +22,7 @@ import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { RolesGuard } from "@src/modules/common/guards/roles.guard";
 import { Roles } from "@src/modules/common/decorators/roles.decorators";
 @Controller("admin")
-@ApiTags("admin Hubs")
+@ApiTags("admin hubs")
 @ApiBearerAuth()
 export class AdminHubsController {
   constructor(private readonly hubsService: AdminHubsService) {}
