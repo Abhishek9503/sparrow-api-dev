@@ -204,24 +204,4 @@ export class AuthService {
       throw new BadRequestException("Maximum request limit reached");
     }
   }
-
-  async createAdminToken(
-    userId: string,
-  ): Promise<{ token: string; expires: number }> {
-    const expiresIn = 180; // 3 minutes
-    const payload = {
-      userId,
-      purpose: "admin_access",
-    };
-
-    const token = this.jwtService.sign(payload, {
-      secret: this.configService.get("app.jwtSecretKey"),
-      expiresIn: `${expiresIn}s`,
-    });
-
-    return {
-      token,
-      expires: expiresIn,
-    };
-  }
 }
