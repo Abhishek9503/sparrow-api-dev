@@ -64,17 +64,13 @@ export class AdminAuthService {
         secret: this.configService.get("app.jwtSecretKey"),
       });
 
-      //check access
-      if (decoded.purpose !== "admin_access") {
-        throw new UnauthorizedException("Invalid token purpose");
-      }
       // Check expiration
       const now = Math.floor(Date.now() / 1000);
       if (decoded.exp && decoded.exp < now) {
         throw new UnauthorizedException("Token has expired");
       }
 
-      const userId = new ObjectId(decoded.userId);
+      const userId = new ObjectId(decoded._id);
       // generate new tokens if valid user
       const newAccessToken = await this.createToken(userId);
       const newRefreshToken = await this.createRefreshToken(userId);
