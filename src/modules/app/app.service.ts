@@ -135,7 +135,7 @@ export class AppService {
       const updatedCurl = await this.formatCurl(curl);
       if (!curl || !curl.length) {
         throw new Error();
-    
+      }
       const stringifiedCurl = toJsonString(updatedCurl);
       const parsedCurl = JSON.parse(stringifiedCurl);
 
