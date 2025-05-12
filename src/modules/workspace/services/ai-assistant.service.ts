@@ -15,7 +15,6 @@ import {
 } from "openai/resources/beta/assistants";
 import { MessagesPage } from "openai/resources/beta/threads/messages";
 import { Thread } from "openai/resources/beta/threads/threads";
-
 // ---- Payload
 import {
   AIResponseDto,
@@ -46,7 +45,7 @@ export class AiAssistantService {
   private deployment: string;
   private apiVersion: string;
   private maxTokens: number;
-  private assistantsClient: AzureOpenAI;
+  private gptAssistantsClient: AzureOpenAI;
   private monthlyTokenLimit: number;
   private whiteListUserTokenLimit: number;
   private assistantId: string;
@@ -80,7 +79,7 @@ export class AiAssistantService {
 
     // Initialize the AzureOpenAI client
     try {
-      this.assistantsClient = this.getClient();
+      this.gptAssistantsClient = this.getGPTClient();
     } catch (e) {
       console.error(e);
     }
@@ -91,13 +90,13 @@ export class AiAssistantService {
    *
    * @returns  A new instance of the AzureOpenAI client.
    */
-  private getClient = (): AzureOpenAI => {
-    const assistantsClient = new AzureOpenAI({
+  private getGPTClient = (): AzureOpenAI => {
+    const gptAssistantsClient = new AzureOpenAI({
       endpoint: this.endpoint,
       apiVersion: this.apiVersion,
       apiKey: this.apiKey,
     });
-    return assistantsClient;
+    return gptAssistantsClient;
   };
 
   /**
@@ -114,7 +113,7 @@ export class AiAssistantService {
     };
     // Create an assistant
     const assistantResponse: Assistant =
-      await this.assistantsClient.beta.assistants.create(options);
+      await this.gptAssistantsClient.beta.assistants.create(options);
     return assistantResponse.id;
   };
 
@@ -163,12 +162,12 @@ export class AiAssistantService {
     if (!currentThreadId) {
       // Create an thread if it does not exist
       const assistantThread: Thread =
-        await this.assistantsClient.beta.threads.create({});
+        await this.gptAssistantsClient.beta.threads.create({});
       currentThreadId = assistantThread.id;
     }
 
     // Add a user question to the existing thread
-    await this.assistantsClient.beta.threads.messages.create(currentThreadId, {
+    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
       role,
       content: message,
     });
@@ -176,7 +175,7 @@ export class AiAssistantService {
     // Run the thread and poll it until it is in a terminal state
 
     const pollRunner =
-      await this.assistantsClient.beta.threads.runs.createAndPoll(
+      await this.gptAssistantsClient.beta.threads.runs.createAndPoll(
         currentThreadId,
         {
           assistant_id: assistantId,
@@ -190,7 +189,7 @@ export class AiAssistantService {
      * Can be used in future iterations for real-time data streaming
      */
     // Run the thread and stream the responses
-    // const stream = await this.assistantsClient.beta.threads.runs.stream(
+    // const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
     //   currentThreadId,
     //   {
     //     assistant_id: assistantId,
@@ -214,7 +213,7 @@ export class AiAssistantService {
 
     // Get the messages
     const messageList: MessagesPage =
-      await this.assistantsClient.beta.threads.messages.list(currentThreadId);
+      await this.gptAssistantsClient.beta.threads.messages.list(currentThreadId);
     const kafkaMessage = {
       userId: this.contextService.get("user")._id,
       tokenCount: pollRunner.usage.total_tokens,
@@ -258,20 +257,20 @@ export class AiAssistantService {
 
     // Create thread
     if (!currentThreadId) {
-      const assistantThread = await this.assistantsClient.beta.threads.create(
+      const assistantThread = await this.gptAssistantsClient.beta.threads.create(
         {},
       );
       currentThreadId = assistantThread.id;
     }
 
     // Send message in thread
-    await this.assistantsClient.beta.threads.messages.create(currentThreadId, {
+    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
       role: "user",
       content: prompt,
     });
 
     // Create Stream for the run in thread
-    const stream = await this.assistantsClient.beta.threads.runs.stream(
+    const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
       currentThreadId,
       {
         assistant_id: assistantId,
@@ -335,7 +334,7 @@ export class AiAssistantService {
       value: JSON.stringify(kafkaMessage),
     });
   }
-
+    
   /**
    * Generates stream wise response based on a given prompt using an assistant.
    * @param data - Prompt input data to generate a response.
@@ -370,6 +369,8 @@ export class AiAssistantService {
         const tabId = parsedData.tabId;
         const emailId = parsedData.emailId;
         const apiData = parsedData.apiData || "Data not available";
+        const model = parsedData.model || "gpt";
+        const activity = parsedData.activity || "chat";
 
         // Fetch user details
         const user = await this.userService.getUserByEmail(emailId);
@@ -388,14 +389,14 @@ export class AiAssistantService {
 
         // Check if user exceeded token limit
         if (
-          (stat?.tokenStats &&
-            stat.tokenStats?.yearMonth === currentYearMonth &&
-            stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
+          (stat?.aiModel &&
+            stat.aiModel?.yearMonth === currentYearMonth &&
+            (stat.aiModel.gpt + stat.aiModel.deepseek) > (this.monthlyTokenLimit || 0) &&
             !parsedWhiteListEmails.includes(emailId)) ||
-          (stat?.tokenStats &&
-            stat.tokenStats?.yearMonth === currentYearMonth &&
+          (stat?.aiModel &&
+            stat.aiModel?.yearMonth === currentYearMonth &&
             parsedWhiteListEmails.includes(emailId) &&
-            stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
+            (stat.aiModel.gpt + stat.aiModel.deepseek) > this.whiteListUserTokenLimit)
         ) {
           client.send(
             JSON.stringify({
@@ -414,7 +415,7 @@ export class AiAssistantService {
           );
         }
 
-        if (!this.assistantsClient) {
+        if (!this.gptAssistantsClient) {
           throw new InternalServerErrorException(
             "AI assistant client is not initialized.",
           );
@@ -422,11 +423,11 @@ export class AiAssistantService {
 
         if (!threadId) {
           const assistantThread =
-            await this.assistantsClient.beta.threads.create({});
+            await this.gptAssistantsClient.beta.threads.create({});
           threadId = assistantThread.id;
         }
 
-        await this.assistantsClient.beta.threads.messages.create(threadId, {
+        await this.gptAssistantsClient.beta.threads.messages.create(threadId, {
           role: "user",
           content: `{Text: ${text}, API data: ${apiData}}`,
         });
@@ -440,7 +441,7 @@ export class AiAssistantService {
           }),
         );
 
-        this.assistantsClient.beta.threads.runs
+        this.gptAssistantsClient.beta.threads.runs
           .stream(threadId, {
             assistant_id: this.assistantId,
           })
@@ -469,7 +470,7 @@ export class AiAssistantService {
               );
               // Get latest run for Token Usage
               const runsList =
-                await this.assistantsClient.beta.threads.runs.list(threadId);
+                await this.gptAssistantsClient.beta.threads.runs.list(threadId);
               const latestRun = runsList.data[0];
 
               if (latestRun?.usage) {
@@ -478,6 +479,7 @@ export class AiAssistantService {
                 const kafkaMessage = {
                   userId: user._id.toString(),
                   tokenCount: tokenUsage,
+                  model: model
                 };
 
                 await this.producerService.produce(
@@ -486,6 +488,23 @@ export class AiAssistantService {
                     value: JSON.stringify(kafkaMessage),
                   },
                 );
+
+                const activityLog = {
+                  userId: user._id.toString(),
+                  activity: activity,
+                  model: model,
+                  tokenConsumed: tokenUsage,
+                  threadId: threadId,
+                }
+                
+                // Send activity log to Kafka topic
+                await this.producerService.produce(
+                  TOPIC.AI_ACTIVITY_LOG_TOPIC,
+                  {
+                    value: JSON.stringify(activityLog),
+                  },
+                );  
+
               } else {
                 console.warn("Run usage not yet available.");
               }
@@ -539,7 +558,7 @@ export class AiAssistantService {
         { role: "user", content: userMessage },
       ];
 
-      const response = await this.assistantsClient.chat.completions.create({
+      const response = await this.gptAssistantsClient.chat.completions.create({
         model: "sparrow",
         messages: messages,
         temperature: 0.7,

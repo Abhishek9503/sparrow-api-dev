@@ -47,7 +47,6 @@ import {
 @ApiBearerAuth()
 @ApiTags("testflow")
 @Controller("api/workspace")
-@UseGuards(JwtAuthGuard)
 export class TestflowController {
   /**
    * Creates an instance of TestflowController.
@@ -72,6 +71,7 @@ export class TestflowController {
     description:
       "This will create a testflow and add this testflow in user's workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Testflow Created Successfully" })
   @ApiResponse({ status: 400, description: "Create Testflow Failed" })
   async createTestflow(
@@ -103,6 +103,7 @@ export class TestflowController {
     summary: "Get Individual Testflow",
     description: "This will get individual testflow of a workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 200,
     description: "Fetch Testflow Request Received",
@@ -137,6 +138,7 @@ export class TestflowController {
     summary: "Update An Testflow",
     description: "This will update an Testflow",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Testflow Updated Successfully" })
   @ApiResponse({ status: 400, description: "Update Testflow Failed" })
   async updateTestflow(
@@ -174,6 +176,7 @@ export class TestflowController {
     summary: "Delete a Testflow",
     description: "This will delete a Testflow",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Removed Testflow Successfully" })
   @ApiResponse({ status: 400, description: "Failed to remove Testflow" })
   async deleteTestflow(
@@ -208,6 +211,7 @@ export class TestflowController {
     summary: "Get All Testflows",
     description: "This will get all testflows of a workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({
     status: 200,
     description: "Fetch Testflow Request Received",
@@ -218,6 +222,40 @@ export class TestflowController {
     @Res() res: FastifyReply,
   ) {
     const testflow = await this.testflowService.getAllTestflows(workspaceId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      testflow,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Get all Testflows for a specific Public Workspace.
+   *
+   * @param {string} workspaceId - The ID of the Workspace to retrieve Testflows for.
+   * @param {FastifyReply} res - Fastify reply object to send the response.
+   * @returns Response containing all Testflows in the Workspace.
+   *
+   * @description Fetches all Testflows associated with the given Workspace ID,
+   * returning an array of Testflow objects.
+   */
+  @Get("public/:workspaceId/testflow")
+  @ApiOperation({
+    summary: "Get All Public Testflows",
+    description: "This will get all testflows of a public workspace",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Fetch Testflow Request Received",
+  })
+  @ApiResponse({ status: 400, description: "Fetch Testflow Request Failed" })
+  async getPublicTestflows(
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const testflow =
+      await this.testflowService.getAllPublicTestflows(workspaceId);
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,

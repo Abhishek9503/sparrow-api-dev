@@ -12,4 +12,5 @@ export enum Collections {
   CHATBOTSTATS = "chatbotstats",
   TESTFLOW = "testflow",
   USERINVITES = "userinvites",
+  AILOGS = "ailogs",
 }

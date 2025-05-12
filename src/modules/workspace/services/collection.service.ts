@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 
 import {
   CreateCollectionDto,
@@ -20,6 +24,7 @@ import {
   CollectionAuthModeEnum,
   CollectionBranch,
   CollectionItem,
+  CollectionTypeEnum,
   ItemTypeEnum,
 } from "@src/modules/common/models/collection.model";
 import { ContextService } from "@src/modules/common/services/context.service";
@@ -34,6 +39,7 @@ import { ProducerService } from "@src/modules/common/services/kafka/producer.ser
 import { PostmanParserService } from "@src/modules/common/services/postman.parser.service";
 import { v4 as uuidv4 } from "uuid";
 import { AddTo } from "@src/modules/common/models/collection.rxdb.model";
+import { WorkspaceType } from "@src/modules/common/models/workspace.model";
 @Injectable()
 export class CollectionService {
   constructor(
@@ -58,6 +64,10 @@ export class CollectionService {
 
     const newCollection: Collection = {
       name: createCollectionDto.name,
+      collectionType:
+        createCollectionDto?.collectionType === CollectionTypeEnum.MOCK
+          ? CollectionTypeEnum.MOCK
+          : CollectionTypeEnum.STANDARD,
       totalRequests: 0,
       createdBy: user.name,
       selectedAuthType: CollectionAuthModeEnum["No Auth"],
@@ -77,6 +87,15 @@ export class CollectionService {
       }),
     });
     return collection;
+  }
+
+  async updateMockCollectionUrl(id: string): Promise<UpdateResult<Collection>> {
+    const baseUrl = this.configService.get("app.url");
+    const mockUrl = `${baseUrl}/api/mock/${id}`;
+    const data = await this.collectionRepository.updateCollection(id, {
+      mockCollectionUrl: mockUrl,
+    });
+    return data;
   }
 
   async createSampleData(user: any): Promise<CollectionItem[]> {
@@ -368,6 +387,23 @@ export class CollectionService {
     await this.checkPermission(id, user._id);
 
     const workspace = await this.workspaceRepository.get(id);
+    const collections = [];
+    for (let i = 0; i < workspace.collection?.length; i++) {
+      const collection = await this.collectionRepository.get(
+        workspace.collection[i].id.toString(),
+      );
+      collections.push(collection);
+    }
+    return collections;
+  }
+
+  async getAllPublicWorkspaceCollections(
+    id: string,
+  ): Promise<WithId<Collection>[]> {
+    const workspace = await this.workspaceRepository.get(id);
+    if (workspace.workspaceType !== WorkspaceType.PUBLIC) {
+      throw new BadRequestException("Workspace is not public.");
+    }
     const collections = [];
     for (let i = 0; i < workspace.collection?.length; i++) {
       const collection = await this.collectionRepository.get(

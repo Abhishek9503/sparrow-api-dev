@@ -27,7 +27,9 @@
     "docker:up:mongo": "docker compose up mongo --build -d",
     "docker:up:kafka": "docker compose up kafka --build -d",
     "start:migration": "ts-node -r tsconfig-paths/register src/migration.ts",
-    "start:migration-testflow": "ts-node -r tsconfig-paths/register src/migrationTestflow.ts"
+    "start:migration-testflow": "ts-node -r tsconfig-paths/register src/migrationTestflow.ts",
+    "start:migration-workspace-type": "ts-node -r tsconfig-paths/register src/migrationWorkspaceType.ts",
+    "start:migration-chatbot-ai-model": "ts-node -r tsconfig-paths/register src/migration-chatbotstats.ts"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
@@ -72,6 +74,7 @@
     "gravatar": "1.8.2",
     "husky": "^8.0.3",
     "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
     "kafkajs": "^2.2.4",
     "mongodb": "^5.7.0",
     "nest-access-control": "2.2.0",
@@ -101,6 +104,7 @@
     "@types/gravatar": "1.8.3",
     "@types/jest": "^29.5.3",
     "@types/js-yaml": "^4.0.7",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "16.11.56",
     "@types/passport-jwt": "^3.0.9",
     "@types/supertest": "^2.0.12",

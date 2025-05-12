@@ -30,7 +30,6 @@ import { WorkspaceService } from "../services/workspace.service";
 @ApiBearerAuth()
 @ApiTags("environment")
 @Controller("api/workspace")
-@UseGuards(JwtAuthGuard)
 export class EnvironmentController {
   constructor(
     private readonly workspaceService: WorkspaceService,
@@ -43,6 +42,7 @@ export class EnvironmentController {
     description:
       "This will create a environment and add this environment in user's workspace",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Environment Created Successfully" })
   @ApiResponse({ status: 400, description: "Create Environment Failed" })
   async createCollection(
@@ -75,6 +75,7 @@ export class EnvironmentController {
     summary: "Delete a Environment",
     description: "This will delete a environment",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 201, description: "Removed Environment Successfully" })
   @ApiResponse({ status: 400, description: "Failed to remove Environment" })
   async deleteEnvironment(
@@ -108,6 +109,7 @@ export class EnvironmentController {
     status: 200,
     description: "Fetch Environment Request Received",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 400, description: "Fetch Environment Request Failed" })
   async getEnvironment(
     @Param("workspaceId") workspaceId: string,
@@ -123,11 +125,36 @@ export class EnvironmentController {
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
+  @Get("public/:workspaceId/environment")
+  @ApiOperation({
+    summary: "Get All Public Environments",
+    description: "This will get all environments of a public workspace",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Fetch Environment Request Received",
+  })
+  @ApiResponse({ status: 400, description: "Fetch Environment Request Failed" })
+  async getPublicEnvironments(
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const environment =
+      await this.environmentService.getAllPublicEnvironments(workspaceId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      environment,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
   @Put(":workspaceId/environment/:environmentId")
   @ApiOperation({
     summary: "Update An Environment",
     description: "This will update an environment",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 200, description: "Environment Updated Successfully" })
   @ApiResponse({ status: 400, description: "Update Environment Failed" })
   async updateEnvironment(
@@ -166,6 +193,7 @@ export class EnvironmentController {
     status: 200,
     description: "Fetch Environment Request Received",
   })
+  @UseGuards(JwtAuthGuard)
   @ApiResponse({ status: 400, description: "Fetch Environment Request Failed" })
   async getIndividualEnvironment(
     @Param("workspaceId") workspaceId: string,
