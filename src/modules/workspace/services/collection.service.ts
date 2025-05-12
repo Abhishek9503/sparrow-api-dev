@@ -24,6 +24,7 @@ import {
   CollectionAuthModeEnum,
   CollectionBranch,
   CollectionItem,
+  CollectionTypeEnum,
   ItemTypeEnum,
 } from "@src/modules/common/models/collection.model";
 import { ContextService } from "@src/modules/common/services/context.service";
@@ -63,6 +64,10 @@ export class CollectionService {
 
     const newCollection: Collection = {
       name: createCollectionDto.name,
+      collectionType:
+        createCollectionDto?.collectionType === CollectionTypeEnum.MOCK
+          ? CollectionTypeEnum.MOCK
+          : CollectionTypeEnum.STANDARD,
       totalRequests: 0,
       createdBy: user.name,
       selectedAuthType: CollectionAuthModeEnum["No Auth"],
