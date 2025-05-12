@@ -3,7 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { ObjectId } from "mongodb";
 import { UnauthorizedException } from "@nestjs/common";
-import { AdminAuthRepository } from "../repositories/admin.auth.repository";
+import { AdminAuthRepository } from "../repositories/user-admin.auth.repository";
 import { createHmac } from "crypto";
 
 @Injectable()

@@ -16,9 +16,6 @@ import { TeamController } from "./controllers/team.controller";
 import { RefreshTokenStrategy } from "./strategies/refresh-token.strategy";
 import { HubSpotService } from "./services/hubspot.service";
 import { GoogleStrategy } from "./strategies/google.strategy";
-import { AdminAuthService } from "./services/admin.auth.service";
-import { AdminAuthRepository } from "./repositories/admin.auth.repository";
-import { AdminAuthController } from "./controllers/admin.auth.controller";
 
 @Module({
   imports: [
@@ -43,8 +40,6 @@ import { AdminAuthController } from "./controllers/admin.auth.controller";
   ],
   providers: [
     AuthService,
-    AdminAuthService,
-    AdminAuthRepository,
     JwtStrategy,
     RefreshTokenStrategy,
     UserService,
@@ -79,14 +74,7 @@ import { AdminAuthController } from "./controllers/admin.auth.controller";
     TeamRepository,
     UserInvitesRepository,
     HubSpotService,
-    AdminAuthService,
-    AdminAuthRepository,
   ],
-  controllers: [
-    AuthController,
-    UserController,
-    TeamController,
-    AdminAuthController,
-  ],
+  controllers: [AuthController, UserController, TeamController],
 })
 export class IdentityModule {}

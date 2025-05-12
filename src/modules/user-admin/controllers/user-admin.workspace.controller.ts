@@ -20,7 +20,7 @@ import { ApiResponseService } from "@src/modules/common/services/api-response.se
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { RolesGuard } from "@src/modules/common/guards/roles.guard";
 import { Roles } from "@src/modules/common/decorators/roles.decorators";
-import { AdminWorkspaceService } from "../services/admin.workspace.service";
+import { AdminWorkspaceService } from "../services/user-admin.workspace.service";
 import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
 import { CreateWorkspaceDto } from "@src/modules/workspace/payloads/workspace.payload";
 

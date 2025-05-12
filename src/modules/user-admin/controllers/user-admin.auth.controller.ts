@@ -21,7 +21,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { AdminAuthService } from "../services/admin.auth.service";
+import { AdminAuthService } from "../services/user-admin.auth.service";
 
 /**
  * Interface for refresh token request

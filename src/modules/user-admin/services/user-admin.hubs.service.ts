@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { ObjectId } from "mongodb";
 
-import { AdminHubsRepository } from "../repositories/admin.hubs.repository";
-import { AdminWorkspaceRepository } from "../repositories/admin.workspace.repository";
+import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
+import { AdminWorkspaceRepository } from "../repositories/user-admin.workspace.repository";
 
 interface SortOptions {
   sortBy: string;
