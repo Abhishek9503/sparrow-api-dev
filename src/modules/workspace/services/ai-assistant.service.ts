@@ -60,6 +60,7 @@ export class AiAssistantService {
   private assistantId: string;
   private deepseekEndpoint: string;
   private deepseekApiKey: string;
+  private deepseekApiVersion: string;
   // Default assistant configuration
   private assistant = {
     name: "API Instructor",
@@ -89,6 +90,7 @@ export class AiAssistantService {
     this.whiteListUserTokenLimit - 100000;
     this.deepseekEndpoint = this.configService.get("ai.deepseekEndpoint");
     this.deepseekApiKey = this.configService.get("ai.deepseekApiKey");
+    this.deepseekApiVersion = this.configService.get("ai.deepseekApiVersion");
 
     // Initialize the AzureOpenAI client
     try {
@@ -127,8 +129,9 @@ export class AiAssistantService {
   private getDeepSeekClient = (): ReturnType<typeof ModelClient> => {
     const endpoint = this.deepseekEndpoint;
     const apiKey = this.deepseekApiKey;
+    const apiVersion = this.deepseekApiVersion;
   
-    const client = ModelClient(endpoint, new AzureKeyCredential(apiKey));
+    const client = ModelClient(endpoint, new AzureKeyCredential(apiKey), {apiVersion});
     return client;
   };
 
@@ -636,7 +639,7 @@ export class AiAssistantService {
           top_p: 0.1,
           presence_penalty: 0,
           frequency_penalty: 0,
-          model: "DeepSeek-V3-ppcpc",
+          model: "DeepSeek-V3-DEV",
           stream: true
         }
       }).asNodeStream();

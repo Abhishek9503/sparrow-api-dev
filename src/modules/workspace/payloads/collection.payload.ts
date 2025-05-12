@@ -12,6 +12,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import {
   CollectionAuthModeEnum,
   CollectionItem,
+  CollectionTypeEnum,
   ItemTypeEnum,
   QueryParams,
   RequestBody,
@@ -84,6 +85,14 @@ export class CreateCollectionDto {
   @IsMongoId()
   @IsNotEmpty()
   workspaceId: string;
+
+  @ApiProperty({
+    enum: CollectionTypeEnum,
+  })
+  @IsEnum({ CollectionTypeEnum })
+  @IsString()
+  @IsOptional()
+  collectionType?: CollectionTypeEnum;
 
   @ApiProperty({ type: [CollectionItem] })
   @IsArray()

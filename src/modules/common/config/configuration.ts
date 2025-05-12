@@ -93,8 +93,9 @@ export default () => ({
     maxTokens: parseInt(process.env.AZURE_OPENAI_MAX_TOKENS),
     monthlyTokenLimit: parseInt(process.env.AZURE_OPENAI_MONTHLY_TOKEN_LIMIT),
     assistantId: process.env.AZURE_OPENAI_ASSISTANT_ID,
-    deepseekEndpoint: process.env.AZURE_OPENAI_DEEPSEEK_ENDPOINT,
-    deepseekApiKey: process.env.AZURE_OPENAI_DEEPSEEK_API_KEY,
+    deepseekEndpoint: process.env.DEEPSEEK_ENDPOINT,
+    deepseekApiKey: process.env.DEEPSEEK_API_KEY,
+    deepseekApiVersion: process.env.DEEPSEEK_API_VERSION
   },
   hubspot: {
     hubspotEnabled: process.env.HUBSPOT_INTEGRATION_ENABLED,
