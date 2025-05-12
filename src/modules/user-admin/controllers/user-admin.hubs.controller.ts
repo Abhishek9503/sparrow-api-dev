@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
-import { AdminHubsService } from "../services/admin.hubs.service";
+import { AdminHubsService } from "../services/user-admin.hubs.service";
 import {
   ApiBearerAuth,
   ApiTags,
