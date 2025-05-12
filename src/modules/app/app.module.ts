@@ -8,6 +8,7 @@ import { EnvironmentVariables } from "@common/config/env.validation";
 import { transformAndValidateSync } from "class-transformer-validator";
 import configuration from "@common/config/configuration";
 import { WorkspaceModule } from "../workspace/workspace.module";
+import { AdminModule } from "../admin/admin.module";
 import { CommonModule } from "../common/common.module";
 import { IdentityModule } from "../identity/identity.module";
 import { LoggerModule } from "nestjs-pino";
@@ -58,6 +59,7 @@ import { SentryModule } from "@sentry/nestjs/setup";
     ConfigModule,
     IdentityModule,
     WorkspaceModule,
+    AdminModule,
     CommonModule,
     ProxyModule,
   ],

@@ -27,7 +27,9 @@
     "docker:up:mongo": "docker compose up mongo --build -d",
     "docker:up:kafka": "docker compose up kafka --build -d",
     "start:migration": "ts-node -r tsconfig-paths/register src/migration.ts",
-    "start:migration-testflow": "ts-node -r tsconfig-paths/register src/migrationTestflow.ts"
+    "start:migration-testflow": "ts-node -r tsconfig-paths/register src/migrationTestflow.ts",
+    "start:migration-workspace-type": "ts-node -r tsconfig-paths/register src/migrationWorkspaceType.ts",
+    "start:migration-chatbot-ai-model": "ts-node -r tsconfig-paths/register src/migration-chatbotstats.ts"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",

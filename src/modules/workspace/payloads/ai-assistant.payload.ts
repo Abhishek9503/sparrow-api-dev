@@ -147,6 +147,31 @@ export class ChatBotPayload {
   @IsNotEmpty()
   @ApiProperty({ required: true, example: "Api Data" })
   apiData: string;
+
+  /**
+   * Model.
+   */
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ required: true, example: "gpt-4o or deepseek" })
+  model: string;
+
+  /**
+   * Conversation.
+   */
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ required: true, example: '[{"role": "user", "content": "Hello!"}, {"role": "assistant", "content": "Hi there! How can I help you?"}]' })
+  conversation: string;
+
+  /**
+   * User Activity.
+   */
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ required: true, example: "user activity" })
+  activity: string;
+
 }
 
 export class ErrorResponsePayload {

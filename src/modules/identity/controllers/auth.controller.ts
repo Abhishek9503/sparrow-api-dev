@@ -25,7 +25,6 @@ import { UserService } from "../services/user.service";
 import { ObjectId } from "mongodb";
 import { ConfigService } from "@nestjs/config";
 import { HubSpotService } from "../services/hubspot.service";
-import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 /**
  * Authentication Controller
  */
@@ -196,34 +195,5 @@ export class AuthController {
       HttpStatusCode.MOVED_PERMANENTLY,
       urlWithTokenAndSource,
     );
-  }
-
-  @Get("admin-login")
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({
-    summary: "Generate admin access token",
-    description: "Generates a short-lived token for accessing admin app",
-  })
-  @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: "Token generated" })
-  @ApiResponse({ status: 401, description: "Unauthorized" })
-  async generateAdminToken(@Req() req: any, @Res() res: FastifyReply) {
-    const user = this.contextService.get("user");
-
-    const redirectUrl = this.configService.get("admin.redirectUrl");
-    const token = await this.authService.createAdminToken(user._id);
-
-    const data = {
-      redirectUrl: `${redirectUrl}?token=${encodeURIComponent(token.token)}`,
-      expiresIn: token.expires,
-    };
-
-    const responseData = new ApiResponseService(
-      "Admin token generated",
-      HttpStatusCode.OK,
-      data,
-    );
-
-    return res.status(responseData.httpStatusCode).send(responseData);
   }
 }

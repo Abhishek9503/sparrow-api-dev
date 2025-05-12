@@ -292,6 +292,7 @@ export class TeamService {
           logo: teamData.logo,
           name: teamData.name,
           hubUrl: teamData.hubUrl,
+          workspaces: [],
           description: senderData.name || "No creator found",
         };
         // Add the team object to the teams array
