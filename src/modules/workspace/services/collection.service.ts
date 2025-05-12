@@ -89,6 +89,15 @@ export class CollectionService {
     return collection;
   }
 
+  async updateMockCollectionUrl(id: string): Promise<UpdateResult<Collection>> {
+    const baseUrl = this.configService.get("app.url");
+    const mockUrl = `${baseUrl}/api/mock/${id}`;
+    const data = await this.collectionRepository.updateCollection(id, {
+      mockCollectionUrl: mockUrl,
+    });
+    return data;
+  }
+
   async createSampleData(user: any): Promise<CollectionItem[]> {
     const bodyData = {
       id: 0,
