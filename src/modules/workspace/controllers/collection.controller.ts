@@ -44,6 +44,7 @@ import {
   MemoryStorageFile,
   UploadedFile,
 } from "@blazity/nest-file-fastify";
+import { CollectionTypeEnum } from "@src/modules/common/models/collection.model";
 
 @ApiBearerAuth()
 @ApiTags("collection")
@@ -79,6 +80,11 @@ export class collectionController {
       id: collection._id,
       name: createCollectionDto.name,
     });
+    if (createCollectionDto?.collectionType === CollectionTypeEnum.MOCK) {
+      await this.collectionService.updateMockCollectionUrl(
+        data.insertedId.toString(),
+      );
+    }
     const responseData = new ApiResponseService(
       "Collection Created",
       HttpStatusCode.CREATED,
