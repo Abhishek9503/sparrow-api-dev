@@ -88,8 +88,8 @@ export class TeamUserService {
         text: "User Invited",
         template: "inviteTeamEmail",
         context: {
-          firstname: user.name.split(" ")[0],
-          username: currentUser.name.split(" ")[0],
+          firstname: currentUser.name.split(" ")[0],
+          username: user.name.split(" ")[0],
           teamname: payload.teamName,
           role: role.charAt(0).toUpperCase() + role.slice(1),
           sparrowEmail: this.configService.get("support.sparrowEmail"),
@@ -1367,6 +1367,7 @@ export class TeamUserService {
           teamId: teamId,
           role: invitedRole,
           email: inviteEmail,
+          senderName: senderName,
         },
         subject: `${senderName} has invited you to the hub “${teamData.name}”`,
       };
