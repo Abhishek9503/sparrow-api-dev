@@ -114,5 +114,4 @@ export default () => ({
     dsn: process.env.SENTRY_DSN_KEY,
     environment: process.env.SENTRY_APP_ENVIRONMENT,
   },
-
 });
