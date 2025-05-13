@@ -483,6 +483,7 @@ export class AiAssistantService {
             const kafkaMessage = {
               userId: user._id.toString(),
               tokenCount: tokenUsage,
+              model: model
             };
             
             await this.producerService.produce(
