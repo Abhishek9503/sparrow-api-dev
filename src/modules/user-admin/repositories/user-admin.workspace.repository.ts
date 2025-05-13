@@ -23,4 +23,8 @@ export class AdminWorkspaceRepository {
 
     return { total, rawData };
   }
+
+  async getTotalWorkspaceCount(query: any): Promise<number> {
+    return await this.db.collection("workspace").countDocuments(query);
+  }
 }
