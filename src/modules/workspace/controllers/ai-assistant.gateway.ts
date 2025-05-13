@@ -43,9 +43,9 @@ export class AiAssistantGateway
       );
 
       // Call appropriate service based on the "mode" header
-      if (mode === 'chatbot') {
+      if (mode === 'sparrow-ai') {
         this.aiAssistantService.generateTextChatBot(client);
-      } else if (mode === 'llm') {
+      } else if (mode === 'llm-evaluation') {
         this.llmService.aiLlmService(client);
       } else {
         client.send(JSON.stringify({ event: 'error', message: 'Invalid mode header' }));
