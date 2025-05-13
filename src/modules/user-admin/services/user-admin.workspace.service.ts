@@ -20,6 +20,10 @@ export class AdminWorkspaceService {
     const skip = (page - 1) * limit;
 
     const query: any = { "team.id": hubId };
+
+    const totalWorkspaceCount =
+      await this.workspaceRepo.getTotalWorkspaceCount(query);
+
     if (search) {
       query.name = { $regex: new RegExp(search, "i") };
     }
@@ -53,6 +57,7 @@ export class AdminWorkspaceService {
 
     return {
       hubName: hub.name,
+      isNewHub: totalWorkspaceCount === 0,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       totalCount: total,
