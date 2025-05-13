@@ -64,6 +64,7 @@ export class LlmService {
     const timeTaken = Math.round(endTime - startTime);
     
     return {
+      statusCode: 200,
       messages: data || "",
       inputTokens,
       outputTokens,
@@ -170,6 +171,7 @@ export class LlmService {
 
             client.send(
               JSON.stringify({
+                statusCode: 200,
                 messages: "",
                 stream_status: "end",
                 inputTokens: event.usage.prompt_tokens,
