@@ -15,7 +15,7 @@ export class InstrumentService {
         dsn: sentryDsn,
         environment: sentryEnvironment,
         beforeSend: (event) => {
-          return event;
+            return event;
         },
         // Setting this option to true will send default PII data to Sentry.
         sendDefaultPii: true,
