@@ -21,7 +21,7 @@ import { ApiResponseService } from "@src/modules/common/services/api-response.se
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { RolesGuard } from "@src/modules/common/guards/roles.guard";
 import { Roles } from "@src/modules/common/decorators/roles.decorators";
-@Controller("admin")
+@Controller("api/admin")
 @ApiTags("admin hubs")
 @ApiBearerAuth()
 export class AdminHubsController {
@@ -38,9 +38,6 @@ export class AdminHubsController {
       throw new UnauthorizedException("User ID missing from token");
     }
 
-    if (!userId) {
-      throw new UnauthorizedException("User ID missing from token");
-    }
     const data = await this.hubsService.getHubsForUser(userId);
 
     const responseData = new ApiResponseService(

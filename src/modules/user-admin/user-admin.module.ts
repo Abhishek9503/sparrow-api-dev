@@ -32,14 +32,7 @@ import { JwtService } from "@nestjs/jwt";
     AdminAuthRepository,
     AdminAuthService,
   ],
-  exports: [
-    AdminHubsService,
-    AdminHubsRepository,
-    AdminWorkspaceService,
-    AdminWorkspaceRepository,
-    AdminAuthRepository,
-    AdminAuthService,
-  ],
+  exports: [],
   controllers: [
     AdminHubsController,
     AdminWorkspaceController,

@@ -33,7 +33,7 @@ export interface RefreshTokenRequest {
   };
 }
 
-@Controller("admin/api/auth")
+@Controller("api/admin/auth")
 @ApiTags("admin authentication")
 export class AdminAuthController {
   private readonly OAUTH_SIGNUP_DELAY_MS = 5000;

@@ -17,13 +17,25 @@ export class AdminWorkspaceService {
     sort: { sortBy: string; sortOrder: "asc" | "desc" },
     workspaceType?: "PRIVATE" | "PUBLIC",
   ) {
-    const { total, rawData } = await this.workspaceRepo.findPaginatedByHubId(
-      hubId,
-      page,
+    const skip = (page - 1) * limit;
+
+    const query: any = { "team.id": hubId };
+    if (search) {
+      query.name = { $regex: new RegExp(search, "i") };
+    }
+    if (workspaceType) {
+      query.workspaceType = workspaceType;
+    }
+
+    const sortConfig: Record<string, 1 | -1> = {
+      [sort.sortBy]: sort.sortOrder === "asc" ? 1 : -1,
+    };
+
+    const { total, rawData } = await this.workspaceRepo.findPaginated(
+      query,
+      sortConfig,
+      skip,
       limit,
-      search,
-      sort,
-      workspaceType,
     );
 
     const hub = await this.adminHubService.findHubById(hubId);

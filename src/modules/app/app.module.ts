@@ -23,7 +23,7 @@ import {
 import { CustomMetricsMiddleware } from "./middleware/metrics.middleware";
 import { AppRepository } from "./app.repository";
 import { SentryModule } from "@sentry/nestjs/setup";
-import { UserAdminModule } from "../user-admin/usera-admin.module";
+import { UserAdminModule } from "../user-admin/user-admin.module";
 
 @Module({
   imports: [
