@@ -14,6 +14,7 @@ import {
   ApiOperation,
   ApiQuery,
   ApiResponse,
+  ApiExtraModels,
 } from "@nestjs/swagger";
 import { FastifyReply } from "fastify";
 import { ApiResponseService } from "@src/modules/common/services/api-response.service";
@@ -23,8 +24,9 @@ import { Roles } from "@src/modules/common/decorators/roles.decorators";
 import { AdminWorkspaceService } from "../services/user-admin.workspace.service";
 import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
 import { CreateWorkspaceDto } from "@src/modules/workspace/payloads/workspace.payload";
+import { HubWorkspaceQuerySwaggerDto } from "../payloads/workspace.payload";
 
-@Controller("admin")
+@Controller("api/admin")
 @ApiTags("admin workspace")
 @ApiBearerAuth()
 export class AdminWorkspaceController {
@@ -33,27 +35,12 @@ export class AdminWorkspaceController {
     private readonly workspaceService: WorkspaceService,
   ) {}
 
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
   @Get("hub-workspaces")
   @ApiOperation({ summary: "Get paginated workspaces for a hub" })
-  @ApiQuery({ name: "hubId", required: true, type: String })
-  @ApiQuery({ name: "page", required: false, type: String, example: "1" })
-  @ApiQuery({ name: "limit", required: false, type: String, example: "10" })
-  @ApiQuery({ name: "search", required: false, type: String })
-  @ApiQuery({
-    name: "sortBy",
-    required: false,
-    enum: ["name", "workspaceType", "createdAt", "updatedAt"],
-  })
-  @ApiQuery({ name: "sortOrder", required: false, enum: ["asc", "desc"] })
-  @ApiQuery({
-    name: "workspaceType",
-    required: false,
-    enum: ["PRIVATE", "PUBLIC"],
-    description:
-      "Filter workspaces by visibility type. Leave empty to include all.",
-  })
   async getPaginatedHubWorkspaces(
     @Query("hubId") hubId: string,
     @Query("page") page: string = "1",

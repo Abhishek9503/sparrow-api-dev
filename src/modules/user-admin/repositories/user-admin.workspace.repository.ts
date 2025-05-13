@@ -10,33 +10,13 @@ export class AdminWorkspaceRepository {
     return this.db.collection("workspace").findOne({ _id: workspaceObjectId });
   }
 
-  async findPaginatedByHubId(
-    hubId: string,
-    page: number,
-    limit: number,
-    search: string,
-    sort: { sortBy: string; sortOrder: "asc" | "desc" },
-    workspaceType?: "PRIVATE" | "PUBLIC",
-  ) {
-    const skip = (page - 1) * limit;
-
-    const query: any = { "team.id": hubId };
-    if (search) {
-      query.name = { $regex: new RegExp(search, "i") };
-    }
-    if (workspaceType) {
-      query.workspaceType = workspaceType;
-    }
-
-    const sortConfig: Record<string, 1 | -1> = {
-      [sort.sortBy]: sort.sortOrder === "asc" ? 1 : -1,
-    };
-
+  async findPaginated(query: any, sort: any, skip: number, limit: number) {
     const collection = this.db.collection("workspace");
+
     const total = await collection.countDocuments(query);
     const rawData = await collection
       .find(query)
-      .sort(sortConfig)
+      .sort(sort)
       .skip(skip)
       .limit(limit)
       .toArray();
