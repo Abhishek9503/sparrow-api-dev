@@ -20,6 +20,7 @@ import {
 import {
   CreateCollectionDto,
   UpdateCollectionDto,
+  UpdateMockCollectionStatusDto,
 } from "../payloads/collection.payload";
 import { FastifyReply } from "fastify";
 import { CollectionService } from "../services/collection.service";
@@ -177,6 +178,39 @@ export class collectionController {
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  @Patch(":collectionId/workspace/:workspaceId/mock-status")
+  @ApiOperation({
+    summary: "Update Mock Collections State",
+    description: "This will update a mock collection running status",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 200,
+    description: "Mock Collection Updated Successfully",
+  })
+  @ApiResponse({ status: 400, description: "Failed to Update Mock Collection" })
+  async updateMockCollectionState(
+    @Param("collectionId") collectionId: string,
+    @Param("workspaceId") workspaceId: string,
+    @Body() updateCollectionDto: Partial<UpdateMockCollectionStatusDto>,
+    @Res() res: FastifyReply,
+  ) {
+    await this.collectionService.updateMockCollectionRunningStatus(
+      workspaceId,
+      collectionId,
+      updateCollectionDto.isMockCollectionRunning,
+    );
+
+    const collection = await this.collectionService.getCollection(collectionId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
   @Delete(":collectionId/workspace/:workspaceId")
   @ApiOperation({
     summary: "Delete a Collections",

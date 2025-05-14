@@ -834,6 +834,11 @@ export class Collection {
   @IsOptional()
   mockCollectionUrl?: string;
 
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  isMockCollectionRunning?: boolean;
+
   @ApiProperty({
     enum: CollectionAuthModeEnum,
   })
