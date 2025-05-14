@@ -67,13 +67,6 @@ export class HttpController {
     @Req() req: FastifyRequest,
     @Res() res: FastifyReply,
   ) {
-    console.log("Received request:", {
-      url,
-      method,
-      headers,
-      body,
-      contentType,
-    });
     try {
       const response = await this.httpService.makeHttpRequest({
         url,
