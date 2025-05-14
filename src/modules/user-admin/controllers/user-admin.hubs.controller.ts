@@ -7,6 +7,9 @@ import {
   Res,
   Query,
   UnauthorizedException,
+  Post,
+  Body,
+  UseInterceptors,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import { AdminHubsService } from "../services/user-admin.hubs.service";
@@ -15,17 +18,31 @@ import {
   ApiTags,
   ApiOperation,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
+  ApiResponse,
 } from "@nestjs/swagger";
 import { FastifyReply } from "fastify";
 import { ApiResponseService } from "@src/modules/common/services/api-response.service";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { RolesGuard } from "@src/modules/common/guards/roles.guard";
 import { Roles } from "@src/modules/common/decorators/roles.decorators";
+import {
+  FileInterceptor,
+  MemoryStorageFile,
+  UploadedFile,
+} from "@blazity/nest-file-fastify";
+import { CreateOrUpdateTeamDto } from "@src/modules/identity/payloads/team.payload";
+import { TeamService } from "@src/modules/identity/services/team.service";
+
 @Controller("api/admin")
 @ApiTags("admin hubs")
 @ApiBearerAuth()
 export class AdminHubsController {
-  constructor(private readonly hubsService: AdminHubsService) {}
+  constructor(
+    private readonly hubsService: AdminHubsService,
+    private readonly teamService: TeamService,
+  ) {}
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
   @Get("hubs")
@@ -121,6 +138,48 @@ export class AdminHubsController {
       "Hubs list generated",
       HttpStatusCode.OK,
       data,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Post("create-hub")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @ApiOperation({ summary: "Create a new Hub as Admin" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        image: {
+          type: "string",
+          format: "binary",
+        },
+        name: {
+          type: "string",
+        },
+        description: {
+          type: "string",
+        },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor("image"))
+  @ApiResponse({ status: 201, description: "Hub Created Successfully" })
+  @ApiResponse({ status: 400, description: "Create Hub Failed" })
+  async createHub(
+    @Body() createHubDto: CreateOrUpdateTeamDto,
+    @Res() res: FastifyReply,
+    @UploadedFile() image: MemoryStorageFile,
+  ) {
+    const data = await this.teamService.create(createHubDto, image);
+    const hub = await this.teamService.get(data.insertedId.toString());
+
+    const responseData = new ApiResponseService(
+      "Hub Created",
+      HttpStatusCode.CREATED,
+      hub,
     );
 
     return res.status(responseData.httpStatusCode).send(responseData);

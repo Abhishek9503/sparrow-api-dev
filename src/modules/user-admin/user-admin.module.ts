@@ -15,6 +15,7 @@ import { AdminAuthController } from "./controllers/user-admin.auth.controller";
 import { AdminAuthRepository } from "./repositories/user-admin.auth.repository";
 import { AdminAuthService } from "./services/user-admin.auth.service";
 import { JwtService } from "@nestjs/jwt";
+import { TeamService } from "../identity/services/team.service";
 
 /**
  * Admin Module provides all necessary services, handlers, repositories,
@@ -31,6 +32,7 @@ import { JwtService } from "@nestjs/jwt";
     AdminWorkspaceRepository,
     AdminAuthRepository,
     AdminAuthService,
+    TeamService,
   ],
   exports: [],
   controllers: [

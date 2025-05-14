@@ -94,7 +94,23 @@ export class CollectionService {
     const mockUrl = `${baseUrl}/api/mock/${id}`;
     const data = await this.collectionRepository.updateCollection(id, {
       mockCollectionUrl: mockUrl,
+      isMockCollectionRunning: false,
     });
+    return data;
+  }
+
+  async updateMockCollectionRunningStatus(
+    workspaceId: string,
+    collectionId: string,
+    status: boolean,
+  ): Promise<UpdateResult<Collection>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(workspaceId);
+    const data = await this.collectionRepository.updateCollection(
+      collectionId,
+      {
+        isMockCollectionRunning: status,
+      },
+    );
     return data;
   }
 
