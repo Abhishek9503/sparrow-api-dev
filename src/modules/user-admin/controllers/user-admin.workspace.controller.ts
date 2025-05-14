@@ -118,4 +118,62 @@ export class AdminWorkspaceController {
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Get("workspace-details")
+  @ApiOperation({ summary: "Get paginated workspaces for a hub" })
+  async getPaginatedWorkspaceDetails(
+    @Query("workspaceId") workspaceId: string,
+    @Query("tab")
+    tab: "resources" | "members" = "resources",
+    @Query("page")
+    page: string = "1",
+    @Query("limit") limit: string = "10",
+    @Query("search") search = "",
+    @Query("resources")
+    resources: "collections" | "testflows" | "environments" | "all" = "all",
+    @Query("sortBy")
+    sortBy: "resources" | "createdBy" | "updatedAt" = "updatedAt",
+    @Query("sortOrder") sortOrder: "asc" | "desc" = "desc",
+    @Res() res: FastifyReply,
+  ) {
+    const pageNumber = parseInt(page, 10) || 1;
+    const limitNumber = parseInt(limit, 10);
+    const data = await this.adminWorkspaceService.getPaginatedWorkspaceDetails(
+      workspaceId,
+      tab,
+      pageNumber,
+      limitNumber,
+      search,
+      resources,
+      { sortBy, sortOrder },
+    );
+    const responseData = new ApiResponseService(
+      "Collections Fetched",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Get("workspace-summary")
+  @ApiOperation({ summary: "Get paginated workspaces for a hub" })
+  async getWorkspaceSummary(
+    @Query("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data =
+      await this.adminWorkspaceService.getWorkspaceSummary(workspaceId);
+    const responseData = new ApiResponseService(
+      "WorkSpaceSummary Fetched",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }
