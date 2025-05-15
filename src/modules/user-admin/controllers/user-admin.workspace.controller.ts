@@ -62,6 +62,7 @@ export class AdminWorkspaceController {
     @Query("sortOrder") sortOrder: "asc" | "desc" = "desc",
     @Query("workspaceType") workspaceType: "PRIVATE" | "PUBLIC" | undefined,
     @Res() res: FastifyReply,
+    @Req() req: any,
   ) {
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
@@ -77,6 +78,8 @@ export class AdminWorkspaceController {
       ? sortOrder
       : "desc";
 
+    const userId = req.user._id;
+
     const data = await this.adminWorkspaceService.getPaginatedHubWorkspaces(
       hubId,
       parsedPage,
@@ -84,6 +87,7 @@ export class AdminWorkspaceController {
       search,
       { sortBy: validatedSortBy, sortOrder: validatedSortOrder },
       workspaceType,
+      userId,
     );
 
     const responseData = new ApiResponseService(

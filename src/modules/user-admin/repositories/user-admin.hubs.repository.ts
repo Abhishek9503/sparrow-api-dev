@@ -74,10 +74,19 @@ export class AdminHubsRepository {
 
   async findBasicTeamsByUserId(userId: string) {
     const userObjectId = new ObjectId(userId);
+    const userIdStr = userId.toString();
     const teams = await this.db
       .collection("team")
-      .find({ "users.id": userObjectId })
-
+      .find({
+        users: {
+          $elemMatch: {
+            $or: [
+              { id: userObjectId }, // case where id is stored as ObjectId
+              { id: userIdStr }, // case where id is stored as string
+            ],
+          },
+        },
+      })
       .toArray();
 
     return teams;
