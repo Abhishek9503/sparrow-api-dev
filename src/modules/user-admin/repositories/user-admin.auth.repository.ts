@@ -20,6 +20,36 @@ export class AdminAuthRepository {
     );
   }
 
+  async verifyRefreshToken(
+    userId: ObjectId,
+    hashedToken: string,
+  ): Promise<boolean> {
+    const user = await this.db.collection("user").findOne({
+      _id: userId,
+      admin_refresh_tokens: hashedToken,
+    });
+
+    return !!user;
+  }
+
+  /**
+   * Update refresh token (replace old with new)
+   */
+  async updateRefreshToken(
+    userId: ObjectId,
+    oldToken: string,
+    newToken: string,
+  ): Promise<any> {
+    return this.db.collection("user").updateOne(
+      { _id: userId, refresh_tokens: oldToken },
+      {
+        $set: {
+          "admin_refresh_tokens.$": newToken,
+        },
+      },
+    );
+  }
+
   async findUserById(_id: ObjectId): Promise<any> {
     const user = await this.db.collection(Collections.USER).findOne({ _id });
     if (!user) {

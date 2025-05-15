@@ -4,6 +4,9 @@ import {
   Res,
   Query,
   BadRequestException,
+  Post,
+  Body,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { FastifyReply } from "fastify";
 import { ApiResponseService } from "@src/modules/common/services/api-response.service";
@@ -53,5 +56,51 @@ export class AdminAuthController {
     );
 
     return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Post("refresh-token")
+  @ApiOperation({
+    summary: "Refresh access token",
+    description: "Generate a new access token using a valid refresh token",
+  })
+  @ApiResponse({ status: 200, description: "Token refreshed successfully" })
+  @ApiResponse({ status: 401, description: "Invalid or expired refresh token" })
+  async refreshToken(
+    @Body() refreshTokenDto: { refreshToken: string },
+    @Res() res: FastifyReply,
+  ) {
+    try {
+      if (!refreshTokenDto.refreshToken) {
+        throw new BadRequestException("Refresh token is required");
+      }
+
+      const tokens = await this.adminAuthService.refreshAccessToken(
+        refreshTokenDto.refreshToken,
+      );
+
+      const responseData = new ApiResponseService(
+        "Token refreshed successfully",
+        HttpStatusCode.OK,
+        {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        },
+      );
+
+      return res.status(responseData.httpStatusCode).send(responseData);
+    } catch (error) {
+      const statusCode =
+        error instanceof UnauthorizedException
+          ? HttpStatusCode.UNAUTHORIZED
+          : HttpStatusCode.BAD_REQUEST;
+
+      const responseData = new ApiResponseService(
+        error.message || "Token refresh failed",
+        statusCode,
+        null,
+      );
+
+      return res.status(responseData.httpStatusCode).send(responseData);
+    }
   }
 }
