@@ -198,7 +198,6 @@ export class AdminWorkspaceController {
   @ApiOperation({ summary: "Delete a Workspace " })
   async deleteWorkspace(
     @Query("workspaceId") workspaceId: string,
-    @Query("hubId") hubId: string,
     @Res() res: FastifyReply,
   ) {
     const data = await this.workspaceService.delete(workspaceId);
@@ -217,7 +216,6 @@ export class AdminWorkspaceController {
   @ApiOperation({ summary: "Edit a Workspace " })
   async editWorkspace(
     @Query("workspaceId") workspaceId: string,
-    @Query("hubId") hubId: string,
     @Body() updateWorkspaceDto: Partial<UpdateWorkspaceDto>,
     @Res() res: FastifyReply,
   ) {
@@ -239,7 +237,6 @@ export class AdminWorkspaceController {
   @ApiOperation({ summary: "Changing a WorkspaceType " })
   async updateWorkspaceType(
     @Query("workspaceId") workspaceId: string,
-    @Query("hubId") hubId: string,
     @Body() payload: UpdateWorkspaceTypeDto,
     @Res() res: FastifyReply,
   ) {
@@ -263,7 +260,6 @@ export class AdminWorkspaceController {
   @ApiOperation({ summary: "Invite Collaborartors" })
   async addUSerWorkspace(
     @Query("workspaceId") workspaceId: string,
-    @Query("hubId") hubId: string,
     @Body() payload: AddWorkspaceUserDto,
     @Res() res: FastifyReply,
   ) {
