@@ -50,7 +50,6 @@ import { AiAssistantService } from "./services/ai-assistant.service";
 import { ChatbotStatsService } from "./services/chatbot-stats.service";
 import { TestflowService } from "./services/testflow.service";
 import { TeamUserService } from "../identity/services/team-user.service";
-import { LlmService } from "./services/ai-llm.service";
 
 // ---- Gateway
 import {
@@ -106,8 +105,7 @@ import { MockServerController } from "./controllers/mock-server.controller";
     AiLogHandler,
     AiLogService,
     AiLogRepository,
-    ConsumerService,
-    LlmService
+    ConsumerService
   ],
   exports: [
     CollectionService,
