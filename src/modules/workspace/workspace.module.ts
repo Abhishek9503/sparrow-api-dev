@@ -105,7 +105,7 @@ import { MockServerController } from "./controllers/mock-server.controller";
     AiLogHandler,
     AiLogService,
     AiLogRepository,
-    ConsumerService
+    ConsumerService,
   ],
   exports: [
     CollectionService,
@@ -137,7 +137,6 @@ import { MockServerController } from "./controllers/mock-server.controller";
     ChatbotStatsController,
     TestflowController,
     MockServerController,
-
   ],
 })
 export class WorkspaceModule {}
