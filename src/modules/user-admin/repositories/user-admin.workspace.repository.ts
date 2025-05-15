@@ -30,18 +30,23 @@ export class AdminWorkspaceRepository {
   async getTotalWorkspaceCount(query: any): Promise<number> {
     return await this.db.collection("workspace").countDocuments(query);
   }
-  async getFilteredCollectionsByIds(
-    ids: string[] = [],
-    search: string,
-    page: number,
-    limit: number,
-    sort: { sortBy: string; sortOrder: "asc" | "desc" },
-  ): Promise<Collection[]> {
+  async getFilteredCollectionsByIds({
+    ids = [],
+    search = "",
+    page,
+    limit,
+    sort = { sortBy: "updatedAt", sortOrder: "desc" },
+  }: {
+    ids?: string[];
+    search?: string;
+    page?: number;
+    limit?: number;
+    sort?: { sortBy: string; sortOrder: "asc" | "desc" };
+  }): Promise<{ collections: Collection[]; totalCount: number }> {
     const objectIds = ids.map((id) => new ObjectId(id));
-    const skip = (page - 1) * limit;
     const searchRegex = new RegExp(search, "i");
 
-    const allowedSortFields = ["name", "createdAt", "updatedAt"];
+    const allowedSortFields = ["name", "createdBy", "updatedAt"];
     const sortBy = allowedSortFields.includes(sort.sortBy)
       ? sort.sortBy
       : "updatedAt";
@@ -52,93 +57,109 @@ export class AdminWorkspaceRepository {
       name: { $regex: searchRegex },
     };
 
-    const collections = await this.db
-      .collection<Collection>(Collections.COLLECTION)
-      .find(query)
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
+    const collectionRef = this.db.collection<Collection>(
+      Collections.COLLECTION,
+    );
 
-    return collections;
+    const totalCount = await collectionRef.countDocuments(query);
+
+    let cursor = collectionRef.find(query).sort({ [sortBy]: sortOrder });
+
+    if (page !== undefined && limit !== undefined) {
+      const skip = (page - 1) * limit;
+      cursor = cursor.skip(skip).limit(limit);
+    }
+
+    const collections = await cursor.toArray();
+
+    return { collections, totalCount };
   }
-  async getFiteredTestFlowsById(
-    ids: string[] = [],
-    search: string,
-    page: number,
-    limit: number,
-    sort: { sortBy: string; sortOrder: "asc" | "desc" },
-  ): Promise<any[]> {
-    const objectIds = ids.map((id) => new ObjectId(id));
-    const skip = (page - 1) * limit;
 
-    const allowedSortFields = ["name", "createdAt", "updatedAt"];
+  async getFilteredTestFlowsById({
+    ids = [],
+    search = "",
+    page,
+    limit,
+    sort = { sortBy: "updatedAt", sortOrder: "desc" },
+  }: {
+    ids?: string[];
+    search?: string;
+    page?: number;
+    limit?: number;
+    sort?: { sortBy: string; sortOrder: "asc" | "desc" };
+  }): Promise<{ testflows: any[]; totalCount: number }> {
+    const objectIds = ids.map((id) => new ObjectId(id));
+    const allowedSortFields = ["name", "createdBy", "updatedAt"];
     const sortBy = allowedSortFields.includes(sort.sortBy)
       ? sort.sortBy
       : "updatedAt";
     const sortOrder = sort.sortOrder === "asc" ? 1 : -1;
 
-    const testflows = await this.db
-      .collection<any>(Collections.TESTFLOW)
-      .aggregate([
-        {
-          $match: {
-            _id: { $in: objectIds },
-            name: { $regex: search, $options: "i" },
-          },
-        },
-        {
-          $addFields: {
-            updatedByObjId: { $toObjectId: "$updatedBy" },
-          },
-        },
-        {
-          $sort: {
-            [sortBy]: sortOrder,
-          },
-        },
-        {
-          $skip: skip,
-        },
-        {
-          $limit: limit,
-        },
-        {
-          $lookup: {
-            from: "user",
-            localField: "updatedByObjId",
-            foreignField: "_id",
-            as: "updatedByUser",
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            updatedAt: 1,
-            updatedBy: 1,
-            nodes: 1,
-            updatedByUser: 1,
-          },
-        },
-      ])
-      .toArray();
+    const matchStage = {
+      _id: { $in: objectIds },
+      name: { $regex: new RegExp(search, "i") },
+    };
 
-    return testflows;
+    const collection = this.db.collection<any>(Collections.TESTFLOW);
+
+    // Fetch total count
+    const totalCount = await collection.countDocuments(matchStage);
+
+    // Build aggregation pipeline
+    const pipeline: any[] = [
+      { $match: matchStage },
+      { $addFields: { createdByObjId: { $toObjectId: "$createdBy" } } },
+      { $sort: { [sortBy]: sortOrder } },
+    ];
+
+    if (page !== undefined && limit !== undefined) {
+      const skip = (page - 1) * limit;
+      pipeline.push({ $skip: skip }, { $limit: limit });
+    }
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: "user",
+          localField: "createdByObjId",
+          foreignField: "_id",
+          as: "createdByUser",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          updatedAt: 1,
+          updatedBy: 1,
+          nodes: 1,
+          createdByUser: 1,
+        },
+      },
+    );
+
+    const testflows = await collection.aggregate(pipeline).toArray();
+
+    return { testflows, totalCount };
   }
 
-  async getFilteredEnvironmentsById(
-    ids: string[] = [],
-    search: string,
-    page: number,
-    limit: number,
-    sort: { sortBy: string; sortOrder: "asc" | "desc" },
-  ): Promise<Environment[]> {
+  async getFilteredEnvironmentsById({
+    ids = [],
+    search = "",
+    page,
+    limit,
+    sort = { sortBy: "updatedAt", sortOrder: "desc" },
+  }: {
+    ids?: string[];
+    search?: string;
+    page?: number;
+    limit?: number;
+    sort?: { sortBy: string; sortOrder: "asc" | "desc" };
+  }): Promise<{ environments: Environment[]; totalCount: number }> {
     const objectIds = ids.map((id) => new ObjectId(id));
-    const skip = (page - 1) * limit;
     const searchRegex = new RegExp(search, "i");
 
-    const allowedSortFields = ["name", "createdAt", "updatedAt"];
+    const allowedSortFields = ["name", "createdBy", "updatedAt"];
     const sortBy = allowedSortFields.includes(sort.sortBy)
       ? sort.sortBy
       : "updatedAt";
@@ -149,14 +170,19 @@ export class AdminWorkspaceRepository {
       name: { $regex: searchRegex },
     };
 
-    const environments = await this.db
-      .collection<Environment>(Collections.ENVIRONMENT)
-      .find(query)
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
+    const collection = this.db.collection<Environment>(Collections.ENVIRONMENT);
 
-    return environments;
+    const totalCount = await collection.countDocuments(query);
+
+    let cursor = collection.find(query).sort({ [sortBy]: sortOrder });
+
+    if (page !== undefined && limit !== undefined) {
+      const skip = (page - 1) * limit;
+      cursor = cursor.skip(skip).limit(limit);
+    }
+
+    const environments = await cursor.toArray();
+
+    return { environments, totalCount };
   }
 }

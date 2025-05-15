@@ -80,93 +80,199 @@ export class AdminWorkspaceService {
     const workspace = await this.workspaceRepository.get(workspaceId);
 
     if (tab === "resources") {
-      const resources = [];
+      if (resource === "all") {
+        const allResources = [];
 
-      // Only fetch collections if resource is 'collections' or 'all'
-      if (resource === "collections" || resource === "all") {
+        //  Collections
         const collectionIds =
-          workspace.collection?.map((c) => new ObjectId(c?.id)) || [];
+          workspace?.collection?.map((c) => new ObjectId(c?.id)) || [];
         if (collectionIds.length > 0) {
-          const collections =
-            await this.workspaceRepo?.getFilteredCollectionsByIds(
-              collectionIds.map((id) => id?.toString()),
+          const { collections } =
+            await this.workspaceRepo.getFilteredCollectionsByIds({
+              ids: collectionIds.map((id) => id.toString()),
               search,
-              page,
-              limit,
-              sort,
-            );
+              sort: sort,
+            });
 
-          const mappedCollections = collections.map((items) => ({
+          const mappedCollections = collections.map((item) => ({
             resourceType: "collection",
-            keyStats: items?.items?.length,
-            name: items?.name,
-            updatedAt: items?.updatedAt,
-            updatedBy: items?.updatedBy?.name,
+            keyStats: item?.items?.length,
+            name: item?.name,
+            updatedAt: item?.updatedAt,
+            createdBy: item?.createdBy,
           }));
 
-          resources.push(...mappedCollections);
+          allResources.push(...mappedCollections);
         }
-      }
 
-      // Only fetch testflows if resource is 'testflows' or 'all'
-      if (resource === "testflows" || resource === "all") {
+        //  Testflows
         const testflowsId =
           workspace?.testflows?.map((c) => new ObjectId(c?.id)) || [];
         if (testflowsId.length > 0) {
-          const testflows = await this.workspaceRepo?.getFiteredTestFlowsById(
-            testflowsId.map((id) => id?.toString()),
-            search,
-            page,
-            limit,
-            sort,
-          );
-          const mappedTestflows = testflows.map((items) => ({
+          const { testflows } =
+            await this.workspaceRepo.getFilteredTestFlowsById({
+              ids: testflowsId.map((id) => id.toString()),
+              search,
+              sort: sort,
+            });
+
+          const mappedTestflows = testflows.map((item) => ({
             resourceType: "testflow",
-            name: items?.name,
-            keyStats: items?.nodes?.length,
-            updatedAt: items?.updatedAt,
-            updatedBy: items?.updatedByUser[0]?.name,
+            keyStats: item?.nodes?.length,
+            name: item?.name,
+            updatedAt: item?.updatedAt,
+            createdBy: item?.createdByUser?.[0]?.name,
           }));
 
-          resources.push(...mappedTestflows);
+          allResources.push(...mappedTestflows);
         }
-      }
 
-      // Only fetch environments if resource is 'environments' or 'all'
-      if (resource === "environments" || resource === "all") {
+        // Environments
         const environmentsId =
           workspace?.environments?.map((c) => new ObjectId(c?.id)) || [];
         if (environmentsId.length > 0) {
-          const environments =
-            await this.workspaceRepo.getFilteredEnvironmentsById(
-              environmentsId.map((id) => id.toString()),
+          const { environments } =
+            await this.workspaceRepo.getFilteredEnvironmentsById({
+              ids: environmentsId.map((id) => id.toString()),
               search,
-              page,
-              limit,
-              sort,
-            );
+              sort: sort,
+            });
 
-          const mappedEnvironments = environments.map((items) => ({
+          const mappedEnvironments = environments.map((item) => ({
             resourceType: "environment",
-            keyStats: items?.variable?.length,
-            updatedAt: items?.updatedAt,
-            updatedBy: items?.updatedBy,
-            name: items?.name,
+            keyStats: item?.variable?.length,
+            name: item?.name,
+            updatedAt: item?.updatedAt,
+            createdBy: item?.createdBy,
           }));
 
-          resources.push(...mappedEnvironments);
+          allResources.push(...mappedEnvironments);
+        }
+
+        //  Manual Sort
+        if (sort.sortBy === "resources") {
+          allResources.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sort.sortBy === "createdBy") {
+          allResources.sort((a, b) => {
+            const aBy = a.createdBy?.toLowerCase?.() || "";
+            const bBy = b.createdBy?.toLowerCase?.() || "";
+            return aBy.localeCompare(bBy);
+          });
+        } else {
+          allResources.sort((a, b) => {
+            const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+            const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+            return dateB - dateA;
+          });
+        }
+
+        //  Manual Pagination
+        const totalCount = allResources.length;
+        const start = (page - 1) * limit;
+        const paginatedResources = allResources.slice(start, start + limit);
+
+        return { resources: paginatedResources, totalCount };
+      }
+
+      // Fetch individual resource types (collections / testflows / environments)
+      if (resource === "collections") {
+        const collectionIds =
+          workspace?.collection?.map((c) => new ObjectId(c?.id)) || [];
+        if (collectionIds.length > 0) {
+          const { collections, totalCount } =
+            await this.workspaceRepo.getFilteredCollectionsByIds({
+              ids: collectionIds.map((id) => id.toString()),
+              search,
+              sort: sort,
+              page,
+              limit,
+            });
+
+          const mappedCollections = collections.map((item) => ({
+            resourceType: "collection",
+            keyStats: item?.items?.length,
+            name: item?.name,
+            updatedAt: item?.updatedAt,
+            cretaedBy: item?.createdBy,
+          }));
+
+          return { resources: mappedCollections, totalCount };
         }
       }
 
-      return resources;
+      if (resource === "testflows") {
+        const testflowsId =
+          workspace?.testflows?.map((c) => new ObjectId(c?.id)) || [];
+        if (testflowsId.length > 0) {
+          const { testflows, totalCount } =
+            await this.workspaceRepo.getFilteredTestFlowsById({
+              ids: testflowsId.map((id) => id.toString()),
+              search,
+              sort: sort,
+              page,
+              limit,
+            });
+
+          const mappedTestflows = testflows.map((item) => ({
+            resourceType: "testflow",
+            keyStats: item?.nodes?.length,
+            name: item?.name,
+            updatedAt: item?.updatedAt,
+            updatedBy: item?.updatedByUser?.[0]?.name,
+          }));
+
+          return { resources: mappedTestflows, totalCount };
+        }
+      }
+
+      if (resource === "environments") {
+        const environmentsId =
+          workspace?.environments?.map((c) => new ObjectId(c?.id)) || [];
+        if (environmentsId.length > 0) {
+          const { environments, totalCount } =
+            await this.workspaceRepo.getFilteredEnvironmentsById({
+              ids: environmentsId.map((id) => id.toString()),
+              search,
+              sort: sort,
+              page,
+              limit,
+            });
+
+          const mappedEnvironments = environments.map((item) => ({
+            resourceType: "environment",
+            keyStats: item?.variable?.length,
+            name: item?.name,
+            updatedAt: item?.updatedAt,
+            createdBy: item?.createdBy,
+          }));
+
+          return { resources: mappedEnvironments, totalCount };
+        }
+      }
+
+      return { resources: [], totalCount: 0 };
     } else {
-      const users = workspace?.users?.map((item) => ({
+      const filteredUsers = workspace?.users?.filter((item) =>
+        item?.name?.toLowerCase().includes(search),
+      );
+
+      const totalCount = filteredUsers?.length || 0;
+
+      // Paginate
+      const startIndex = (page - 1) * limit;
+      const paginatedUsers = filteredUsers?.slice(
+        startIndex,
+        startIndex + limit,
+      );
+
+      const users = paginatedUsers?.map((item) => ({
         user: item?.name,
         _id: item?.id,
         role: item?.role,
         email: item?.email,
       }));
-      const data = { users };
+
+      const data = { users, totalCount };
       return data;
     }
   }
