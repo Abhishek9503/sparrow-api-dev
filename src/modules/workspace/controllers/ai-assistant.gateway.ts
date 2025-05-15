@@ -8,6 +8,7 @@ import {
 import { Server as WebSocketServerType, WebSocket } from 'ws';
 import { AiAssistantService } from '../services/ai-assistant.service';
 import { LlmService } from "../services/ai-llm.service";
+import { AiService } from '@src/modules/common/enum/ai-services.enum';
 
 @WebSocketGateway({ path: '/ai-assistant', cors: true })
 export class AiAssistantGateway
@@ -43,9 +44,9 @@ export class AiAssistantGateway
       );
 
       // Call appropriate service based on the "mode" header
-      if (mode === 'sparrow-ai') {
+      if (mode === AiService.SparrowAI) {
         this.aiAssistantService.generateTextChatBot(client);
-      } else if (mode === 'llm-evaluation') {
+      } else if (mode === AiService.LlmEvaluation) {
         this.llmService.aiLlmService(client);
       } else {
         client.send(JSON.stringify({ event: 'error', message: 'Invalid mode header' }));

@@ -11,6 +11,10 @@ import { OpenAI } from "openai";
 // ---- Payload
 import { LlmPayload } from "../payloads/ai-llm.payload";
 
+
+// ---- Enums
+import { Models , ClaudeModelVersion , GoogleModelVersion , OpenAIModelVersion , DeepSeepModelVersion} from "@src/modules/common/enum/ai-services.enum";
+
 /**
  * Service for managing LLM interactions with OpenAI API.
  */
@@ -102,7 +106,7 @@ export class LlmService {
 
     try {
       // For GPT-o1 and GPT-o1 Mini models, the response is generated without streaming and with limited parameters
-      if (modelVersion === "gpt-o1" || modelVersion === "gpt-o1-mini") {
+      if (modelVersion === OpenAIModelVersion.GPT_o1 || modelVersion === OpenAIModelVersion.GPT_o1_Mini) {
         const response = await OpenAIclient.chat.completions.create({
           model: modelVersion,
           messages: messages,
@@ -267,7 +271,7 @@ export class LlmService {
         } = parsedData;
 
         // Only support OpenAI model currently
-        if (model === "openai") {
+        if (model === Models.OpenAI) {
           // Create OpenAI client
           const OpenAIclient = await this.createOpenAIClient(client, authKey);
           

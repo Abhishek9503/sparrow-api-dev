@@ -38,6 +38,7 @@ import { UserService } from "../../identity/services/user.service";
 // ---- Enums
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { parseWhitelistedEmailList } from "@src/modules/common/util/email.parser.util";
+import { Models } from "@src/modules/common/enum/ai-services.enum";
 
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
@@ -761,11 +762,11 @@ export class AiAssistantService {
         const conversation = parsedData.conversation || "";
         const activity = parsedData.activity || "chat";
 
-        if (model === "gpt") {
+        if (model === Models.GPT) {
           await this.handleGptModelInteraction(client, emailId, text, apiData, tabId, threadId, model, activity);
           continue;
         }
-        else if (model === "deepseek") {
+        else if (model === Models.DeepSeek) {
           await this.handleDeepseekModelInteraction(client, emailId, text, apiData, tabId, conversation, model, activity);
           continue;
         }
