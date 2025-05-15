@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { AdminWorkspaceRepository } from "../repositories/user-admin.workspace.repository";
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
+import { ObjectId } from "mongodb";
 
 @Injectable()
 export class AdminWorkspaceService {
@@ -16,6 +17,7 @@ export class AdminWorkspaceService {
     search: string,
     sort: { sortBy: string; sortOrder: "asc" | "desc" },
     workspaceType?: "PRIVATE" | "PUBLIC",
+    userId?: string,
   ) {
     const skip = (page - 1) * limit;
 
@@ -34,6 +36,15 @@ export class AdminWorkspaceService {
     const sortConfig: Record<string, 1 | -1> = {
       [sort.sortBy]: sort.sortOrder === "asc" ? 1 : -1,
     };
+    if (userId) {
+      const userObjectId = new ObjectId(userId);
+      const userIdString = userId.toString();
+      query.users = {
+        $elemMatch: {
+          $or: [{ id: userObjectId }, { id: userIdString }],
+        },
+      };
+    }
 
     const { total, rawData } = await this.workspaceRepo.findPaginated(
       query,
