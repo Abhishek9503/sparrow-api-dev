@@ -831,9 +831,11 @@ export class AiAssistantService {
           const stream = await OpenAIclient.chat.completions.create({
             model: modelVersion,
             messages: messages,
-            temperature: temperature,
-            presence_penalty: presencePenalty,
-            frequency_penalty: frequencePenalty,
+            ...(modelVersion !== OpenAIModelVersion.GPT_o3_Mini && {
+              temperature: temperature,
+              presence_penalty: presencePenalty,
+              frequency_penalty: frequencePenalty,
+            }),
             ...(maxTokens > 1 && { max_tokens: maxTokens }),
             ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
             stream: true,
