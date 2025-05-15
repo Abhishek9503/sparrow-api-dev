@@ -6,6 +6,9 @@ import {
   Res,
   Query,
   Body,
+  Delete,
+  Put,
+  Patch,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import {
@@ -23,8 +26,13 @@ import { RolesGuard } from "@src/modules/common/guards/roles.guard";
 import { Roles } from "@src/modules/common/decorators/roles.decorators";
 import { AdminWorkspaceService } from "../services/user-admin.workspace.service";
 import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
-import { CreateWorkspaceDto } from "@src/modules/workspace/payloads/workspace.payload";
+import {
+  CreateWorkspaceDto,
+  UpdateWorkspaceDto,
+  UpdateWorkspaceTypeDto,
+} from "@src/modules/workspace/payloads/workspace.payload";
 import { HubWorkspaceQuerySwaggerDto } from "../payloads/workspace.payload";
+import { AddWorkspaceUserDto } from "@src/modules/workspace/payloads/workspaceUser.payload";
 
 @Controller("api/admin")
 @ApiTags("admin workspace")
@@ -123,7 +131,7 @@ export class AdminWorkspaceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
   @Get("workspace-details")
-  @ApiOperation({ summary: "Get paginated workspaces for a hub" })
+  @ApiOperation({ summary: "Get paginated resources for workspace" })
   async getPaginatedWorkspaceDetails(
     @Query("workspaceId") workspaceId: string,
     @Query("tab")
@@ -162,18 +170,115 @@ export class AdminWorkspaceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
   @Get("workspace-summary")
-  @ApiOperation({ summary: "Get paginated workspaces for a hub" })
+  @ApiOperation({ summary: "Get workspace summary" })
   async getWorkspaceSummary(
     @Query("workspaceId") workspaceId: string,
+    @Query("hubId") hubId: string,
     @Res() res: FastifyReply,
   ) {
-    const data =
-      await this.adminWorkspaceService.getWorkspaceSummary(workspaceId);
+    const data = await this.adminWorkspaceService.getWorkspaceSummary(
+      workspaceId,
+      hubId,
+    );
     const responseData = new ApiResponseService(
       "WorkSpaceSummary Fetched",
       HttpStatusCode.OK,
       data,
     );
     return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Delete("workspace-details")
+  @ApiOperation({ summary: "Delete a Workspace " })
+  async deleteWorkspace(
+    @Query("workspaceId") workspaceId: string,
+    @Query("hubId") hubId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.workspaceService.delete(workspaceId);
+    const responseData = new ApiResponseService(
+      "Workspace Deleted",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Put("workspace-details")
+  @ApiOperation({ summary: "Edit a Workspace " })
+  async editWorkspace(
+    @Query("workspaceId") workspaceId: string,
+    @Query("hubId") hubId: string,
+    @Body() updateWorkspaceDto: Partial<UpdateWorkspaceDto>,
+    @Res() res: FastifyReply,
+  ) {
+    await this.workspaceService.update(workspaceId, updateWorkspaceDto);
+
+    const workspace = await this.workspaceService.get(workspaceId);
+    const responseData = new ApiResponseService(
+      "Workspace Updated",
+      HttpStatusCode.OK,
+      workspace,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Patch("workspace-details")
+  @ApiOperation({ summary: "Changing a WorkspaceType " })
+  async updateWorkspaceType(
+    @Query("workspaceId") workspaceId: string,
+    @Query("hubId") hubId: string,
+    @Body() payload: UpdateWorkspaceTypeDto,
+    @Res() res: FastifyReply,
+  ) {
+    await this.workspaceService.updateWorkspaceType(
+      workspaceId,
+      payload.workspaceType,
+    );
+    const workspace = await this.workspaceService.get(workspaceId);
+    const responseData = new ApiResponseService(
+      "Workspace Type Updated",
+      HttpStatusCode.OK,
+      workspace,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Post("workspace-details")
+  @ApiOperation({ summary: "Invite Collaborartors" })
+  async addUSerWorkspace(
+    @Query("workspaceId") workspaceId: string,
+    @Query("hubId") hubId: string,
+    @Body() payload: AddWorkspaceUserDto,
+    @Res() res: FastifyReply,
+  ) {
+    const params = {
+      users: payload.users,
+      role: payload.role,
+    };
+    const response = await this.workspaceService.addUserInWorkspace(params);
+    const workspace = await this.workspaceService.get(workspaceId);
+    const data = {
+      ...workspace,
+      ...response,
+    };
+    const responseData = new ApiResponseService(
+      "User Added",
+      HttpStatusCode.OK,
+      data,
+    );
+    res.status(responseData.httpStatusCode).send(responseData);
   }
 }

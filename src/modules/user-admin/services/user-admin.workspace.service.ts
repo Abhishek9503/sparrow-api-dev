@@ -3,6 +3,7 @@ import { AdminWorkspaceRepository } from "../repositories/user-admin.workspace.r
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
 import { WorkspaceRepository } from "@src/modules/workspace/repositories/workspace.repository";
 import { ObjectId } from "mongodb";
+import { WorkspaceType } from "@src/modules/common/models/workspace.model";
 
 @Injectable()
 export class AdminWorkspaceService {
@@ -122,6 +123,7 @@ export class AdminWorkspaceService {
             name: item?.name,
             updatedAt: item?.updatedAt,
             createdBy: item?.createdByUser?.[0]?.name,
+            id: item._id,
           }));
 
           allResources.push(...mappedTestflows);
@@ -276,17 +278,25 @@ export class AdminWorkspaceService {
       return data;
     }
   }
-  async getWorkspaceSummary(workspaceId: string) {
+  async getWorkspaceSummary(workspaceId: string, hubId: string) {
     const workspace = await this.workspaceRepository.get(workspaceId);
-
+    const hub = await this.adminHubService.findHubById(hubId);
     const workspace_summary = {
-      collections: workspace?.collection.length,
-      contributors: workspace.users.filter((user) => user.role !== "viewer")
-        .length,
-      testFlows: workspace.testflows.length,
-      environments: workspace.environments.length,
+      totalCollections: workspace?.collection?.length ?? 0,
+      totalContributors:
+        workspace?.users?.filter((user) => user.role !== "viewer")?.length ?? 0,
+      totalTestFLows: workspace?.testflows?.length ?? 0,
+      totalEnvironments: workspace?.environments?.length ?? 0,
+      title: workspace?.name,
+      description: workspace?.description,
+      updatedAt: workspace.updatedAt,
+      updatedBy: workspace?.users?.find(
+        (user) => user.id?.toString() === workspace?.updatedBy?.toString(),
+      )?.name,
+      WorkspaceType: workspace?.workspaceType,
+      hubName: hub?.name,
     };
-
+    console.log(workspace_summary);
     return workspace_summary;
   }
 }
