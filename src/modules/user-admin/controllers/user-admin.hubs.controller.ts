@@ -33,7 +33,10 @@ import {
   MemoryStorageFile,
   UploadedFile,
 } from "@blazity/nest-file-fastify";
-import { CreateOrUpdateTeamDto, UpdateTeamDto } from "@src/modules/identity/payloads/team.payload";
+import {
+  CreateOrUpdateTeamDto,
+  UpdateTeamDto,
+} from "@src/modules/identity/payloads/team.payload";
 import { TeamService } from "@src/modules/identity/services/team.service";
 
 @Controller("api/admin")
@@ -187,7 +190,8 @@ export class AdminHubsController {
   }
 
   @Get("get-hub/:teamId")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
   @ApiOperation({
     summary: "Retrieve Team Details",
     description: "This will retrieve team details",
@@ -205,7 +209,8 @@ export class AdminHubsController {
   }
 
   @Put("update-hub/:teamId")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
   @ApiOperation({
     summary: "Update a Team",
     description: "This will update a Team",
