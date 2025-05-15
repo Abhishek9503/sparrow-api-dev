@@ -16,6 +16,7 @@ import {
   Collection,
   CollectionItem,
   ItemTypeEnum,
+  CollectionTypeEnum,
 } from "@src/modules/common/models/collection.model";
 import {
   CollectionGraphQLDto,
@@ -1337,5 +1338,22 @@ export class CollectionRepository {
           },
         );
     }
+  }
+
+  /**
+   * Fetches the mock collection from DB
+   * @param _id mock collection id
+   * @returns Mock collection or null
+   */
+  async getMockCollection(_id: ObjectId): Promise<Collection | null> {
+    const data = await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .findOne({
+        _id,
+        collectionType: CollectionTypeEnum.MOCK,
+        isMockCollectionRunning: true,
+      });
+
+    return data;
   }
 }
