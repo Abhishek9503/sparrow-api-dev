@@ -9,6 +9,7 @@ import {
   Delete,
   Put,
   Patch,
+  Req,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import {
@@ -290,7 +291,7 @@ export class AdminWorkspaceController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
   @Put("user-role")
-  @ApiOperation({ summary: "Invite Collaborartors" })
+  @ApiOperation({ summary: "Change user roles" })
   async changeUserRole(
     @Query("workspaceId") workspaceId: string,
     @Query("userId") userId: string,
