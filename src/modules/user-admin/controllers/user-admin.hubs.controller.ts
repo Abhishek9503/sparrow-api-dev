@@ -10,6 +10,7 @@ import {
   Post,
   Body,
   UseInterceptors,
+  Put,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import { AdminHubsService } from "../services/user-admin.hubs.service";
@@ -32,7 +33,7 @@ import {
   MemoryStorageFile,
   UploadedFile,
 } from "@blazity/nest-file-fastify";
-import { CreateOrUpdateTeamDto } from "@src/modules/identity/payloads/team.payload";
+import { CreateOrUpdateTeamDto, UpdateTeamDto } from "@src/modules/identity/payloads/team.payload";
 import { TeamService } from "@src/modules/identity/services/team.service";
 
 @Controller("api/admin")
@@ -182,6 +183,68 @@ export class AdminHubsController {
       hub,
     );
 
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Get("get-hub/:teamId")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: "Retrieve Team Details",
+    description: "This will retrieve team details",
+  })
+  @ApiResponse({ status: 200, description: "Fetch Team Request Received" })
+  @ApiResponse({ status: 400, description: "Fetch Team Request Failed" })
+  async getTeam(@Param("teamId") teamId: string, @Res() res: FastifyReply) {
+    const data = await this.teamService.get(teamId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Put("update-hub/:teamId")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: "Update a Team",
+    description: "This will update a Team",
+  })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        image: {
+          type: "string",
+          format: "binary",
+        },
+        name: {
+          type: "string",
+        },
+        description: {
+          type: "string",
+        },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor("image"))
+  @ApiResponse({ status: 201, description: "Team Updated Successfully" })
+  @ApiResponse({ status: 400, description: "Updated Team Failed" })
+  async updateTeam(
+    @Param("teamId") teamId: string,
+    @Body() updateTeamDto: Partial<UpdateTeamDto>,
+    @Res() res: FastifyReply,
+    @UploadedFile()
+    image: MemoryStorageFile,
+  ) {
+    await this.teamService.update(teamId, updateTeamDto, image);
+    const team = await this.teamService.get(teamId);
+    const responseData = new ApiResponseService(
+      "Team Updated",
+      HttpStatusCode.CREATED,
+      team,
+    );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 }
