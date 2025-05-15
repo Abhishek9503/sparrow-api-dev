@@ -296,7 +296,6 @@ export class AdminWorkspaceService {
       WorkspaceType: workspace?.workspaceType,
       hubName: hub?.name,
     };
-    console.log(workspace_summary);
     return workspace_summary;
   }
 }
