@@ -32,7 +32,10 @@ import {
   UpdateWorkspaceTypeDto,
 } from "@src/modules/workspace/payloads/workspace.payload";
 import { HubWorkspaceQuerySwaggerDto } from "../payloads/workspace.payload";
-import { AddWorkspaceUserDto } from "@src/modules/workspace/payloads/workspaceUser.payload";
+import {
+  AddWorkspaceUserDto,
+  UserWorkspaceRoleDto,
+} from "@src/modules/workspace/payloads/workspaceUser.payload";
 
 @Controller("api/admin")
 @ApiTags("admin workspace")
@@ -280,5 +283,31 @@ export class AdminWorkspaceController {
       data,
     );
     res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @ApiExtraModels(HubWorkspaceQuerySwaggerDto)
+  @ApiQuery({ type: HubWorkspaceQuerySwaggerDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Put("user-role")
+  @ApiOperation({ summary: "Invite Collaborartors" })
+  async changeUserRole(
+    @Query("workspaceId") workspaceId: string,
+    @Query("userId") userId: string,
+    @Body() data: UserWorkspaceRoleDto,
+    @Res() res: FastifyReply,
+  ) {
+    const params = {
+      userId: userId,
+      workspaceId: workspaceId,
+      role: data.role,
+    };
+    await this.workspaceService.changeUserRole(params);
+    const workspace = await this.workspaceService.get(workspaceId);
+    const responseData = new ApiResponseService(
+      "Role Changed",
+      HttpStatusCode.OK,
+      workspace,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
   }
 }
