@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { ObjectId } from "mongodb";
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
 import { AdminMembersRepository } from "../repositories/user.admin.members.repository";
 
@@ -115,14 +114,5 @@ export class AdminMembersService {
       totalPages: Math.ceil(totalCount / limit),
       limit,
     };
-  }
-
-  // Helper method to count workspaces a member has access to
-  private countMemberWorkspaces(memberId: string | ObjectId, hub: any): number {
-    const memberIdStr = memberId.toString();
-
-    // If we had workspace data in the hub, we could check workspace access
-    // For now, we'll assume all members have access to all workspaces
-    return hub.workspaces?.length || 0;
   }
 }
