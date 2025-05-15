@@ -915,10 +915,10 @@ export class AiAssistantService {
         }
       } catch (error: any) {
         if (client.readyState === WebSocket.OPEN) {
-          console.log("error", error);
           client.send(
             JSON.stringify({
               statusCode: error?.status || 500,
+              event: "error",
               message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
             })
           );
@@ -1016,6 +1016,7 @@ export class AiAssistantService {
               if (client.readyState === WebSocket.OPEN) {
                 client.send(
                   JSON.stringify({
+                    statusCode: 404,
                     event: "error",
                     message: "Unsupported model. Currently only 'openai' is supported."
                   })
