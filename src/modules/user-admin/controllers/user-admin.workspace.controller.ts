@@ -265,6 +265,7 @@ export class AdminWorkspaceController {
   ) {
     const params = {
       users: payload.users,
+      workspaceId: workspaceId,
       role: payload.role,
     };
     const response = await this.workspaceService.addUserInWorkspace(params);
