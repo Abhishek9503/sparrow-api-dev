@@ -915,8 +915,11 @@ export class AiAssistantService {
         }
       } catch (error: any) {
         if (client.readyState === WebSocket.OPEN) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
           client.send(
             JSON.stringify({
+              timeTaken: `${timeTaken}ms`,
               statusCode: error?.status || 500,
               event: "error",
               message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
