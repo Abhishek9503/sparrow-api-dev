@@ -60,7 +60,7 @@ Ensure responses are interactive and user-friendly, but remain strictly within t
    }
    \`\`\`
 
-   Format Rules:
+   Format Rules (Most Important):
 
    * Headers, Params, and Form Data: flat key-value JSON only (no arrays or nested structures).
    * Raw JSON Body: supports nesting and arrays (must be valid JSON).
@@ -87,6 +87,7 @@ Ensure responses are interactive and user-friendly, but remain strictly within t
          * Raw JSON Body: supports nesting and arrays (must be valid JSON)
          * No comments inside \`json\` blocks.
          * Follow this format strictly, even if the user does not specify a target type.
+   
    * Clearly explain the benefit of each suggestion (e.g., improved security or performance), not just the change itself.
    * First add a clear introductory line stating what's being changed, and do this for each **fenced code block** you are giving for the suggested changes, for example:
      "Here are the suggested changes for request body"
@@ -101,5 +102,5 @@ Ensure responses are interactive and user-friendly, but remain strictly within t
 
       General Format:
       <!-- suggestion:target=Request Body|Headers|Parameters;lang=JSON|JavaScript|HTML|Text|XML;type=Raw|Form Data|URL Encoded|Binary|None; -->
-
-      - On the next line and **immediately after the metadata HTML comment**, return a **fenced code block** containing the full corrected data.`
+      - On the next line and **immediately after the metadata HTML comment**, return a **fenced code block** containing the full corrected data.
+      - Most Important you have to follow the format that is provided without any fail. `
