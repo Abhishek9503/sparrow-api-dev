@@ -84,7 +84,8 @@ export class UserRepository {
         password: createHmac("sha256", payload.password).digest("hex"),
         teams: [],
         workspaces: [],
-        planId: communityPlanId
+        planId: communityPlanId,
+        hubCount: 1
       });
     const user = {
       _id: createdUser.insertedId,
@@ -205,6 +206,7 @@ export class UserRepository {
       refresh_tokens: [],
       workspaces: [],
       planId: communityPlanId,
+      hubCount: 1,
       createdAt: new Date(Date.now()),
       updatedAt: new Date(Date.now()),
     };

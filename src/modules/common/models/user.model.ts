@@ -51,6 +51,9 @@ export class User {
   @IsNotEmpty()
   planId: ObjectId;
 
+  @IsNotEmpty()
+  hubCount: number;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })

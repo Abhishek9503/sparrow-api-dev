@@ -40,10 +40,16 @@ export class PlanService {
     const user = await this.contextService.get("user");
     const userObject = await this.userService.getUserById(user._id.toString());
     const userPlan = await this.get(userObject.planId.toString());
-    console.log(userObject);
-    console.log(userPlan);
-    if(userPlan.name === "Community"){
-       throw new ForbiddenException("Cant create new Hubs in community plan");
+    
+    const event = userPlan.limits.find((event)=>{
+      if(event.key === "no_of_hubs"){
+        return true;
+      }
+    })
+    console.log(userObject.hubCount ,  Number(event.value) );
+    if(userObject.hubCount >=  Number(event.value) ){
+      
+      throw new ForbiddenException("Cant create new Hubs in community plan");
     }
   }
 
