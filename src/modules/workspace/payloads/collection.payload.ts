@@ -141,6 +141,13 @@ export class UpdateCollectionDto {
   items?: CollectionItem[];
 }
 
+export class UpdateMockCollectionStatusDto {
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  isMockCollectionRunning?: boolean;
+}
+
 export class ImportCollectionDto {
   @ApiProperty({
     required: true,
