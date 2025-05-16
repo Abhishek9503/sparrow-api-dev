@@ -24,7 +24,7 @@ export class AdminAuthRepository {
     userId: ObjectId,
     hashedToken: string,
   ): Promise<boolean> {
-    const user = await this.db.collection("user").findOne({
+    const user = await this.db.collection(Collections.USER).findOne({
       _id: userId,
       admin_refresh_tokens: hashedToken,
     });
@@ -40,8 +40,8 @@ export class AdminAuthRepository {
     oldToken: string,
     newToken: string,
   ): Promise<any> {
-    return this.db.collection("user").updateOne(
-      { _id: userId, refresh_tokens: oldToken },
+    return this.db.collection(Collections.USER).updateOne(
+      { _id: userId, admin_refresh_tokens: oldToken },
       {
         $set: {
           "admin_refresh_tokens.$": newToken,
