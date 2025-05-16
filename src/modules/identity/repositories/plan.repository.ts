@@ -1,16 +1,7 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
-import {
-  Db,
-  InsertOneResult,
-  ObjectId,
-  WithId,
-} from "mongodb";
+import { Db, InsertOneResult, ObjectId, WithId } from "mongodb";
 import { ContextService } from "@src/modules/common/services/context.service";
-import {
-  CreateOrUpdateTeamDto,
-} from "../payloads/team.payload";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
-import { Team } from "@src/modules/common/models/team.model";
 import { CreateOrUpdatePlanDto } from "../payloads/plan.payload";
 import { Plan } from "@src/modules/common/models/plan.model";
 
@@ -33,14 +24,11 @@ export class PlanRepository {
   async create(
     planData: CreateOrUpdatePlanDto,
   ): Promise<InsertOneResult<Plan>> {
-
-
     const params = {
       createdBy: "system",
       createdAt: new Date(),
       updatedAt: new Date(),
       updatedBy: "system",
-
     };
 
     const createdPlan = await this.db
@@ -82,44 +70,4 @@ export class PlanRepository {
       .toArray();
     return plans;
   }
-
-  /**
-   * Updates a team name
-   * @param {string} id
-   * @returns {Promise<ITeam>} mutated team data
-   */
-  // async update(
-  //   id: string,
-  //   payload: Partial<UpdateTeamDto>,
-  // ): Promise<UpdateResult<Team>> {
-  //   const _id = new ObjectId(id);
-  //   const updatedTeam = await this.db
-  //     .collection<Team>(Collections.TEAM)
-  //     .updateOne({ _id }, { $set: payload });
-  //   if (!updatedTeam.matchedCount) {
-  //     throw new BadRequestException(
-  //       "The teams with that id does not exist in the system.",
-  //     );
-  //   }
-  //   return updatedTeam;
-  // }
-
-  /**
-   * Delete a team from the database by UUID
-   * @param {string} id
-   * @returns {Promise<DeleteWriteOpResultObject>} result of the delete operation
-   */
-  // async delete(id: string): Promise<DeleteResult> {
-  //   const _id = new ObjectId(id);
-  //   const deletedTeam = await this.db
-  //     .collection<Team>(Collections.TEAM)
-  //     .deleteOne({ _id });
-  //   if (!deletedTeam) {
-  //     throw new BadRequestException(
-  //       "The Team with that id could not be found.",
-  //     );
-  //   }
-  //   return deletedTeam;
-  // }
-
 }
