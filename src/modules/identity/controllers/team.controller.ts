@@ -32,6 +32,7 @@ import {
   UploadedFile,
 } from "@blazity/nest-file-fastify";
 import { UserService } from "../services/user.service";
+import { PlanService } from "../services/plan.service";
 /**
  * Team Controller
  */
@@ -44,6 +45,7 @@ export class TeamController {
     private readonly teamService: TeamService,
     private readonly teamUserService: TeamUserService,
     private readonly userService: UserService,
+    private readonly planService: PlanService
   ) {}
 
   @Post()
@@ -79,6 +81,7 @@ export class TeamController {
     @UploadedFile()
     image: MemoryStorageFile,
   ) {
+    await this.planService.limitTeamsCreation();
     const data = await this.teamService.create(createTeamDto, image);
     const team = await this.teamService.get(data.insertedId.toString());
     const responseData = new ApiResponseService(

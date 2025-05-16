@@ -75,7 +75,7 @@ export class UserRepository {
    * @param {RegisterPayload} payload user payload
    * @returns {Promise<IUser>} created user data
    */
-  async createUser(payload: RegisterPayload): Promise<InsertOneResult<User>> {
+  async createUser(payload: RegisterPayload, communityPlanId: ObjectId): Promise<InsertOneResult<User>> {
     const createdUser = await this.db
       .collection<User>(Collections.USER)
       .insertOne({
@@ -84,6 +84,7 @@ export class UserRepository {
         password: createHmac("sha256", payload.password).digest("hex"),
         teams: [],
         workspaces: [],
+        planId: communityPlanId
       });
     const user = {
       _id: createdUser.insertedId,
@@ -188,6 +189,7 @@ export class UserRepository {
     oAuthId: string,
     name: string,
     email: string,
+    communityPlanId: ObjectId
   ): Promise<InsertOneResult> {
     const user: User = {
       name,
@@ -202,6 +204,7 @@ export class UserRepository {
       isEmailVerified: true,
       refresh_tokens: [],
       workspaces: [],
+      planId: communityPlanId,
       createdAt: new Date(Date.now()),
       updatedAt: new Date(Date.now()),
     };

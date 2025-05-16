@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable } from "@nestjs/common";
 
 import {
   InsertOneResult,
@@ -7,6 +7,8 @@ import {
 import { CreateOrUpdatePlanDto } from "../payloads/plan.payload";
 import { Plan } from "@src/modules/common/models/plan.model";
 import { PlanRepository } from "../repositories/plan.repository";
+import { ContextService } from "@src/modules/common/services/context.service";
+import { UserService } from "./user.service";
 
 /**
  * Team Service
@@ -14,7 +16,9 @@ import { PlanRepository } from "../repositories/plan.repository";
 @Injectable()
 export class PlanService {
   constructor(
-    private readonly planRepository: PlanRepository
+    private readonly planRepository: PlanRepository,
+    private readonly contextService: ContextService,
+    private readonly userService: UserService
   ) {}
 
 
@@ -30,6 +34,17 @@ export class PlanService {
     
     const createdPlan = await this.planRepository.create(planData);
     return createdPlan;
+  }
+
+  async limitTeamsCreation() {
+    const user = await this.contextService.get("user");
+    const userObject = await this.userService.getUserById(user._id.toString());
+    const userPlan = await this.get(userObject.planId.toString());
+    console.log(userObject);
+    console.log(userPlan);
+    if(userPlan.name === "Community"){
+       throw new ForbiddenException("Cant create new Hubs in community plan");
+    }
   }
 
   /**

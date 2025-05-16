@@ -13,6 +13,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import { TeamDto } from "./team.model";
+import { ObjectId } from "mongodb";
 
 export enum EmailServiceProvider {
   GMAIL = "GMAIL",
@@ -38,13 +39,17 @@ export class User {
   @IsNotEmpty()
   name: string;
 
-  @IsEmail()
+  @IsEmail() 
   @IsNotEmpty()
   email: string;
 
   @IsString()
   @IsOptional()
   password?: string;
+
+  @IsMongoId()
+  @IsNotEmpty()
+  planId: ObjectId;
 
   @IsArray()
   @IsOptional()

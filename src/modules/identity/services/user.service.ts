@@ -24,6 +24,7 @@ import { ContextService } from "@src/modules/common/services/context.service";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { VerificationPayload } from "../payloads/verification.payload";
 import { HubSpotService } from "./hubspot.service";
+import { PlanRepository } from "../repositories/plan.repository";
 export interface IGenericMessageBody {
   message: string;
 }
@@ -40,6 +41,7 @@ export class UserService {
     private readonly contextService: ContextService,
     private readonly emailService: EmailService,
     private readonly hubspotService: HubSpotService,
+    private readonly planRepository: PlanRepository
   ) {}
 
   /**
@@ -111,7 +113,17 @@ export class UserService {
         "The account with the provided email currently exists. Please choose another one.",
       );
     }
-    await this.userRepository.createUser(payload);
+    const plans = await this.planRepository.getPlans();
+    let communityPlanId;
+    for (let i = 0; i < plans.length; i++){
+      if(plans[i].name === "Community"){
+        communityPlanId = plans[i]._id;
+      }
+    }
+
+    await this.userRepository.createUser(
+      payload, communityPlanId
+    );
 
     const data = {
       isUserCreated: true,
@@ -380,10 +392,20 @@ export class UserService {
     name: string,
     email: string,
   ): Promise<InsertOneResult> {
+    
+    const plans = await this.planRepository.getPlans();
+    let communityPlanId;
+    for (let i = 0; i < plans.length; i++){
+      if(plans[i].name === "Community"){
+        communityPlanId = plans[i]._id;
+      }
+    }
+
     const createdUser = await this.userRepository.createGoogleAuthUser(
       oauthId,
       name,
       email,
+      communityPlanId
     );
     const user = {
       _id: createdUser.insertedId,
