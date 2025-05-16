@@ -8,6 +8,7 @@ import {
   Body,
   Param,
   Delete,
+  Put,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import {
@@ -32,6 +33,7 @@ import {
 import { TeamUserService } from "@src/modules/identity/services/team-user.service";
 import { TeamService } from "@src/modules/identity/services/team.service";
 import { AddTeamUserDto } from "@src/modules/identity/payloads/teamUser.payload";
+import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
 
 @Controller("api/admin")
 @ApiTags("admin hub members")
@@ -41,6 +43,7 @@ export class AdminMembersController {
     private readonly adminMembersService: AdminMembersService,
     private readonly teamUserService: TeamUserService,
     private readonly teamService: TeamService,
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   @ApiExtraModels(HubMembersQuerySwaggerDto)
@@ -254,5 +257,81 @@ export class AdminMembersController {
 
       return res.status(responseData.httpStatusCode).send(responseData);
     }
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Put("user-hubrole")
+  @ApiOperation({ summary: "Demote a admin in team" })
+  async demoteToMember(
+    @Query("userId") userId: string,
+    @Query("teamId") teamId: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.teamUserService.demoteTeamAdmin({ teamId, userId });
+    const team = await this.teamService.get(teamId);
+    const responseData = new ApiResponseService(
+      "Admin Demoted",
+      HttpStatusCode.OK,
+      team,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Post("user-hubrole")
+  @ApiOperation({ summary: "Add Another Admin for a team" })
+  async promoteToAdmin(
+    @Query("userId") userId: string,
+    @Query("teamId") teamId: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.teamUserService.addAdmin({ teamId, userId });
+    const team = await this.teamService.get(teamId);
+    const responseData = new ApiResponseService(
+      "Admin added",
+      HttpStatusCode.OK,
+      team,
+    );
+    res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Delete("user-hubrole")
+  @ApiOperation({ summary: "Remove user from a hub" })
+  async removeUserinTeam(
+    @Query("userId") userId: string,
+    @Query("teamId") teamId: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.teamUserService.removeUser({ teamId, userId });
+    const team = await this.teamService.get(teamId);
+    const responseData = new ApiResponseService(
+      "User Removed",
+      HttpStatusCode.OK,
+      team,
+    );
+    res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Delete("deleteuser-workspace")
+  @ApiOperation({ summary: "Remove user from a workspace" })
+  async removeUserinWorkspace(
+    @Query("workspaceId") workspaceId: string,
+    @Query("userId") userId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const params = {
+      userId: userId,
+      workspaceId: workspaceId,
+    };
+    await this.workspaceService.removeUserFromWorkspace(params);
+    const workspace = await this.workspaceService.get(workspaceId);
+    const responseData = new ApiResponseService(
+      "User Removed",
+      HttpStatusCode.OK,
+      workspace,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
   }
 }
