@@ -89,4 +89,57 @@ export class AdminAuthService {
       throw new UnauthorizedException("Invalid or expired token");
     }
   }
+  /**
+   * Refresh access token using refresh token
+   */
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      // Verify refresh token
+      const decoded = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get("app.refreshTokenSecretKey"),
+      });
+
+      // Check expiration
+      const now = Math.floor(Date.now() / 1000);
+      if (decoded.exp && decoded.exp < now) {
+        throw new UnauthorizedException("Refresh token has expired");
+      }
+
+      const userId = new ObjectId(decoded._id);
+
+      // Verify the refresh token exists in the user's record
+      const hashedRefreshToken = createHmac("sha256", refreshToken).digest(
+        "hex",
+      );
+      const isValidToken = await this.adminAuthRepository.verifyRefreshToken(
+        userId,
+        hashedRefreshToken,
+      );
+
+      if (!isValidToken) {
+        throw new UnauthorizedException("Invalid refresh token");
+      }
+
+      // Generate new tokens
+      const newAccessToken = await this.createToken(userId);
+      const newRefreshToken = await this.createRefreshToken(userId);
+
+      // Update the refresh token in the database
+      await this.adminAuthRepository.updateRefreshToken(
+        userId,
+        hashedRefreshToken,
+        createHmac("sha256", newRefreshToken.token).digest("hex"),
+      );
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+  }
 }
