@@ -33,6 +33,8 @@ import {
 } from "@blazity/nest-file-fastify";
 import { UserService } from "../services/user.service";
 import { PlanService } from "../services/plan.service";
+import { User } from "@src/modules/common/decorators/user.decorator";
+import { CreateTeamGuard } from "@src/modules/common/guards/plan-limits/create-team-guard";
 /**
  * Team Controller
  */
@@ -49,7 +51,7 @@ export class TeamController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CreateTeamGuard)
   @ApiOperation({
     summary: "Create a new  Team",
     description: "This will Create a  new Team",
@@ -82,8 +84,6 @@ export class TeamController {
     image: MemoryStorageFile,
     // @User() user: any
   ) {
-    // console.log(user,"======================================================");
-    await this.planService.limitTeamsCreation();
     const data = await this.teamService.create(createTeamDto, image);
     const team = await this.teamService.get(data.insertedId.toString());
     const responseData = new ApiResponseService(

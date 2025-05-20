@@ -46,5 +46,5 @@ export class Plan {
 }
 
 export class Limits {
-  ownedHub: TeamsCountLimit;
+  noOfOwnedHub: TeamsCountLimit;
 }

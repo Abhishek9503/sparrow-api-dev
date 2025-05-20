@@ -22,7 +22,7 @@ export class CreatePlanMigration implements OnModuleInit {
           description: "Free tier with limited access",
           active: true,
           limits: {
-            ownedHub: {
+            noOfOwnedHub: {
               area: "hub",
               value: 1,
             },

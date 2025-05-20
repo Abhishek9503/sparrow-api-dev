@@ -12,35 +12,12 @@ export class TeamsCountLimit {
   @IsNotEmpty()
   area: string;
 
-  @IsString()
   @IsNotEmpty()
-  key: string;
-
-  @IsString()
-  @IsNotEmpty()
-  value: string;
-
-  @IsString()
-  @IsNotEmpty()
-  type: string;
+  value: number;
 }
 
 export class Limits {
-  @IsString()
-  @IsNotEmpty()
-  area: string;
-
-  @IsString()
-  @IsNotEmpty()
-  key: string;
-
-  @IsString()
-  @IsNotEmpty()
-  value: string;
-
-  @IsString()
-  @IsNotEmpty()
-  type: string;
+  noOfOwnedHub: TeamsCountLimit;
 }
 export class CreateOrUpdatePlanDto {
   @IsString()
@@ -55,7 +32,8 @@ export class CreateOrUpdatePlanDto {
   active?: boolean;
 
   @IsOptional()
-  ownedHub: TeamsCountLimit;
+  limits?: Limits;
+
 }
 
 export class PlanDto {

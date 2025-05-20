@@ -19,9 +19,9 @@ export class PlanService {
   ) {}
 
   /**
-   * Creates a new team in the database
-   * @param {CreateOrUpdateTeamDto} teamData
-   * @returns {Promise<InsertOneResult<Team>>} result of the insert operation
+   * Creates a new plan in the database
+   * @param {CreateOrUpdateTeamDto} planData
+   * @returns  result of the insert operation
    */
   async create(
     planData: CreateOrUpdatePlanDto,
@@ -35,22 +35,26 @@ export class PlanService {
     const userObject = await this.userService.getUserById(user._id.toString());
     const userPlan = await this.get(userObject.planId.toString());
 
-    const event = userPlan.limits.ownedHub;
+    const event = userPlan.limits.noOfOwnedHub;
     if (userObject.hubCount >= event.value) {
       throw new ForbiddenException("Cant create new Hubs in community plan");
     }
   }
 
   /**
-   * Fetches a team from database by UUID
-   * @param {string} id
-   * @returns {Promise<Team>} queried team data
+   * Fetches a plan from database by UUID
+   * @param  id
+   * @returns queried plan data
    */
   async get(id: string): Promise<WithId<Plan>> {
     const data = await this.planRepository.get(id);
     return data;
   }
 
+   /**
+   * Fetches a plan list from database by UUID
+   * @returns queried plan data
+   */
   async getAllPlans(): Promise<WithId<Plan>[]> {
     const data = await this.planRepository.getPlans();
     return data;
