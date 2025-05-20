@@ -10,7 +10,7 @@ jobs:
     with:
       version: 'v2'
     secrets:
-      REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }} 
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }} 
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
       RELEASE_NAMESPACE: ${{ secrets.RELEASE_NAMESPACE }}

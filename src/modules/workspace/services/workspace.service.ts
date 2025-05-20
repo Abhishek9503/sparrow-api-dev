@@ -289,7 +289,7 @@ export class WorkspaceService {
     }
     const params = {
       name: workspaceData.name,
-      description: "",
+      description: workspaceData.description || "",
       team: {
         id: teamData._id.toString(),
         name: teamData.name,
