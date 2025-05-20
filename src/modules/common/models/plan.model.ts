@@ -1,11 +1,19 @@
 import {
-  IsArray,
   IsBoolean,
   IsDateString,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from "class-validator";
+
+export class TeamsCountLimit {
+  @IsString()
+  @IsNotEmpty()
+  area: string;
+
+  @IsNotEmpty()
+  value: number;
+}
 
 export class Plan {
   @IsString()
@@ -19,9 +27,8 @@ export class Plan {
   @IsBoolean()
   active?: boolean;
 
-  @IsArray()
   @IsOptional()
-  limits?: Limits[];
+  limits?: Limits;
 
   @IsDateString()
   createdAt: Date;
@@ -39,19 +46,5 @@ export class Plan {
 }
 
 export class Limits {
-  @IsString()
-  @IsNotEmpty()
-  area: string;
-
-  @IsString()
-  @IsNotEmpty()
-  key: string;
-
-  @IsString()
-  @IsNotEmpty()
-  value: string;
-
-  @IsString()
-  @IsNotEmpty()
-  type: string;
+  ownedHub: TeamsCountLimit;
 }

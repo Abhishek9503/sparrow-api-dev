@@ -45,7 +45,7 @@ export class TeamController {
     private readonly teamService: TeamService,
     private readonly teamUserService: TeamUserService,
     private readonly userService: UserService,
-    private readonly planService: PlanService
+    private readonly planService: PlanService,
   ) {}
 
   @Post()
@@ -80,7 +80,9 @@ export class TeamController {
     @Res() res: FastifyReply,
     @UploadedFile()
     image: MemoryStorageFile,
+    // @User() user: any
   ) {
+    // console.log(user,"======================================================");
     await this.planService.limitTeamsCreation();
     const data = await this.teamService.create(createTeamDto, image);
     const team = await this.teamService.get(data.insertedId.toString());

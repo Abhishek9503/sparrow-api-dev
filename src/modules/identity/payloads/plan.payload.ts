@@ -1,5 +1,29 @@
-import { IsArray, IsBoolean, IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
+import {
+  IsBoolean,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from "class-validator";
+import { ObjectId } from "mongodb";
 
+export class TeamsCountLimit {
+  @IsString()
+  @IsNotEmpty()
+  area: string;
+
+  @IsString()
+  @IsNotEmpty()
+  key: string;
+
+  @IsString()
+  @IsNotEmpty()
+  value: string;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+}
 
 export class Limits {
   @IsString()
@@ -30,7 +54,14 @@ export class CreateOrUpdatePlanDto {
   @IsBoolean()
   active?: boolean;
 
-  @IsArray()
   @IsOptional()
-  limits?: Limits[];
+  ownedHub: TeamsCountLimit;
+}
+
+export class PlanDto {
+  @IsMongoId()
+  id: ObjectId;
+
+  @IsString()
+  name: string;
 }

@@ -21,6 +21,7 @@ import { MemoryStorageFile } from "@blazity/nest-file-fastify";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { User } from "@src/modules/common/models/user.model";
 import { UserInvitesRepository } from "../repositories/userInvites.repository";
+import { PlanRepository } from "../repositories/plan.repository";
 
 /**
  * Team Service
@@ -34,6 +35,7 @@ export class TeamService {
     private readonly userInvitesRepository: UserInvitesRepository,
     private readonly userRepository: UserRepository,
     private readonly contextService: ContextService,
+    private readonly planRepository: PlanRepository,
   ) {}
 
   async isImageSizeValid(size: number) {
@@ -124,7 +126,18 @@ export class TeamService {
         githubUrl: "",
       };
     }
-    const createdTeam = await this.teamRepository.create(team);
+
+    const plans = await this.planRepository.getPlans();
+    let communityPlan;
+    for (let i = 0; i < plans.length; i++) {
+      if (plans[i].name === "Community") {
+        communityPlan = {
+          id: plans[i]._id,
+          name: plans[i].name,
+        };
+      }
+    }
+    const createdTeam = await this.teamRepository.create(team, communityPlan);
     const user = await this.contextService.get("user");
     const userData = await this.userRepository.findUserByUserId(
       new ObjectId(user._id),

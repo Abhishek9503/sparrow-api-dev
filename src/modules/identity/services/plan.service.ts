@@ -35,12 +35,8 @@ export class PlanService {
     const userObject = await this.userService.getUserById(user._id.toString());
     const userPlan = await this.get(userObject.planId.toString());
 
-    const event = userPlan.limits.find((event) => {
-      if (event.key === "no_of_hubs") {
-        return true;
-      }
-    });
-    if (userObject.hubCount >= Number(event.value)) {
+    const event = userPlan.limits.ownedHub;
+    if (userObject.hubCount >= event.value) {
       throw new ForbiddenException("Cant create new Hubs in community plan");
     }
   }
