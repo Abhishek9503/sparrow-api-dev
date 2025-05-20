@@ -19,8 +19,8 @@ import { TeamService } from "../identity/services/team.service";
 import { AdminMembersService } from "./services/user-admin.members.service";
 import { AdminMembersController } from "./controllers/user-admin.members.controller";
 import { AdminMembersRepository } from "./repositories/user.admin.members.repository";
-import { AdminUsersController } from "./controllers/user-admin.users.controller";
-import { AdminUsersService } from "./services/user-admin.users.service";
+import { AdminUsersController } from "./controllers/user-admin.enterprise-user.controller";
+import { AdminUsersService } from "./services/user-admin.enterprise-user.service";
 
 /**
  * Admin Module provides all necessary services, handlers, repositories,

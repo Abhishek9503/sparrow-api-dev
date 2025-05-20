@@ -23,7 +23,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { TeamService } from "@src/modules/identity/services/team.service";
-import { AdminUsersService } from "../services/user-admin.users.service";
+import { AdminUsersService } from "../services/user-admin.enterprise-user.service";
 
 @Controller("api/admin")
 @ApiTags("admin users")
