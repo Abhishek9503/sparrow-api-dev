@@ -1,18 +1,32 @@
 import {
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from "class-validator";
 
-export class TeamsCountLimit {
-  @IsString()
+export enum LimmitArea {
+  USER = "user",
+  HUB = "hub",
+  WORKSPACE = "workspace",
+  TESTFLOW = "testflow",
+  ENVIRONMENT = "environment",
+  COLLECTION = "collection",
+  AI = "ai"
+}
+export class LimitData { 
+  @IsEnum(LimmitArea)
   @IsNotEmpty()
-  area: string;
+  area: LimmitArea;
 
   @IsNotEmpty()
   value: number;
+}
+
+export class Limits {
+  privateHubs: LimitData;
 }
 
 export class Plan {
@@ -45,6 +59,4 @@ export class Plan {
   updatedBy?: string;
 }
 
-export class Limits {
-  noOfOwnedHub: TeamsCountLimit;
-}
+

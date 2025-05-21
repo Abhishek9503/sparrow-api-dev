@@ -22,8 +22,8 @@ export class CreatePlanMigration implements OnModuleInit {
           description: "Free tier with limited access",
           active: true,
           limits: {
-            noOfOwnedHub: {
-              area: "hub",
+            privateHubs: {
+              area: "user",
               value: 1,
             },
           },
@@ -33,7 +33,24 @@ export class CreatePlanMigration implements OnModuleInit {
           updatedBy: "system",
         };
 
+        const standardPlan = {
+          name: "Standard",
+          description: "Free tier with limited access",
+          active: true,
+          limits: {
+            privateHubs: {
+              area: "user",
+              value: 3,
+            },
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: "system",
+          updatedBy: "system",
+        };
+           
         await planCollection.insertOne(communityPlan);
+        await planCollection.insertOne(standardPlan);
         console.log("\x1b[36mCommunity Plan created successfully.\x1b[0m");
       } else {
         console.log("\x1b[33mCommunity Plan already exists. Skipping.\x1b[0m");

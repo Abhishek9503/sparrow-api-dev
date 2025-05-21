@@ -1,3 +1,4 @@
+import { Limits } from "@src/modules/common/models/plan.model";
 import {
   IsBoolean,
   IsMongoId,
@@ -7,18 +8,6 @@ import {
 } from "class-validator";
 import { ObjectId } from "mongodb";
 
-export class TeamsCountLimit {
-  @IsString()
-  @IsNotEmpty()
-  area: string;
-
-  @IsNotEmpty()
-  value: number;
-}
-
-export class Limits {
-  noOfOwnedHub: TeamsCountLimit;
-}
 export class CreateOrUpdatePlanDto {
   @IsString()
   @IsNotEmpty()
@@ -33,7 +22,6 @@ export class CreateOrUpdatePlanDto {
 
   @IsOptional()
   limits?: Limits;
-
 }
 
 export class PlanDto {

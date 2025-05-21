@@ -127,22 +127,36 @@ export class TeamService {
       };
     }
 
-    const plans = await this.planRepository.getPlans();
-    let communityPlan;
-    for (let i = 0; i < plans.length; i++) {
-      if (plans[i].name === "Community") {
-        communityPlan = {
-          id: plans[i]._id,
-          name: plans[i].name,
-        };
-      }
-    }
-    const createdTeam = await this.teamRepository.create(team, communityPlan);
+    let hubPlan;
+  
     const user = await this.contextService.get("user");
     const userData = await this.userRepository.findUserByUserId(
       new ObjectId(user._id),
     );
+    if(userData.hubCount === 0){
+      const plans = await this.planRepository.getPlans();
+      for (let i = 0; i < plans.length; i++) {
+        if (plans[i].name === "Community") {
+          hubPlan = {
+            id: plans[i]._id,
+            name: plans[i].name,
+          };
+        }
+      }
+    } else{
+      const userTeams = await this.getAllTeams(userData._id.toString());
+      const ownedTeam = userTeams.find((team) => {
+        if(team.owner === userData._id.toString()) return true;
+        return false;
+      });
+      hubPlan = {
+        id: ownedTeam.plan.id,
+        name: ownedTeam.plan.name
+      }
+    }
+    const createdTeam = await this.teamRepository.create(team, hubPlan);
     const updatedUserTeams = [...userData.teams];
+    const updatedHubCount = userData.hubCount + 1;
     updatedUserTeams.push({
       id: createdTeam.insertedId,
       name: teamData.name,
@@ -151,6 +165,7 @@ export class TeamService {
     });
     const updatedUserParams = {
       teams: updatedUserTeams,
+      hubCount: updatedHubCount
     };
     await this.userRepository.updateUserById(
       new ObjectId(userData._id),
@@ -305,6 +320,7 @@ export class TeamService {
           logo: teamData.logo,
           name: teamData.name,
           hubUrl: teamData.hubUrl,
+          plan: teamData.plan,
           workspaces: [],
           description: senderData.name || "No creator found",
         };

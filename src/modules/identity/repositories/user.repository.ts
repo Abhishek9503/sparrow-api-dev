@@ -85,7 +85,7 @@ export class UserRepository {
         teams: [],
         workspaces: [],
         planId: communityPlanId,
-        hubCount: 1
+        hubCount: 0
       });
     const user = {
       _id: createdUser.insertedId,
@@ -206,7 +206,7 @@ export class UserRepository {
       refresh_tokens: [],
       workspaces: [],
       planId: communityPlanId,
-      hubCount: 1,
+      hubCount: 0,
       createdAt: new Date(Date.now()),
       updatedAt: new Date(Date.now()),
     };

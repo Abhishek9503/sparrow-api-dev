@@ -35,7 +35,7 @@ export class PlanService {
     const userObject = await this.userService.getUserById(user._id.toString());
     const userPlan = await this.get(userObject.planId.toString());
 
-    const event = userPlan.limits.noOfOwnedHub;
+    const event = userPlan.limits.privateHubs;
     if (userObject.hubCount >= event.value) {
       throw new ForbiddenException("Cant create new Hubs in community plan");
     }
