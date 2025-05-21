@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
 import { AdminMembersRepository } from "../repositories/user.admin.members.repository";
+import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
 
 @Injectable()
 export class AdminMembersService {
   constructor(
     private readonly adminHubsRepo: AdminHubsRepository,
     private readonly adminMembersRepo: AdminMembersRepository,
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   async getPaginatedHubMembers(
@@ -48,6 +50,25 @@ export class AdminMembersService {
             member.id,
             hubId,
           );
+        const memberWorkspaces = await this.workspaceService.getAllWorkSpaces(
+          member.id,
+        );
+
+        const teamWorkspaces = memberWorkspaces.filter(
+          (workspace) => workspace.team.id === hubId,
+        );
+
+        const simplifiedWorkspaces = teamWorkspaces.map((workspace) => {
+          const memberRole =
+            workspace.users.find(
+              (user) => user.id.toString() === member.id.toString(),
+            )?.role || null;
+
+          return {
+            workspace: workspace,
+            userRole: memberRole,
+          };
+        });
 
         return {
           id: member.id,
@@ -56,6 +77,7 @@ export class AdminMembersService {
           role: member.role.charAt(0).toUpperCase() + member.role.slice(1),
           workspaceAccess,
           lastActive: "",
+          simplifiedWorkspaces,
         };
       }),
     );

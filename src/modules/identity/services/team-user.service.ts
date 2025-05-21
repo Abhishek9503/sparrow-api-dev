@@ -79,6 +79,7 @@ export class TeamUserService {
     senderEmail: string,
   ) {
     const currentUser = await this.contextService.get("user");
+    const senderData = await this.userRepository.getUserByEmail(senderEmail);
     const transporter = this.emailService.createTransporter();
     const promiseArray = [];
     for (const user of payload.users) {
@@ -88,7 +89,7 @@ export class TeamUserService {
         text: "User Invited",
         template: "inviteTeamEmail",
         context: {
-          firstname: currentUser.name.split(" ")[0],
+          firstname: senderData.name.split(" ")[0],
           username: user.name.split(" ")[0],
           teamname: payload.teamName,
           role: role.charAt(0).toUpperCase() + role.slice(1),

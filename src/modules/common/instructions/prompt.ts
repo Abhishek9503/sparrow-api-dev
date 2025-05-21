@@ -85,7 +85,7 @@ Ensure responses are interactive and user-friendly, but remain strictly within t
 
          * Headers, Parameters, and Form Data: flat key-value JSON only (no arrays or nested structures)
          * Raw JSON Body: supports nesting and arrays (must be valid JSON)
-         * No comments inside \`json\` blocks.
+         * No comments inside \`json\` blocks. (**Most Important**)
          * Follow this format strictly, even if the user does not specify a target type.
    
    * Clearly explain the benefit of each suggestion (e.g., improved security or performance), not just the change itself.
