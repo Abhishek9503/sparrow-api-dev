@@ -24,7 +24,6 @@ import { ContextService } from "@src/modules/common/services/context.service";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { VerificationPayload } from "../payloads/verification.payload";
 import { HubSpotService } from "./hubspot.service";
-import { PlanRepository } from "../repositories/plan.repository";
 export interface IGenericMessageBody {
   message: string;
 }
@@ -41,7 +40,6 @@ export class UserService {
     private readonly contextService: ContextService,
     private readonly emailService: EmailService,
     private readonly hubspotService: HubSpotService,
-    private readonly planRepository: PlanRepository
   ) {}
 
   /**
@@ -114,9 +112,7 @@ export class UserService {
       );
     }
 
-    await this.userRepository.createUser(
-      payload
-    );
+    await this.userRepository.createUser(payload);
 
     const data = {
       isUserCreated: true,
@@ -385,7 +381,6 @@ export class UserService {
     name: string,
     email: string,
   ): Promise<InsertOneResult> {
-
     const createdUser = await this.userRepository.createGoogleAuthUser(
       oauthId,
       name,

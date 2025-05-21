@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { Injectable, OnModuleInit, Inject } from "@nestjs/common";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 
@@ -38,7 +37,7 @@ export class CreatePlanMigration implements OnModuleInit {
           createdBy: "system",
           updatedBy: "system",
         };
-           
+
         await planCollection.insertOne(communityPlan);
         await planCollection.insertOne(standardPlan);
         console.log("\x1b[36mCommunity Plan created successfully.\x1b[0m");

@@ -1,25 +1,23 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { Db, InsertOneResult, ObjectId, WithId } from "mongodb";
-import { ContextService } from "@src/modules/common/services/context.service";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 import { CreateOrUpdatePlanDto } from "../payloads/plan.payload";
 import { Plan } from "@src/modules/common/models/plan.model";
 
 /**
- * Team Service
+ * Plan Repository
  */
 @Injectable()
 export class PlanRepository {
   constructor(
     @Inject("DATABASE_CONNECTION")
     private db: Db,
-    private readonly contextService: ContextService,
   ) {}
 
   /**
-   * Creates a new team in the database
-   * @param {CreateOrUpdateTeamDto} teamData
-   * @returns {Promise<InsertOneWriteOpResult<Team>>} result of the insert operation
+   * Creates a new plan in the database
+   * @param {CreateOrUpdatePlanDto} planData
+   * @returns {Promise<InsertOneWriteOpResult<Plan>>} result of the insert operation
    */
   async create(
     planData: CreateOrUpdatePlanDto,
@@ -41,9 +39,9 @@ export class PlanRepository {
   }
 
   /**
-   * Fetches a team from database by UUID
+   * Fetches a plan from database by UUID
    * @param {string} id
-   * @returns {Promise<Team>} queried team data
+   * @returns {Promise<Plan>} queried plan data
    */
   async get(id: string): Promise<WithId<Plan>> {
     const _id = new ObjectId(id);
@@ -59,9 +57,9 @@ export class PlanRepository {
   }
 
   /**
-   * Fetches a team from database by UUID
+   * Fetches plans from database by UUID
    * @param {string} id
-   * @returns {Promise<Team>} queried team data
+   * @returns {Promise<Plan>} queried plan data
    */
   async getPlans(): Promise<WithId<Plan>[]> {
     const plans = await this.db

@@ -128,12 +128,12 @@ export class TeamService {
     }
 
     let hubPlan;
-  
+
     const user = await this.contextService.get("user");
     const userData = await this.userRepository.findUserByUserId(
       new ObjectId(user._id),
     );
-    
+
     const plans = await this.planRepository.getPlans();
     for (let i = 0; i < plans.length; i++) {
       if (plans[i].name === "Community") {
@@ -143,7 +143,7 @@ export class TeamService {
         };
       }
     }
-    
+
     const createdTeam = await this.teamRepository.create(team, hubPlan);
     const updatedUserTeams = [...userData.teams];
     updatedUserTeams.push({
@@ -153,7 +153,7 @@ export class TeamService {
       isNewInvite: false,
     });
     const updatedUserParams = {
-      teams: updatedUserTeams
+      teams: updatedUserTeams,
     };
     await this.userRepository.updateUserById(
       new ObjectId(userData._id),

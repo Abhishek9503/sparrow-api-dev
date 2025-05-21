@@ -1,29 +1,10 @@
 import {
   IsBoolean,
   IsDateString,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from "class-validator";
-
-export enum LimmitArea {
-  USER = "user",
-  HUB = "hub",
-  WORKSPACE = "workspace",
-  TESTFLOW = "testflow",
-  ENVIRONMENT = "environment",
-  COLLECTION = "collection",
-  AI = "ai"
-}
-export class LimitData { 
-  @IsEnum(LimmitArea)
-  @IsNotEmpty()
-  area: LimmitArea;
-
-  @IsNotEmpty()
-  value: number;
-}
 
 export class Limits {}
 
@@ -56,5 +37,3 @@ export class Plan {
   @IsOptional()
   updatedBy?: string;
 }
-
-

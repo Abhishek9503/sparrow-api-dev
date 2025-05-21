@@ -57,7 +57,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // if admin role exists we return the whole obj (this is only used for admin api's)
     if (role) {
       return {
-        _id: _id,
+        _id: user._id,
         email: user.email,
         name: user.name,
         role: role,
@@ -65,9 +65,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     return {
-      _id: user._id, 
+      _id: user._id,
       email: user.email,
-      name: user.name
+      name: user.name,
     };
   }
 }
