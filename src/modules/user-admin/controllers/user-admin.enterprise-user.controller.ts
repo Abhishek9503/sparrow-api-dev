@@ -51,4 +51,29 @@ export class AdminUsersController {
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Get("dashboard-stats")
+  @ApiOperation({
+    summary: "Get dashboard statistics (total users, new invites, total hubs)",
+    description: "Returns counts and month-over-month changes for key metrics",
+  })
+  async getDashboardStats(@Req() req: any, @Res() res: FastifyReply) {
+    const userId = req.user._id;
+
+    if (!userId) {
+      throw new UnauthorizedException("User ID is missing from token");
+    }
+
+    const stats = await this.usersService.getDashboardStats(userId);
+
+    const responseData = new ApiResponseService(
+      "Dashboard statistics generated",
+      HttpStatusCode.OK,
+      stats,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }

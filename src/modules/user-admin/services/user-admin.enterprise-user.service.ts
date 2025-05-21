@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from "@nestjs/common";
 
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
 import { UserService } from "@src/modules/identity/services/user.service";
@@ -88,5 +92,81 @@ export class AdminUsersService {
       };
     });
     return { teams: updatedFilteredTeams, users: newestUniqueUsers };
+  }
+
+  async getDashboardStats(userId: string) {
+    try {
+      // Get current date and first day of current month
+      const now = new Date();
+      const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Get teams where user is owner or admin
+      const teams = await this.teamsRepo.findTeamsByOwnerOrAdmin(
+        userId.toString(),
+      );
+
+      if (!teams || teams.length === 0) {
+        return {
+          users: { total: 0, changeFromLastMonth: 0 },
+          hubs: { total: 0, changeFromLastMonth: 0 },
+          invites: { total: 0, changeFromLastMonth: 0 },
+        };
+      }
+
+      // Count totals and changes
+      const totalHubs = teams.length;
+      const newHubs = teams.filter(
+        (team) =>
+          team.createdAt && new Date(team.createdAt) >= firstDayThisMonth,
+      ).length;
+
+      // Count total users across teams
+      const uniqueUsers = new Set();
+      const newUsers = new Set();
+      let totalInvites = 0;
+      let newInvites = 0;
+
+      teams.forEach((team) => {
+        // Count users
+        (team.users || []).forEach((user: any) => {
+          uniqueUsers.add(user.id.toString());
+
+          // Check if user joined this month
+          if (user.joinedAt && new Date(user.joinedAt) >= firstDayThisMonth) {
+            newUsers.add(user.id.toString());
+          }
+        });
+
+        // Count invites
+        const invites = team.invites || [];
+        totalInvites += invites.length;
+
+        // Count new invites
+        newInvites += invites.filter(
+          (invite: any) =>
+            invite.createdAt && new Date(invite.createdAt) >= firstDayThisMonth,
+        ).length;
+      });
+
+      return {
+        users: {
+          total: uniqueUsers.size,
+          changeFromLastMonth: newUsers.size,
+        },
+        hubs: {
+          total: totalHubs,
+          changeFromLastMonth: newHubs,
+        },
+        invites: {
+          total: totalInvites,
+          changeFromLastMonth: newInvites,
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      throw new InternalServerErrorException(
+        "Failed to fetch dashboard statistics",
+      );
+    }
   }
 }
