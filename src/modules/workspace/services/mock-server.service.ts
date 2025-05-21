@@ -7,7 +7,6 @@ import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { MockRequestResponseDto } from "../payloads/mock-server.payload";
 import { v4 as uuidv4 } from "uuid";
 import { MockRequestHistory } from "@src/modules/common/models/collection.model";
-import { KeyValue } from "@src/modules/common/models/collection.rxdb.model";
 
 /**
  * Mock Server Service - Service responsible for handling operations related to mock server and requests.
@@ -75,26 +74,26 @@ export class MockServerService {
                 const duration = Math.round(Date.now() - startTime);
 
                 // Convert request headers to KeyValue format
-                const requestHeadersKV: KeyValue[] = Object.entries(
-                  req.headers,
-                ).map(([key, value]) => ({
-                  key,
-                  value: Array.isArray(value)
-                    ? value.join(", ")
-                    : String(value),
-                  checked: true,
-                }));
+                // const requestHeadersKV: KeyValue[] = Object.entries(
+                //   req.headers,
+                // ).map(([key, value]) => ({
+                //   key,
+                //   value: Array.isArray(value)
+                //     ? value.join(", ")
+                //     : String(value),
+                //   checked: true,
+                // }));
 
                 // Convert response headers to KeyValue format
-                const responseHeadersKV: KeyValue[] = res
-                  ? Object.entries(res.getHeaders()).map(([key, value]) => ({
-                      key,
-                      value: Array.isArray(value)
-                        ? value.join(", ")
-                        : String(value),
-                      checked: true,
-                    }))
-                  : [];
+                // const responseHeadersKV: KeyValue[] = res
+                //   ? Object.entries(res.getHeaders()).map(([key, value]) => ({
+                //       key,
+                //       value: Array.isArray(value)
+                //         ? value.join(", ")
+                //         : String(value),
+                //       checked: true,
+                //     }))
+                //   : [];
 
                 const endpointURL = (url: string) => {
                   const regex = /\/api\/mock\/[a-f0-9]+(\/.*)/;
@@ -109,11 +108,11 @@ export class MockServerService {
                   method: req.method as HTTPMethods,
                   responseStatus: responseData.status,
                   duration: duration,
-                  requestHeaders: requestHeadersKV,
+                  requestHeaders: mock.headers,
                   requestBody: mock.body,
                   selectedRequestBodyType: mock.selectedRequestBodyType,
                   selectedResponseBodyType: mock.selectedResponseBodyType,
-                  responseHeaders: responseHeadersKV,
+                  responseHeaders: mock.responseHeaders,
                   responseBody: mock.responseBody,
                 };
 

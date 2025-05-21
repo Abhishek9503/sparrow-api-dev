@@ -830,6 +830,7 @@ export class MockRequestHistory {
 
   @ApiProperty({ example: "200 OK" })
   @IsString()
+  @IsOptional()
   responseStatus?: string;
 
   @ApiProperty({

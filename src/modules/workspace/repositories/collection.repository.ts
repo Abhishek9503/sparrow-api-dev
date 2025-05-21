@@ -1361,12 +1361,11 @@ export class CollectionRepository {
     collectionId: string,
     historyEntry: any,
   ): Promise<void> {
-    const id =
-      typeof collectionId === "string"
-        ? new ObjectId(collectionId)
-        : collectionId;
     await this.db
       .collection<Collection>(Collections.COLLECTION)
-      .updateOne({ _id: id }, { $push: { mockRequestHistory: historyEntry } });
+      .updateOne(
+        { _id: new ObjectId(collectionId) },
+        { $push: { mockRequestHistory: historyEntry } },
+      );
   }
 }
