@@ -104,13 +104,14 @@ export class AdminWorkspaceService {
               sort: sort,
             });
 
-          const mappedCollections = collections.map((item) => ({
+          const mappedCollections = collections.map((item: any) => ({
             resourceType: "collections",
             keyStats: item?.items?.length,
             name: item?.name,
             updatedAt: item?.updatedAt,
             createdBy: item?.createdBy,
             updatedBy: item?.updatedBy,
+            id: item?.id,
           }));
 
           allResources.push(...mappedCollections);
@@ -151,13 +152,14 @@ export class AdminWorkspaceService {
               sort: sort,
             });
 
-          const mappedEnvironments = environments.map((item) => ({
+          const mappedEnvironments = environments.map((item: any) => ({
             resourceType: "environments",
             keyStats: item?.variable?.length,
             name: item?.name,
             updatedAt: item?.updatedAt,
             createdBy: item?.createdBy,
             updatedBy: item?.updatedBy,
+            id: item?.id,
           }));
 
           allResources.push(...mappedEnvironments);
@@ -202,13 +204,14 @@ export class AdminWorkspaceService {
               limit,
             });
 
-          const mappedCollections = collections.map((item) => ({
+          const mappedCollections = collections.map((item: any) => ({
             resourceType: "collections",
             keyStats: item?.items?.length,
             name: item?.name,
             updatedAt: item?.updatedAt,
             createdBy: item?.createdBy,
             updatedBy: item?.updatedBy,
+            id: item?.id,
           }));
 
           return { resources: mappedCollections, totalCount };
@@ -235,6 +238,7 @@ export class AdminWorkspaceService {
             updatedAt: item?.updatedAt,
             updatedBy: item?.updatedByUser?.[0]?.name,
             createdBy: item?.createdBy,
+            id: item?.id,
           }));
 
           return { resources: mappedTestflows, totalCount };
@@ -254,13 +258,14 @@ export class AdminWorkspaceService {
               limit,
             });
 
-          const mappedEnvironments = environments.map((item) => ({
+          const mappedEnvironments = environments.map((item: any) => ({
             resourceType: "environments",
             keyStats: item?.variable?.length,
             name: item?.name,
             updatedAt: item?.updatedAt,
             createdBy: item?.createdBy,
             updatedBy: item?.updatedBy,
+            id: item?.id,
           }));
 
           return { resources: mappedEnvironments, totalCount };
