@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -530,6 +531,42 @@ export class WorkSpaceController {
       HttpStatusCode.OK,
       data,
     );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Retrieves a paginated list of public workspaces.
+   * @route GET /api/workspace/public-list?page=1
+   * @param page - The page number (query param, default 1)
+   * @returns Paginated list of public workspaces
+   */
+  @Get("public-list")
+  @ApiOperation({
+    summary: "Get paginated list of public workspaces",
+    description: "Returns a paginated list of public workspaces (20 per page)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Paginated public workspaces fetched successfully",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Failed to fetch public workspaces",
+  })
+  async getPaginatedPublicWorkspaces(
+    @Query("page") page: string = "1",
+    @Res() res: FastifyReply,
+  ) {
+    const pageSize = 20;
+    const { workspaces, total } =
+      await this.workspaceService.getPaginatedPublicWorkspaces(page, pageSize);
+    const responseData = new ApiResponseService("Success", HttpStatusCode.OK, {
+      workspaces,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    });
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
