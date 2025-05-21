@@ -47,13 +47,6 @@ export class User {
   @IsOptional()
   password?: string;
 
-  @IsMongoId()
-  @IsNotEmpty()
-  planId: ObjectId;
-
-  @IsNotEmpty()
-  hubCount: number;
-
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })

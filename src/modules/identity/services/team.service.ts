@@ -133,30 +133,19 @@ export class TeamService {
     const userData = await this.userRepository.findUserByUserId(
       new ObjectId(user._id),
     );
-    if(userData.hubCount === 0){
-      const plans = await this.planRepository.getPlans();
-      for (let i = 0; i < plans.length; i++) {
-        if (plans[i].name === "Community") {
-          hubPlan = {
-            id: plans[i]._id,
-            name: plans[i].name,
-          };
-        }
-      }
-    } else{
-      const userTeams = await this.getAllTeams(userData._id.toString());
-      const ownedTeam = userTeams.find((team) => {
-        if(team.owner === userData._id.toString()) return true;
-        return false;
-      });
-      hubPlan = {
-        id: ownedTeam.plan.id,
-        name: ownedTeam.plan.name
+    
+    const plans = await this.planRepository.getPlans();
+    for (let i = 0; i < plans.length; i++) {
+      if (plans[i].name === "Community") {
+        hubPlan = {
+          id: plans[i]._id,
+          name: plans[i].name,
+        };
       }
     }
+    
     const createdTeam = await this.teamRepository.create(team, hubPlan);
     const updatedUserTeams = [...userData.teams];
-    const updatedHubCount = userData.hubCount + 1;
     updatedUserTeams.push({
       id: createdTeam.insertedId,
       name: teamData.name,
@@ -164,8 +153,7 @@ export class TeamService {
       isNewInvite: false,
     });
     const updatedUserParams = {
-      teams: updatedUserTeams,
-      hubCount: updatedHubCount
+      teams: updatedUserTeams
     };
     await this.userRepository.updateUserById(
       new ObjectId(userData._id),

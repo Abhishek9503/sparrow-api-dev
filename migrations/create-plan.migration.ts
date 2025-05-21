@@ -21,12 +21,7 @@ export class CreatePlanMigration implements OnModuleInit {
           name: "Community",
           description: "Free tier with limited access",
           active: true,
-          limits: {
-            privateHubs: {
-              area: "user",
-              value: 1,
-            },
-          },
+          limits: {},
           createdAt: new Date(),
           updatedAt: new Date(),
           createdBy: "system",
@@ -35,14 +30,9 @@ export class CreatePlanMigration implements OnModuleInit {
 
         const standardPlan = {
           name: "Standard",
-          description: "Free tier with limited access",
+          description: "paid tier with limited access",
           active: true,
-          limits: {
-            privateHubs: {
-              area: "user",
-              value: 3,
-            },
-          },
+          limits: {},
           createdAt: new Date(),
           updatedAt: new Date(),
           createdBy: "system",

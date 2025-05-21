@@ -30,17 +30,6 @@ export class PlanService {
     return createdPlan;
   }
 
-  async limitTeamsCreation() {
-    const user = await this.contextService.get("user");
-    const userObject = await this.userService.getUserById(user._id.toString());
-    const userPlan = await this.get(userObject.planId.toString());
-
-    const event = userPlan.limits.privateHubs;
-    if (userObject.hubCount >= event.value) {
-      throw new ForbiddenException("Cant create new Hubs in community plan");
-    }
-  }
-
   /**
    * Fetches a plan from database by UUID
    * @param  id

@@ -113,16 +113,9 @@ export class UserService {
         "The account with the provided email currently exists. Please choose another one.",
       );
     }
-    const plans = await this.planRepository.getPlans();
-    let communityPlanId;
-    for (let i = 0; i < plans.length; i++){
-      if(plans[i].name === "Community"){
-        communityPlanId = plans[i]._id;
-      }
-    }
 
     await this.userRepository.createUser(
-      payload, communityPlanId
+      payload
     );
 
     const data = {
@@ -392,20 +385,11 @@ export class UserService {
     name: string,
     email: string,
   ): Promise<InsertOneResult> {
-    
-    const plans = await this.planRepository.getPlans();
-    let communityPlanId;
-    for (let i = 0; i < plans.length; i++){
-      if(plans[i].name === "Community"){
-        communityPlanId = plans[i]._id;
-      }
-    }
 
     const createdUser = await this.userRepository.createGoogleAuthUser(
       oauthId,
       name,
       email,
-      communityPlanId
     );
     const user = {
       _id: createdUser.insertedId,

@@ -14,18 +14,14 @@ export class CreateTeamGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
   
     const user = request.user;
-    const userObject = await this.userService.getUserById(user._id.toString());
     const userTeams = await this.teamService.getAllTeams(user._id.toString());
-    const ownedTeam = userTeams.find((team) => {
-      if(team.owner === userObject._id.toString()) return true;
+  
+    const ownedTeams = userTeams.filter((team)=>{
+      if(team.owner === user._id.toString()) return true;
       return false;
     });
-    
-    const userPlan = await this.planService.get(ownedTeam.plan.id.toString());
-    
-    const event = userPlan.limits.privateHubs;
-    if (userObject.hubCount >= event.value) {
-        throw new ForbiddenException("Cant create new Hubs in community plan");
+    if(ownedTeams.length === 1 && ownedTeams[0].plan.name === "Community"){
+      throw new ForbiddenException("Can't create new Hub, Plan limit reached.");
     }
     return true;
   }

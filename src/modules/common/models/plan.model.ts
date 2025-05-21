@@ -25,9 +25,7 @@ export class LimitData {
   value: number;
 }
 
-export class Limits {
-  privateHubs: LimitData;
-}
+export class Limits {}
 
 export class Plan {
   @IsString()
