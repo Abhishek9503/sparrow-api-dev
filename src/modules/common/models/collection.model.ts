@@ -820,9 +820,13 @@ export class MockRequestHistory {
   @IsDate()
   timestamp: Date;
 
+  @ApiProperty({ description: "Name of the mock request" })
+  @IsString()
+  name: string;
+
   @ApiProperty({ description: "Endpoint of the mock request" })
   @IsString()
-  endpoint: string;
+  url: string;
 
   @ApiProperty({ example: "put" })
   @IsNotEmpty()

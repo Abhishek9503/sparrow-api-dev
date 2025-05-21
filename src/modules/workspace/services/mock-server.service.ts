@@ -95,7 +95,7 @@ export class MockServerService {
                 //     }))
                 //   : [];
 
-                const endpointURL = (url: string) => {
+                const mockEndpoint = (url: string) => {
                   const regex = /\/api\/mock\/[a-f0-9]+(\/.*)/;
                   const match = url.match(regex);
                   return match ? match[1] : "";
@@ -104,7 +104,8 @@ export class MockServerService {
                 const historyEntry: MockRequestHistory = {
                   id: uuidv4(),
                   timestamp: new Date(),
-                  endpoint: endpointURL(url),
+                  name: item.name,
+                  url: mockEndpoint(url),
                   method: req.method as HTTPMethods,
                   responseStatus: responseData.status,
                   duration: duration,
