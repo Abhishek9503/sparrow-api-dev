@@ -6,6 +6,16 @@ import {
   IsString,
 } from "class-validator";
 
+export enum LimmitArea {
+  USER = "user",
+  HUB = "hub",
+  WORKSPACE = "workspace",
+  TESTFLOW = "testflow",
+  ENVIRONMENT = "environment",
+  COLLECTION = "collection",
+  AI = "ai",
+}
+
 export class Limits {}
 
 export class Plan {

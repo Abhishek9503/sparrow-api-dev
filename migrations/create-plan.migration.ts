@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit, Inject } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 
 import { Db } from "mongodb";
@@ -7,17 +8,22 @@ import { Db } from "mongodb";
 export class CreatePlanMigration implements OnModuleInit {
   constructor(
     @Inject("DATABASE_CONNECTION") private readonly db: Db, // Inject the MongoDB connection
+    private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit(): Promise<void> {
     try {
+      const defaultHubPlan =
+        this.configService.get<string>("app.defaultHubPlan");
       const planCollection = this.db.collection(Collections.PLAN);
-      // Insert Community Plan
-      const existingPlan = await planCollection.findOne({ name: "Community" });
+
+      const existingPlan = await planCollection.findOne({
+        name: defaultHubPlan,
+      });
 
       if (!existingPlan) {
-        const communityPlan = {
-          name: "Community",
+        const plan = {
+          name: defaultHubPlan,
           description: "Free tier with limited access",
           active: true,
           limits: {},
@@ -27,19 +33,7 @@ export class CreatePlanMigration implements OnModuleInit {
           updatedBy: "system",
         };
 
-        const standardPlan = {
-          name: "Standard",
-          description: "paid tier with limited access",
-          active: true,
-          limits: {},
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: "system",
-          updatedBy: "system",
-        };
-
-        await planCollection.insertOne(communityPlan);
-        await planCollection.insertOne(standardPlan);
+        await planCollection.insertOne(plan);
         console.log("\x1b[36mCommunity Plan created successfully.\x1b[0m");
       } else {
         console.log("\x1b[33mCommunity Plan already exists. Skipping.\x1b[0m");

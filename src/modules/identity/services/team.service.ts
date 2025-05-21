@@ -94,6 +94,7 @@ export class TeamService {
     image?: MemoryStorageFile,
   ): Promise<InsertOneResult<Team>> {
     let team;
+    const defaultHubPlan = this.configService.get<string>("app.defaultHubPlan");
 
     const dynamicUrl = await this.generateUniqueTeamUrl(teamData.name);
     if (image) {
@@ -136,7 +137,7 @@ export class TeamService {
 
     const plans = await this.planRepository.getPlans();
     for (let i = 0; i < plans.length; i++) {
-      if (plans[i].name === "Community") {
+      if (plans[i].name === defaultHubPlan) {
         hubPlan = {
           id: plans[i]._id,
           name: plans[i].name,
