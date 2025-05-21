@@ -1356,4 +1356,17 @@ export class CollectionRepository {
 
     return data;
   }
+
+  async addMockRequestHistory(
+    collectionId: string,
+    historyEntry: any,
+  ): Promise<void> {
+    const id =
+      typeof collectionId === "string"
+        ? new ObjectId(collectionId)
+        : collectionId;
+    await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .updateOne({ _id: id }, { $push: { mockRequestHistory: historyEntry } });
+  }
 }

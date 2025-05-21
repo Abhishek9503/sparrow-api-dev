@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { FastifyRequest } from "fastify";
+import { FastifyReply, FastifyRequest, HTTPMethods } from "fastify";
 import { CollectionRepository } from "../repositories/collection.repository";
 import { ObjectId } from "mongodb";
 import { ConfigService } from "@nestjs/config";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { MockRequestResponseDto } from "../payloads/mock-server.payload";
+import { v4 as uuidv4 } from "uuid";
+import { MockRequestHistory } from "@src/modules/common/models/collection.model";
+import { KeyValue } from "@src/modules/common/models/collection.rxdb.model";
 
 /**
  * Mock Server Service - Service responsible for handling operations related to mock server and requests.
@@ -21,8 +24,10 @@ export class MockServerService {
 
   async handleMockRequests(
     req: FastifyRequest,
+    res?: FastifyReply,
   ): Promise<MockRequestResponseDto> {
     try {
+      const startTime = Date.now();
       const url = req.url; // e.g. /api/mock/6825983c9ab55fe3b6dcc05f/user
       const method = req.method.toUpperCase();
 
@@ -60,25 +65,92 @@ export class MockServerService {
                 mock?.url === mockUrl &&
                 mock?.method?.toUpperCase() === method
               ) {
-                return {
+                const responseData = {
                   status:
                     mock.responseStatus !== "" ? mock.responseStatus : 200,
                   body: mock.responseBody ?? "",
                   contentType: mock.selectedResponseBodyType,
                 };
+
+                const duration = Math.round(Date.now() - startTime);
+
+                // Convert request headers to KeyValue format
+                const requestHeadersKV: KeyValue[] = Object.entries(
+                  req.headers,
+                ).map(([key, value]) => ({
+                  key,
+                  value: Array.isArray(value)
+                    ? value.join(", ")
+                    : String(value),
+                  checked: true,
+                }));
+
+                // Convert response headers to KeyValue format
+                const responseHeadersKV: KeyValue[] = res
+                  ? Object.entries(res.getHeaders()).map(([key, value]) => ({
+                      key,
+                      value: Array.isArray(value)
+                        ? value.join(", ")
+                        : String(value),
+                      checked: true,
+                    }))
+                  : [];
+
+                const endpointURL = (url: string) => {
+                  const regex = /\/api\/mock\/[a-f0-9]+(\/.*)/;
+                  const match = url.match(regex);
+                  return match ? match[1] : "";
+                };
+
+                const historyEntry: MockRequestHistory = {
+                  id: uuidv4(),
+                  timestamp: new Date(),
+                  endpoint: endpointURL(url),
+                  method: req.method as HTTPMethods,
+                  responseStatus: responseData.status,
+                  duration: duration,
+                  requestHeaders: requestHeadersKV,
+                  requestBody: mock.body,
+                  selectedRequestBodyType: mock.selectedRequestBodyType,
+                  selectedResponseBodyType: mock.selectedResponseBodyType,
+                  responseHeaders: responseHeadersKV,
+                  responseBody: mock.responseBody,
+                };
+
+                await this.storeRequestHistory(collectionId, historyEntry);
+                return responseData;
               }
             }
           }
-        } else {
+
           throw new NotFoundException("URL NOT FOUND");
         }
+        return {
+          status: HttpStatusCode.NOT_FOUND,
+          body: "URL NOT FOUND",
+        };
       }
-      return {
-        status: HttpStatusCode.NOT_FOUND,
-        body: "URL NOT FOUND",
-      };
     } catch (error) {
       throw new NotFoundException("URL NOT FOUND");
+    }
+  }
+
+  /**
+   * Stores a request history entry in the collection
+   * @param collectionId Collection ID
+   * @param historyEntry History entry to store
+   */
+  private async storeRequestHistory(
+    collectionId: string,
+    historyEntry: MockRequestHistory,
+  ): Promise<void> {
+    try {
+      await this.collectionRepository.addMockRequestHistory(
+        collectionId,
+        historyEntry,
+      );
+    } catch (error) {
+      console.error("Failed to store mock request history:", error);
     }
   }
 }
