@@ -28,9 +28,10 @@ export class Plan {
   description?: string;
 
   @IsBoolean()
+  @IsNotEmpty()
   active?: boolean;
 
-  @IsOptional()
+  @IsNotEmpty()
   limits?: Limits;
 
   @IsDateString()
@@ -40,10 +41,8 @@ export class Plan {
   updatedAt: Date;
 
   @IsString()
-  @IsOptional()
   createdBy?: string;
 
   @IsString()
-  @IsOptional()
   updatedBy?: string;
 }
