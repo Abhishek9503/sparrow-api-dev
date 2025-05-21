@@ -1,54 +1,54 @@
-import { Controller, Body, Get, Post, Param, Res } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Controller, Get, Param, Res, UseGuards } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FastifyReply } from "fastify";
 import { ApiResponseService } from "@src/modules/common/services/api-response.service";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 
-import { CreateOrUpdatePlanDto } from "../payloads/plan.payload";
 import { PlanService } from "../services/plan.service";
+import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 /**
  * Plan Controller
  */
 @ApiTags("plan")
 @Controller("api/plan")
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class PlanController {
   constructor(private readonly planService: PlanService) {}
 
-  @Post()
-  @ApiOperation({
-    summary: "Create a new  Plan",
-    description: "This will Create a new Plan",
-  })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        name: {
-          type: "string",
-        },
-        description: {
-          type: "string",
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 201, description: "Plan Created Successfully" })
-  @ApiResponse({ status: 400, description: "Create Team Failed" })
-  async creatPlan(
-    @Body() createPlanDto: CreateOrUpdatePlanDto,
-    @Res() res: FastifyReply,
-  ) {
-    const data = await this.planService.create(createPlanDto);
-    const plan = await this.planService.get(data.insertedId.toString());
-    const responseData = new ApiResponseService(
-      "Plan Created",
-      HttpStatusCode.CREATED,
-      plan,
-    );
+  // @Post()
+  // @ApiOperation({
+  //   summary: "Create a new Plan",
+  //   description: "This will Create a new Plan",
+  // })
+  // @ApiBody({
+  //   schema: {
+  //     type: "object",
+  //     properties: {
+  //       name: {
+  //         type: "string",
+  //       },
+  //       description: {
+  //         type: "string",
+  //       },
+  //     },
+  //   },
+  // })
+  // @ApiResponse({ status: 201, description: "Plan Created Successfully" })
+  // @ApiResponse({ status: 400, description: "Create Plan Failed" })
+  // async createPlan(
+  //   @Body() createPlanDto: CreateOrUpdatePlanDto,
+  //   @Res() res: FastifyReply,
+  // ) {
+  //   const data = await this.planService.create(createPlanDto);
+  //   const plan = await this.planService.get(data.insertedId.toString());
+  //   const responseData = new ApiResponseService(
+  //     "Plan Created",
+  //     HttpStatusCode.CREATED,
+  //     plan,
+  //   );
 
-    return res.status(responseData.httpStatusCode).send(responseData);
-  }
+  //   return res.status(responseData.httpStatusCode).send(responseData);
+  // }
 
   @Get(":planId")
   @ApiOperation({

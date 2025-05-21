@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Db, InsertOneResult, ObjectId, WithId } from "mongodb";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 import { CreateOrUpdatePlanDto } from "../payloads/plan.payload";
@@ -49,9 +49,7 @@ export class PlanRepository {
       .collection<Plan>(Collections.PLAN)
       .findOne({ _id });
     if (!plan) {
-      throw new BadRequestException(
-        "The Plan with that id could not be found.",
-      );
+      throw new NotFoundException("Plan not found.");
     }
     return plan;
   }

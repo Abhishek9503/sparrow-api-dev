@@ -33,7 +33,6 @@ import {
 } from "@blazity/nest-file-fastify";
 import { UserService } from "../services/user.service";
 import { PlanService } from "../services/plan.service";
-import { User } from "@src/modules/common/decorators/user.decorator";
 import { CreateTeamGuard } from "@src/modules/common/guards/plan-limits/create-team-guard";
 /**
  * Team Controller
@@ -82,7 +81,6 @@ export class TeamController {
     @Res() res: FastifyReply,
     @UploadedFile()
     image: MemoryStorageFile,
-    // @User() user: any
   ) {
     const data = await this.teamService.create(createTeamDto, image);
     const team = await this.teamService.get(data.insertedId.toString());

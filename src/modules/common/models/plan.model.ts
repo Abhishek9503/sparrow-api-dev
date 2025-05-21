@@ -6,7 +6,7 @@ import {
   IsString,
 } from "class-validator";
 
-export enum LimmitArea {
+export enum LimitArea {
   USER = "user",
   HUB = "hub",
   WORKSPACE = "workspace",

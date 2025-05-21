@@ -9,6 +9,7 @@ const databaseProvider: Provider = {
   provide: "DATABASE_CONNECTION",
   useFactory: async (configService: ConfigService): Promise<Db> => {
     const dbUrl = configService.get<string>("db.url");
+    const dbName = configService.get<string>("db.name");
 
     if (!dbUrl) {
       throw new Error("Database URL is not defined in the configuration.");
@@ -16,7 +17,7 @@ const databaseProvider: Provider = {
 
     const client = new MongoClient(dbUrl);
     await client.connect();
-    return client.db("sparrow");
+    return client.db(dbName);
   },
   inject: [ConfigService],
 };
