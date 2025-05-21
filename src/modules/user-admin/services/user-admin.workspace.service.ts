@@ -167,18 +167,22 @@ export class AdminWorkspaceService {
 
         //  Manual Sort
         if (sort.sortBy === "resources") {
-          allResources.sort((a, b) => a.name.localeCompare(b.name));
+          allResources.sort((a, b) => {
+            const comparison = a.name.localeCompare(b.name);
+            return sort.sortOrder === "asc" ? comparison : -comparison;
+          });
         } else if (sort.sortBy === "createdBy") {
           allResources.sort((a, b) => {
             const aBy = a.createdBy?.toLowerCase?.() || "";
             const bBy = b.createdBy?.toLowerCase?.() || "";
-            return aBy.localeCompare(bBy);
+            const comparison = aBy.localeCompare(bBy);
+            return sort.sortOrder === "asc" ? comparison : -comparison;
           });
         } else {
           allResources.sort((a, b) => {
             const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
             const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-            return dateB - dateA;
+            return sort.sortOrder === "asc" ? dateA - dateB : dateB - dateA;
           });
         }
 
