@@ -8,7 +8,7 @@ export enum Models {
   Google = "google",
   OpenAI = "openai",
   DeepSeek = "deepseek",
-  GPT = "gpt"
+  GPT = "gpt"           // For AzureOpenai
 }
 
 export enum ClaudeModelVersion {

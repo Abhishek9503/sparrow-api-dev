@@ -20,6 +20,9 @@ import { MessagesPage } from "openai/resources/beta/threads/messages";
 import { Thread } from "openai/resources/beta/threads/threads";
 import type { IncomingMessage } from "node:http";
 
+// import { GoogleGenAI } from "@google/genai";
+import Anthropic from '@anthropic-ai/sdk';
+
 // ---- Payload
 import {
   AIResponseDto,
@@ -1078,6 +1081,77 @@ export class AiAssistantService {
       throw new BadRequestException(
         "An error occurred while processing the request.",
       );
+    }
+  }
+
+
+  public async promptGeneration(data: ChatBotPayload): Promise<string> {
+    try {
+      const { userInput, authKey, model, modelVersion } = data;
+
+      const promptInstruction = "You are an assistant that helps in creating proper prompts of user text. You are provided with user input and you have to understand the user input and make it proper. Give only desired output without any starting or ending explaination.";
+
+      switch (model) {
+        case Models.OpenAI: {
+          const openai = new OpenAI({ apiKey: authKey });
+          const completion = await openai.chat.completions.create({
+            messages: [
+              { role: "system", content: promptInstruction },
+              { role: "user", content: userInput }
+            ],
+            model: modelVersion
+          });
+          console.log(completion.choices[0].message.content);
+          return completion.choices[0].message.content;
+        }
+
+        // case Models.Google: {
+        //   const google = new GoogleGenAI({ apiKey: authKey });
+        //   const response = await google.models.generateContent({
+        //     model: modelVersion,
+        //     contents: `This is the user input - ${userInput}. You are tasked with generating a prompt for this input.`
+        //   });
+        //   console.log(response.text);
+        //   return response.text;
+        // }
+
+        case Models.Anthropic: {
+          const anthropic = new Anthropic({ apiKey: authKey });
+          const msg = await anthropic.messages.create({
+            model: modelVersion,
+            max_tokens: 1024,
+            messages: [
+              {
+                role: "user",
+                content: `This is the user input - ${userInput}. You are tasked with generating a prompt for this input.`
+              }
+            ]
+          });
+          console.log(msg.content);
+        }
+
+        case Models.DeepSeek: {
+          const deepseek = new OpenAI({
+            baseURL: "https://api.deepseek.com",
+            apiKey: authKey
+          });
+          const completion = await deepseek.chat.completions.create({
+            messages: [
+              { role: "system", content: promptInstruction },
+              { role: "user", content: userInput }
+            ],
+            model: modelVersion
+          });
+          console.log(completion.choices[0].message.content);
+          return completion.choices[0].message.content;
+        }
+
+        default:
+          throw new BadRequestException("Unsupported model type.");
+      }
+    } catch (error) {
+      console.error("Error processing prompt generation:", error);
+      throw new BadRequestException("An error occurred while processing the request.");
     }
   }
 }
