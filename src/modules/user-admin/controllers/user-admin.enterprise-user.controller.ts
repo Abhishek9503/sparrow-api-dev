@@ -60,7 +60,7 @@ export class AdminUsersController {
     }
     const data = await this.usersService.getUserDetails(ownerId, userId);
     const responseData = new ApiResponseService(
-      "Users Generated",
+      "Users Details Generated",
       HttpStatusCode.OK,
       data,
     );
