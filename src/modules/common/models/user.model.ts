@@ -144,6 +144,10 @@ export class UserDto {
   @IsString()
   @IsNotEmpty()
   role: string;
+
+  @IsOptional()
+  @IsDate()
+  joinedAt?: Date;
 }
 
 class AuthProvider {
