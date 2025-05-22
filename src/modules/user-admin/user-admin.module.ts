@@ -21,6 +21,7 @@ import { AdminMembersController } from "./controllers/user-admin.members.control
 import { AdminMembersRepository } from "./repositories/user-admin.members.repository";
 import { AdminUsersController } from "./controllers/user-admin.enterprise-user.controller";
 import { AdminUsersService } from "./services/user-admin.enterprise-user.service";
+import { AdminUpdatesRepository } from "./repositories/user-admin.updates.repository";
 
 /**
  * Admin Module provides all necessary services, handlers, repositories,
@@ -41,6 +42,7 @@ import { AdminUsersService } from "./services/user-admin.enterprise-user.service
     AdminMembersRepository,
     AdminMembersService,
     AdminUsersService,
+    AdminUpdatesRepository,
   ],
   exports: [],
   controllers: [
