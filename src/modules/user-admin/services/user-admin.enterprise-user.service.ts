@@ -2,12 +2,15 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
 import { UserService } from "@src/modules/identity/services/user.service";
+import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
+import { UserDetails } from "@src/modules/identity/controllers/test/mockData/auth.payload";
 
 @Injectable()
 export class AdminUsersService {
   constructor(
     private readonly teamsRepo: AdminHubsRepository,
     private readonly userService: UserService,
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   async getAllUsers(userId: string) {
@@ -73,9 +76,11 @@ export class AdminUsersService {
         return {
           id: user.id,
           name: user.name,
+          email: userOrg.email,
           teams: userTeams,
           teamsAccess: user.teams.length,
           lastActive: userOrg?.lastActive || "",
+          joinedOrg: userOrg?.emailVerificationCodeTimeStamp,
         };
       }),
     );
@@ -88,5 +93,74 @@ export class AdminUsersService {
       };
     });
     return { teams: updatedFilteredTeams, users: newestUniqueUsers };
+  }
+  async getUserDetails(ownerId: string, userId: string) {
+    // Fetch all required data in parallel
+    const [teams, userOrg, memberWorkspaces] = await Promise.all([
+      this.teamsRepo.findBasicTeamsByUserId(ownerId),
+      this.userService.getUserById(userId),
+      this.workspaceService.getAllWorkSpaces(userId),
+    ]);
+
+    // Validate teams exist
+    if (!teams?.length) {
+      throw new NotFoundException("No teams found for this user");
+    }
+
+    // Filter teams owned by the owner
+    const ownerTeams = teams.filter(
+      (team) => team?.owner?.toString() === ownerId.toString(),
+    );
+
+    // Filter teams where the user is a member
+    const userTeams = ownerTeams.filter((team) =>
+      team.users?.some(
+        (user: any) => user.id?.toString() === userId.toString(),
+      ),
+    );
+
+    // Build hub details
+    const hubDetails = userTeams.map((team) => {
+      // Find user in team
+      const teamUser = team.users.find(
+        (user: any) => user.id?.toString() === userId.toString(),
+      );
+
+      // Filter workspaces for this specific team
+      const teamWorkspaces = memberWorkspaces.filter(
+        (workspace) => workspace.team?.id?.toString() === team._id?.toString(),
+      );
+
+      // Build simplified workspaces with user roles
+      const simplifiedWorkspaces = teamWorkspaces.map((workspace) => {
+        const workspaceUser = workspace.users?.find(
+          (user) => user.id?.toString() === userId.toString(),
+        );
+
+        return {
+          workspace: workspace,
+          userRole: workspaceUser?.role || null,
+        };
+      });
+
+      return {
+        id: teamUser.id,
+        name: teamUser.name,
+        email: teamUser.email,
+        teamId: team._id,
+        teamName: team.name,
+        role: teamUser.role,
+        teamJoiningData: teamUser.joinedAt,
+        simplifiedWorkspaces: simplifiedWorkspaces,
+      };
+    });
+
+    return {
+      hubDetails: hubDetails,
+      userDetails: {
+        name: userOrg.name,
+        email: userOrg.email,
+      },
+    };
   }
 }
