@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsNumber,
 } from "class-validator";
 
 export enum LimitArea {
@@ -19,9 +20,9 @@ export enum LimitArea {
 export class WorkspaceLimit {
   area: LimitArea.WORKSPACE;
 
-  @IsBoolean()
+  @IsNumber()
   @IsNotEmpty()
-  value: boolean;
+  value: number;
 }
 
 export class Limits {
