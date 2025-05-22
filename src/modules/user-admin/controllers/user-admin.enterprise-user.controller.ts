@@ -30,7 +30,7 @@ export class AdminUsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
-  @Get("users")
+  @Get("enterpriseUsers")
   @ApiOperation({
     summary: "Get all the users in hub in which the logged in user is owner",
   })
@@ -43,6 +43,30 @@ export class AdminUsersController {
     const data = await this.usersService.getAllUsers(userId);
     const responseData = new ApiResponseService(
       "Users Generated",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Get("enterpriseUsers-details")
+  @ApiOperation({
+    summary: "Get user details for the enterprise logged in user is owner",
+  })
+  async getUsersDetails(
+    @Req() req: any,
+    @Query("userId") userId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const ownerId = req.user._id;
+
+    if (!ownerId) {
+      throw new UnauthorizedException("User ID is missing from token");
+    }
+    const data = await this.usersService.getUserDetails(ownerId, userId);
+    const responseData = new ApiResponseService(
+      "Users Details Generated",
       HttpStatusCode.OK,
       data,
     );
