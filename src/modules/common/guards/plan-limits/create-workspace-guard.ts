@@ -19,7 +19,6 @@ export class CreateWorkspaceGuard implements CanActivate {
     const planLimit = this.configService.get<string>(
       "communityPlan.worksapceLimit",
     );
-    const user = request?.user;
     const teamId = request?.body?.id;
     const usersTeamdetails = await this.teamService.get(teamId);
     if (
