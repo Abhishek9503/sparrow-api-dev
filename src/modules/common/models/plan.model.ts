@@ -16,7 +16,17 @@ export enum LimitArea {
   AI = "ai",
 }
 
-export class Limits {}
+export class WorkspaceLimit {
+  area: LimitArea.WORKSPACE;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  value: boolean;
+}
+
+export class Limits {
+  workspacesPerHub: WorkspaceLimit;
+}
 
 export class Plan {
   @IsString()
