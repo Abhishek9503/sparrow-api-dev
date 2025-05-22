@@ -1,14 +1,5 @@
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
-import { AdminHubsService } from "../services/user-admin.hubs.service";
-import {
-  ApiBearerAuth,
-  ApiTags,
-  ApiOperation,
-  ApiQuery,
-  ApiConsumes,
-  ApiBody,
-  ApiResponse,
-} from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags, ApiOperation } from "@nestjs/swagger";
 import { FastifyReply } from "fastify";
 import { ApiResponseService } from "@src/modules/common/services/api-response.service";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
@@ -17,12 +8,12 @@ import { Roles } from "@src/modules/common/decorators/roles.decorators";
 import {
   Controller,
   Get,
+  Query,
   Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { TeamService } from "@src/modules/identity/services/team.service";
 import { AdminUsersService } from "../services/user-admin.enterprise-user.service";
 
 @Controller("api/admin")
@@ -33,7 +24,7 @@ export class AdminUsersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
-  @Get("users")
+  @Get("enterpriseUsers")
   @ApiOperation({
     summary: "Get all the users in hub in which the logged in user is owner",
   })
@@ -46,6 +37,30 @@ export class AdminUsersController {
     const data = await this.usersService.getAllUsers(userId);
     const responseData = new ApiResponseService(
       "Users Generated",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @Get("enterpriseUsers-details")
+  @ApiOperation({
+    summary: "Get user details for the enterprise logged in user is owner",
+  })
+  async getUsersDetails(
+    @Req() req: any,
+    @Query("userId") userId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const ownerId = req.user._id;
+
+    if (!ownerId) {
+      throw new UnauthorizedException("User ID is missing from token");
+    }
+    const data = await this.usersService.getUserDetails(ownerId, userId);
+    const responseData = new ApiResponseService(
+      "Users Details Generated",
       HttpStatusCode.OK,
       data,
     );
