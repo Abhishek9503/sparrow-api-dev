@@ -119,8 +119,4 @@ export default () => ({
     dsn: process.env.SENTRY_DSN_KEY,
     environment: process.env.SENTRY_APP_ENVIRONMENT,
   },
-  communityPlan: {
-    worksapceLimit: process.env.COMMUNITY_WORKSPACE_LIMIT,
-    testflowLimit: process.env.COMMUNITY_TESTFLOW_LIMIT,
-  },
 });
