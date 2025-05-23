@@ -25,8 +25,17 @@ export class WorkspaceLimit {
   value: number;
 }
 
+export class TestflowLimit {
+  area: LimitArea.TESTFLOW;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
 export class Limits {
   workspacesPerHub: WorkspaceLimit;
+  testflowPerHub: TestflowLimit;
 }
 
 export class Plan {

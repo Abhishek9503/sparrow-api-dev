@@ -34,6 +34,12 @@ export class CreatePlanMigration implements OnModuleInit {
                 "communityPlan.worksapceLimit",
               ),
             },
+            testflowPerHub: {
+              area: LimitArea.TESTFLOW,
+              value: this.configService.get<string>(
+                "communityPlan.testflowLimit",
+              ),
+            },
           },
           createdAt: new Date(),
           updatedAt: new Date(),

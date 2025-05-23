@@ -33,6 +33,7 @@ import {
   CreateTestflowDto,
   UpdateTestflowDto,
 } from "../payloads/testflow.payload";
+import { CreateTestflowGuard } from "@src/modules/common/guards/plan-limits/create-testflow-guard";
 
 /**
  * Controller responsible for handling Testflow operations
@@ -71,7 +72,7 @@ export class TestflowController {
     description:
       "This will create a testflow and add this testflow in user's workspace",
   })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CreateTestflowGuard)
   @ApiResponse({ status: 201, description: "Testflow Created Successfully" })
   @ApiResponse({ status: 400, description: "Create Testflow Failed" })
   async createTestflow(

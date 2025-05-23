@@ -121,5 +121,6 @@ export default () => ({
   },
   communityPlan: {
     worksapceLimit: process.env.COMMUNITY_WORKSPACE_LIMIT,
+    testflowLimit: process.env.COMMUNITY_TESTFLOW_LIMIT,
   },
 });
