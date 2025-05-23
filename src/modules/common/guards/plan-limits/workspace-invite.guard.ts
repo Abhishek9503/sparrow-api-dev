@@ -7,21 +7,22 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { PlanService } from "@src/modules/identity/services/plan.service";
 import { TeamService } from "@src/modules/identity/services/team.service";
+import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
 
 @Injectable()
 export class WorkspaceInviteGuard implements CanActivate {
   constructor(
     private readonly teamService: TeamService,
-    private readonly configService: ConfigService,
-    private readonly planService: PlanService
+    private readonly planService: PlanService,
+    private readonly workspaceService: WorkspaceService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const requestUsers = request?.body.users;
     const workspaceId =  request?.params?.workspaceId;
-    // this.
-    const teamId = request?.body?.teamId;
+    const workspace = await this.workspaceService.get(workspaceId);
+    const teamId = workspace.team.id;
     const teamUserEmails = new Set();
     const userTeam = await this.teamService.get(teamId);
     userTeam.users.forEach((user)=>{
