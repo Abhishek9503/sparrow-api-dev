@@ -17,7 +17,12 @@ export enum LimitArea {
   AI = "ai",
 }
 
-export class Limits {}
+export class Limits {
+  usersPerHub: {
+    area: LimitArea;
+    value: number;
+  }
+}
 
 export class Plan {
   @IsString()

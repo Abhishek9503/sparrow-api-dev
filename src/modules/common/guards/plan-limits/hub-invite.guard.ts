@@ -1,0 +1,47 @@
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PlanService } from "@src/modules/identity/services/plan.service";
+import { TeamService } from "@src/modules/identity/services/team.service";
+
+@Injectable()
+export class HubInviteGuard implements CanActivate {
+  constructor(
+    private readonly teamService: TeamService,
+    private readonly configService: ConfigService,
+    private readonly planService: PlanService
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const requestUsers = request?.body.users;
+    const teamId = request?.body?.teamId;
+    const teamUserEmails = new Set();
+    const userTeam = await this.teamService.get(teamId);
+    userTeam.users.forEach((user)=>{
+      teamUserEmails.add(user.email.toLowerCase());
+    });
+    userTeam.invites.forEach((invites)=>{
+      teamUserEmails.add(invites.email.toLowerCase());
+    });
+    requestUsers.forEach((email: string)=>{
+      teamUserEmails.add(email.toLowerCase());
+    });
+
+    const teamPlanId = userTeam?.plan.id;
+    const planData = await this.planService.get(teamPlanId.toString());
+    if (
+      teamUserEmails.size >
+      planData?.limits?.usersPerHub?.value
+    ) {
+      throw new ForbiddenException(
+        "Can't invite a new member, Plan limit reached for this team.",
+      );
+    }
+    return true;
+  }
+}
