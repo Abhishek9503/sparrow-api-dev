@@ -35,7 +35,7 @@ export class TestflowLimit {
 
 export class Limits {
   workspacesPerHub: WorkspaceLimit;
-  testflowPerHub: TestflowLimit;
+  testflowPerWorkspace: TestflowLimit;
 }
 
 export class Plan {

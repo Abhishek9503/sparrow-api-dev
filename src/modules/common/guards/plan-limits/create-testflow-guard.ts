@@ -23,7 +23,7 @@ export class CreateTestflowGuard implements CanActivate {
     );
     if (
       workspaceDetails?.testflows?.length ===
-      planData?.limits?.testflowPerHub?.value
+      planData?.limits?.testflowPerWorkspace?.value
     ) {
       throw new ForbiddenException(
         "Can't create new Testflow, Plan limit reached for this Workspace.",

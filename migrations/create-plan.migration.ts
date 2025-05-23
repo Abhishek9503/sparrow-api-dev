@@ -32,7 +32,7 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.WORKSPACE,
               value: 3,
             },
-            testflowPerHub: {
+            testflowPerWorkspace: {
               area: LimitArea.TESTFLOW,
               value: 3,
             },
