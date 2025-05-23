@@ -30,9 +30,7 @@ export class CreatePlanMigration implements OnModuleInit {
           limits: {
             workspacesPerHub: {
               area: LimitArea.WORKSPACE,
-              value: this.configService.get<string>(
-                "communityPlan.worksapceLimit",
-              ),
+              value: "3",
             },
           },
           createdAt: new Date(),
