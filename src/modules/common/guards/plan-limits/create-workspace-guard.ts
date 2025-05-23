@@ -21,7 +21,7 @@ export class CreateWorkspaceGuard implements CanActivate {
     const planData = await this.planService.get(teamPlanId.toString());
     if (
       usersTeamdetails?.workspaces?.length ===
-      Number(planData?.limits?.workspacesPerHub?.value)
+      planData?.limits?.workspacesPerHub?.value
     ) {
       throw new ForbiddenException(
         "Can't create new Workspace, Plan limit reached for this team.",
