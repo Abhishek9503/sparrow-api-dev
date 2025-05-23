@@ -34,6 +34,7 @@ import {
   UpdateTestflowDto,
 } from "../payloads/testflow.payload";
 import { CreateTestflowGuard } from "@src/modules/common/guards/plan-limits/create-testflow-guard";
+import { CreateBlockTestflowGuard } from "@src/modules/common/guards/plan-limits/create-block-guard";
 
 /**
  * Controller responsible for handling Testflow operations
@@ -139,7 +140,7 @@ export class TestflowController {
     summary: "Update An Testflow",
     description: "This will update an Testflow",
   })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CreateBlockTestflowGuard)
   @ApiResponse({ status: 200, description: "Testflow Updated Successfully" })
   @ApiResponse({ status: 400, description: "Update Testflow Failed" })
   async updateTestflow(

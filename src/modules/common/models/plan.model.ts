@@ -12,6 +12,7 @@ export enum LimitArea {
   HUB = "hub",
   WORKSPACE = "workspace",
   TESTFLOW = "testflow",
+  BLOCK = "block",
   ENVIRONMENT = "environment",
   COLLECTION = "collection",
   AI = "ai",
@@ -33,9 +34,18 @@ export class TestflowLimit {
   value: number;
 }
 
+export class BlocksPerTestflow {
+  area: LimitArea.BLOCK;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
 export class Limits {
   workspacesPerHub: WorkspaceLimit;
   testflowPerWorkspace: TestflowLimit;
+  blocksPerTestflow: BlocksPerTestflow;
 }
 
 export class Plan {
