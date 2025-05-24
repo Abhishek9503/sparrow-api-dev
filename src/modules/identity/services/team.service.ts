@@ -21,6 +21,7 @@ import { MemoryStorageFile } from "@blazity/nest-file-fastify";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { User } from "@src/modules/common/models/user.model";
 import { UserInvitesRepository } from "../repositories/userInvites.repository";
+import { PlanRepository } from "../repositories/plan.repository";
 
 /**
  * Team Service
@@ -34,6 +35,7 @@ export class TeamService {
     private readonly userInvitesRepository: UserInvitesRepository,
     private readonly userRepository: UserRepository,
     private readonly contextService: ContextService,
+    private readonly planRepository: PlanRepository,
   ) {}
 
   async isImageSizeValid(size: number) {
@@ -92,6 +94,7 @@ export class TeamService {
     image?: MemoryStorageFile,
   ): Promise<InsertOneResult<Team>> {
     let team;
+    const defaultHubPlan = this.configService.get<string>("app.defaultHubPlan");
 
     const dynamicUrl = await this.generateUniqueTeamUrl(teamData.name);
     if (image) {
@@ -124,11 +127,25 @@ export class TeamService {
         githubUrl: "",
       };
     }
-    const createdTeam = await this.teamRepository.create(team);
+
+    let hubPlan;
+
     const user = await this.contextService.get("user");
     const userData = await this.userRepository.findUserByUserId(
       new ObjectId(user._id),
     );
+
+    const plans = await this.planRepository.getPlans();
+    for (let i = 0; i < plans.length; i++) {
+      if (plans[i].name === defaultHubPlan) {
+        hubPlan = {
+          id: plans[i]._id,
+          name: plans[i].name,
+        };
+      }
+    }
+
+    const createdTeam = await this.teamRepository.create(team, hubPlan);
     const updatedUserTeams = [...userData.teams];
     updatedUserTeams.push({
       id: createdTeam.insertedId,
@@ -292,6 +309,7 @@ export class TeamService {
           logo: teamData.logo,
           name: teamData.name,
           hubUrl: teamData.hubUrl,
+          plan: teamData.plan,
           workspaces: [],
           description: senderData.name || "No creator found",
         };

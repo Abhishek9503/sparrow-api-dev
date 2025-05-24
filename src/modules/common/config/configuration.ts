@@ -8,6 +8,7 @@ export default () => ({
     jwtSecretKey: process.env.JWT_SECRET_KEY,
     jwtExpirationTime: parseInt(process.env.JWT_EXPIRATION_TIME) || 1800,
     defaultWorkspaceName: "My Workspace",
+    defaultHubPlan: "Community",
     userBlacklistPrefix: "BL_",
     defaultTeamNameSuffix: "'s Hub",
     imageSizeLimit: 2097152, // value in byte
@@ -32,6 +33,7 @@ export default () => ({
   },
   db: {
     url: process.env.DB_URL,
+    name: process.env.DB_NAME,
   },
   oauth: {
     google: {
@@ -95,7 +97,7 @@ export default () => ({
     assistantId: process.env.AZURE_OPENAI_ASSISTANT_ID,
     deepseekEndpoint: process.env.DEEPSEEK_ENDPOINT,
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
-    deepseekApiVersion: process.env.DEEPSEEK_API_VERSION
+    deepseekApiVersion: process.env.DEEPSEEK_API_VERSION,
   },
   hubspot: {
     hubspotEnabled: process.env.HUBSPOT_INTEGRATION_ENABLED,

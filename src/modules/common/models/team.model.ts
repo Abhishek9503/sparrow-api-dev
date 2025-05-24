@@ -36,6 +36,14 @@ export class logoDto {
   size?: number;
 }
 
+export class Plan {
+  @IsMongoId()
+  id: ObjectId;
+
+  @IsString()
+  name: string;
+}
+
 export class Team {
   @IsString()
   @IsNotEmpty()
@@ -44,6 +52,9 @@ export class Team {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsNotEmpty()
+  plan: Plan;
 
   @IsString()
   @IsOptional()

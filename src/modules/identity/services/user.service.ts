@@ -111,6 +111,7 @@ export class UserService {
         "The account with the provided email currently exists. Please choose another one.",
       );
     }
+
     await this.userRepository.createUser(payload);
 
     const data = {

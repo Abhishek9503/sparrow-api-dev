@@ -32,6 +32,8 @@ import {
   UploadedFile,
 } from "@blazity/nest-file-fastify";
 import { UserService } from "../services/user.service";
+import { PlanService } from "../services/plan.service";
+import { CreateTeamGuard } from "@src/modules/common/guards/plan-limits/create-team-guard";
 /**
  * Team Controller
  */
@@ -44,10 +46,11 @@ export class TeamController {
     private readonly teamService: TeamService,
     private readonly teamUserService: TeamUserService,
     private readonly userService: UserService,
+    private readonly planService: PlanService,
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CreateTeamGuard)
   @ApiOperation({
     summary: "Create a new  Team",
     description: "This will Create a  new Team",
