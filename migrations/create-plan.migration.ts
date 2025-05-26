@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
+import { LimitArea } from "@src/modules/common/models/plan.model";
 
 import { Db } from "mongodb";
 
@@ -26,7 +27,12 @@ export class CreatePlanMigration implements OnModuleInit {
           name: defaultHubPlan,
           description: "Free tier with limited access",
           active: true,
-          limits: {},
+          limits: {
+            workspacesPerHub: {
+              area: LimitArea.WORKSPACE,
+              value: 3,
+            },
+          },
           createdAt: new Date(),
           updatedAt: new Date(),
           createdBy: "system",

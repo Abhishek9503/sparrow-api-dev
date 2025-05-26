@@ -5,6 +5,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsNumber,
 } from "class-validator";
 
 export enum LimitArea {
@@ -17,7 +18,17 @@ export enum LimitArea {
   AI = "ai",
 }
 
-export class Limits {}
+export class WorkspaceLimit {
+  area: LimitArea.WORKSPACE;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
+export class Limits {
+  workspacesPerHub: WorkspaceLimit;
+}
 
 export class Plan {
   @IsString()
