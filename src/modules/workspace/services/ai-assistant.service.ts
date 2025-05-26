@@ -779,7 +779,8 @@ export class AiAssistantService {
       
       return {
         statusCode: 200,
-        messages: "end",
+        messages: "",
+        stream_status: "end",
         inputTokens,
         outputTokens,
         totalTokens,
