@@ -135,6 +135,7 @@ export class TeamService {
       name: teamData.name,
       role: TeamRole.OWNER,
       isNewInvite: false,
+      joinedAt: new Date(),
     });
     const updatedUserParams = {
       teams: updatedUserTeams,
