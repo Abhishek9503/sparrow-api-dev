@@ -20,6 +20,9 @@ import { MessagesPage } from "openai/resources/beta/threads/messages";
 import { Thread } from "openai/resources/beta/threads/threads";
 import type { IncomingMessage } from "node:http";
 
+import { Anthropic } from '@anthropic-ai/sdk';
+
+
 // ---- Payload
 import {
   AIResponseDto,
@@ -42,6 +45,7 @@ import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIM
 
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
+import { totalmem } from "node:os";
 
 /**
  * Service for managing AI Assistant interactions.
@@ -746,6 +750,28 @@ export class AiAssistantService {
     }
   }
 
+  private async createAnthropicClient(
+    client: WebSocket,
+    authKey: string
+  ): Promise<Anthropic | null> {
+    try {
+      const Anthropiclient = new Anthropic({
+        apiKey: authKey,
+      });
+      return Anthropiclient;
+    } catch (error: any) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(
+          JSON.stringify({
+            event: "error",
+            message: "Invalid Authentication. Please add a valid OpenAI API key.",
+          })
+        );
+      }
+      return null;
+    }
+  }
+
   /**
      * Formats response metrics with timing information
      * @param data Response content
@@ -773,6 +799,155 @@ export class AiAssistantService {
         totalTokens,
         timeTaken: `${timeTaken}ms`,
       };
+    }
+
+    /**
+     * Processes LLM requests through Anthropic API
+     */
+    private async anthropicLLMService(
+      client: WebSocket,
+      Anthropicclient: Anthropic | null,
+      modelVersion: string,
+      systemPrompt: string,
+      userInput: string,
+      streamResponse: boolean,
+      temperature: number,
+      presencePenalty: number,
+      maxTokens: number,
+    ): Promise<void> {
+
+      // Return early if Anthropic client creation failed
+      if (!Anthropicclient) return;
+  
+      const startTime = performance.now();
+      
+      // Message format for Anthropic API
+      const messages: { role: "assistant" | "user"; content: string }[] = [
+        { role: "user", content: userInput },
+        { role: "assistant", content: systemPrompt }
+      ];
+  
+      try {
+        // Handle streaming response
+        if (streamResponse === true) {
+          
+          const stream = await Anthropicclient.messages.create({
+            messages: messages,
+            model: modelVersion,
+            temperature: temperature,
+            top_p: presencePenalty,
+            max_tokens: maxTokens > 0 ? maxTokens : 1024,
+            stream: true
+          });
+          
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
+          for await (const event of stream) {
+            if (client.readyState !== WebSocket.OPEN) break;
+
+            // Handle text deltas
+            if (event.type === 'content_block_delta') {
+              if (event.delta.type === 'text_delta') {
+                client.send(
+                  JSON.stringify({
+                    messages: event.delta.text,
+                    stream_status: 'streaming',
+                  })
+                );
+              }
+            }
+
+            const inputTokens = await Anthropicclient.messages.countTokens({
+              model: modelVersion,
+              messages: messages
+            });
+
+            const input_tokens = inputTokens.input_tokens
+
+            // Final usage and stream end
+            if (event.type === 'message_delta' && event.usage) {
+              const endTime = performance.now();
+              const timeTaken = Math.round(endTime - startTime);
+
+              client.send(
+                JSON.stringify({
+                  statusCode: 200,
+                  messages: "",
+                  stream_status: "end",
+                  inputTokens: input_tokens,
+                  outputTokens: event.usage.output_tokens,
+                  totalTokens: input_tokens + event.usage.output_tokens,
+                  timeTaken: `${timeTaken}ms`,
+                })
+              );
+            }
+          }
+      }
+        // Handle non-streaming response
+        else {
+          const response = await Anthropicclient.messages.create({
+            model: modelVersion,
+            messages: messages,
+            temperature: temperature,
+            top_p: presencePenalty,
+            max_tokens: maxTokens > 0 ? maxTokens : 1024
+
+          });
+
+          const data = response.content
+            .map((block) => ('text' in block ? block.text : ''))
+            .join('');
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify(this.formatResponse(
+                response.usage?.input_tokens || 0,
+                response.usage?.output_tokens || 0,
+                response.usage?.input_tokens + response.usage?.output_tokens || 0,
+                startTime
+              ))
+            );
+          }
+        }
+      } catch (error: any) {
+        if (client.readyState === WebSocket.OPEN) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
+          client.send(
+            JSON.stringify({
+              timeTaken: `${timeTaken}ms`,
+              statusCode: error?.status || 500,
+              event: "error",
+              message: error,
+            })
+          );
+        }
+      }
     }
   
     /**
@@ -1015,7 +1190,29 @@ export class AiAssistantService {
                 frequencePenalty,
                 maxTokens
               );
-            } else {
+              continue;
+            }
+  
+            if (model === Models.Anthropic) {
+              // Create OpenAI client
+              const Anthropicclient = await this.createAnthropicClient(client, authKey);
+              
+              // Process the LLM request
+              await this.anthropicLLMService(
+                client,
+                Anthropicclient,
+                modelVersion,
+                systemPrompt,
+                userInput,
+                streamResponse,
+                temperature,
+                presencePenalty,
+                maxTokens
+              );
+              continue;
+            }
+            
+            else {
               if (client.readyState === WebSocket.OPEN) {
                 client.send(
                   JSON.stringify({
