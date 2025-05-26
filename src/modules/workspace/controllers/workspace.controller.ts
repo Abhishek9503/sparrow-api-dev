@@ -557,7 +557,7 @@ export class WorkSpaceController {
     @Query("page") page: string = "1",
     @Res() res: FastifyReply,
   ) {
-    const pageSize = 20;
+    const pageSize = 9;
     const { workspaces, total } =
       await this.workspaceService.getPaginatedPublicWorkspaces(page, pageSize);
     const responseData = new ApiResponseService("Success", HttpStatusCode.OK, {
