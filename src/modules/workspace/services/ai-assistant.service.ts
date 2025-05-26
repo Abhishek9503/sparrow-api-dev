@@ -769,7 +769,6 @@ export class AiAssistantService {
      * @returns Formatted response object
      */
     private formatResponse(
-      data: string | null,
       inputTokens: number,
       outputTokens: number,
       totalTokens: number,
@@ -780,7 +779,7 @@ export class AiAssistantService {
       
       return {
         statusCode: 200,
-        messages: data || "",
+        messages: "end",
         inputTokens,
         outputTokens,
         totalTokens,
@@ -822,13 +821,31 @@ export class AiAssistantService {
             model: modelVersion,
             messages: messages,
           });
+
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
           
           const data = response.choices[0]?.message?.content || "";
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
           
           if (client.readyState === WebSocket.OPEN) {
             client.send(
               JSON.stringify(this.formatResponse(
-                data,
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
@@ -911,13 +928,31 @@ export class AiAssistantService {
             ...(maxTokens > 1 && { max_tokens: maxTokens }),
             ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
           });
+
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
           
           const data = response.choices[0]?.message?.content || "";
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
           
           if (client.readyState === WebSocket.OPEN) {
             client.send(
               JSON.stringify(this.formatResponse(
-                data,
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
