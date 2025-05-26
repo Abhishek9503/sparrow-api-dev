@@ -270,3 +270,21 @@ export class ErrorResponsePayload {
   @IsNotEmpty()
   error: string;
 }
+
+export class GeneratePromptPayload {
+  /**
+   * Auth Key
+   */
+  @IsString()
+  @ApiProperty({ required: true, example: "Authorization Key" })
+  @IsNotEmpty()
+  authKey: string;
+
+  /**
+   * The error.
+   */
+  @IsString()
+  @ApiProperty({ required: true, example: "error" })
+  @IsNotEmpty()
+  error: string;
+}
