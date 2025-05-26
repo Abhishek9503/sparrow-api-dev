@@ -1,5 +1,7 @@
 import { Injectable, Inject } from "@nestjs/common";
-import { Db, ObjectId } from "mongodb";
+import { Collections } from "@src/modules/common/enum/database.collection.enum";
+import { Team } from "@src/modules/common/models/team.model";
+import { Db, ObjectId, WithId } from "mongodb";
 
 @Injectable()
 export class AdminHubsRepository {
@@ -94,5 +96,19 @@ export class AdminHubsRepository {
 
   async findHubById(hubId: string) {
     return this.db.collection("team").findOne({ _id: new ObjectId(hubId) });
+  }
+
+  async findTeamsByQuery(query: any): Promise<WithId<Team>[]> {
+    return await this.db
+      .collection<Team>(Collections.TEAM)
+      .find(query)
+      .toArray();
+  }
+  async findTeamsByOwnerOrAdmin(userId: string): Promise<WithId<Team>[]> {
+    const query = {
+      $or: [{ owner: userId }, { admins: { $in: [userId] } }],
+    };
+
+    return await this.findTeamsByQuery(query);
   }
 }
