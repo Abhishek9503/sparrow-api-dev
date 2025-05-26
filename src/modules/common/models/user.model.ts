@@ -126,6 +126,10 @@ export class User {
   @IsBoolean()
   @IsOptional()
   isCoolDownActive?: boolean;
+
+  @IsOptional()
+  @IsDate()
+  lastActive?: Date;
 }
 
 export class UserDto {

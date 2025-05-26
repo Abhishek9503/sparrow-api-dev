@@ -116,7 +116,9 @@ export class collectionController {
   ) {
     const collection =
       await this.collectionService.getAllCollections(workspaceId);
-    await this.userService.updateLastActive(req.user.toString());
+    await this.userService.updateLastActive(
+      req.user ? req.user.toString() : "",
+    );
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,
