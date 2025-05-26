@@ -46,6 +46,14 @@ import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIM
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
 import { totalmem } from "node:os";
+// import type { GoogleGenAI } from '@google/genai';
+
+async function initializeGenAI(authKey: string) 
+{
+  const { GoogleGenAI } = await import('@google/genai');
+  const genAI = new GoogleGenAI({apiKey: authKey});
+  return genAI;
+}
 
 /**
  * Service for managing AI Assistant interactions.
@@ -764,7 +772,30 @@ export class AiAssistantService {
         client.send(
           JSON.stringify({
             event: "error",
-            message: "Invalid Authentication. Please add a valid OpenAI API key.",
+            message: "Invalid Authentication. Please add a valid Anthropic key.",
+          })
+        );
+      }
+      return null;
+    }
+  }
+
+  private async createDeepSeekClient(
+    client: WebSocket,
+    authKey: string
+  ): Promise<OpenAI | null> {
+    try {
+      const DeepSeekClient = new OpenAI({
+        baseURL: 'https://api.deepseek.com',
+        apiKey: authKey,
+      });
+      return DeepSeekClient;
+    } catch (error: any) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(
+          JSON.stringify({
+            event: "error",
+            message: "Invalid Authentication. Please add a valid DeepSeek key.",
           })
         );
       }
@@ -944,6 +975,135 @@ export class AiAssistantService {
               statusCode: error?.status || 500,
               event: "error",
               message: error,
+            })
+          );
+        }
+      }
+    }
+
+    /**
+     * Processes LLM requests through DeepSeek API
+     */
+    private async deepseekLLMService(
+      client: WebSocket,
+      DeepSeekClinet: OpenAI | null,
+      modelVersion: string,
+      systemPrompt: string,
+      userInput: string,
+      streamResponse: boolean,
+      jsonResponseFormat: boolean,
+      temperature: number,
+      presencePenalty: number,
+      frequencePenalty: number,
+      maxTokens: number,
+    ): Promise<void> {
+      // Return early if DeepSeek client creation failed
+      if (!DeepSeekClinet) return;
+  
+      const startTime = performance.now();
+      
+      // Message format for DeepSeek API
+      const messages: { role: "system" | "user"; content: string }[] = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userInput },
+      ];
+  
+      try {        
+        // Handle streaming response
+        if (streamResponse === true) {
+          const stream = await DeepSeekClinet.chat.completions.create({
+            model: modelVersion,
+            messages: messages,
+            temperature: temperature,
+            presence_penalty: presencePenalty,
+            frequency_penalty: frequencePenalty,
+            ...(maxTokens > 1 && { max_tokens: maxTokens }),
+            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+            stream: true,
+            stream_options: { include_usage: true }
+          });
+          
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
+          
+          // Process stream chunks
+          for await (const event of stream) {
+            if (client.readyState !== WebSocket.OPEN) break;
+            
+            const choice = event.choices?.[0];
+            
+            // Send content chunk if it exists
+            if (choice?.delta?.content) {
+              client.send(
+                JSON.stringify({
+                  messages: choice.delta.content,
+                  stream_status: "streaming"
+                })
+              );
+            }
+            
+            // Send final usage information when available
+            if (event?.usage) {
+              const endTime = performance.now();
+              const timeTaken = Math.round(endTime - startTime);
+  
+              client.send(
+                JSON.stringify({
+                  statusCode: 200,
+                  messages: "",
+                  stream_status: "end",
+                  inputTokens: event.usage.prompt_tokens,
+                  outputTokens: event.usage.completion_tokens,
+                  totalTokens: event.usage.total_tokens,
+                  timeTaken: `${timeTaken}ms`,
+                })
+              );
+            }
+          }
+        }
+        // Handle non-streaming response
+        else {
+          const response = await DeepSeekClinet.chat.completions.create({
+            model: modelVersion,
+            messages: messages,
+            temperature: temperature,
+            presence_penalty: presencePenalty,
+            frequency_penalty: frequencePenalty,
+            ...(maxTokens > 1 && { max_tokens: maxTokens }),
+            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+          });
+          
+          const data = response.choices[0]?.message?.content || "";
+          
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify(this.formatResponse(
+                data,
+                response.usage?.prompt_tokens || 0,
+                response.usage?.completion_tokens || 0,
+                response.usage?.total_tokens || 0,
+                startTime
+              ))
+            );
+          }
+        }
+      } catch (error: any) {
+        if (client.readyState === WebSocket.OPEN) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
+          client.send(
+            JSON.stringify({
+              timeTaken: `${timeTaken}ms`,
+              statusCode: error?.status || 500,
+              event: "error",
+              message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
             })
           );
         }
@@ -1207,6 +1367,27 @@ export class AiAssistantService {
                 streamResponse,
                 temperature,
                 presencePenalty,
+                maxTokens
+              );
+              continue;
+            }
+
+            if (model === Models.DeepSeek) {
+              // Create DeepSeek client
+              const DeepSeekClinet = await this.createDeepSeekClient(client, authKey);
+              
+              // Process the LLM request
+              await this.deepseekLLMService(
+                client,
+                DeepSeekClinet,
+                modelVersion,
+                systemPrompt,
+                userInput,
+                streamResponse,
+                jsonResponseFormat,
+                temperature,
+                presencePenalty,
+                frequencePenalty,
                 maxTokens
               );
               continue;
