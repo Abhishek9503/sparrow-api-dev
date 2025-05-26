@@ -8,7 +8,7 @@ import { WorkspaceService } from "@src/modules/workspace/services/workspace.serv
 import { PlanService } from "@src/modules/identity/services/plan.service";
 
 @Injectable()
-export class CreateBlockTestflowGuard implements CanActivate {
+export class CreateTestflowBlockGuard implements CanActivate {
   constructor(
     private readonly workspaceService: WorkspaceService,
     private readonly planService: PlanService,
