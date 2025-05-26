@@ -20,8 +20,13 @@ import { MessagesPage } from "openai/resources/beta/threads/messages";
 import { Thread } from "openai/resources/beta/threads/threads";
 import type { IncomingMessage } from "node:http";
 
+<<<<<<< HEAD
 import { Anthropic } from '@anthropic-ai/sdk';
 
+=======
+// import { GoogleGenAI } from "@google/genai";
+import Anthropic from '@anthropic-ai/sdk';
+>>>>>>> 1e783854db33d03014dbd2d56687dc6f6c983008
 
 // ---- Payload
 import {
@@ -55,6 +60,13 @@ async function initializeGenAI(authKey: string)
   return genAI;
 }
 
+async function initializeGenAI(authKey: string) 
+{
+  const { GoogleGenAI } = await import('@google/genai');
+  const genAI = new GoogleGenAI({apiKey: authKey});
+  return genAI;
+}
+
 /**
  * Service for managing AI Assistant interactions.
  */
@@ -74,6 +86,7 @@ export class AiAssistantService {
   private deepseekEndpoint: string;
   private deepseekApiKey: string;
   private deepseekApiVersion: string;
+  private deepseekurl: string;
   // Default assistant configuration
   private assistant = {
     name: "API Instructor",
@@ -104,6 +117,7 @@ export class AiAssistantService {
     this.deepseekEndpoint = this.configService.get("ai.deepseekEndpoint");
     this.deepseekApiKey = this.configService.get("ai.deepseekApiKey");
     this.deepseekApiVersion = this.configService.get("ai.deepseekApiVersion");
+    this.deepseekurl = this.configService.get("ai.deepseekURL")
 
     // Initialize the AzureOpenAI client
     try {
@@ -147,6 +161,9 @@ export class AiAssistantService {
     const client = ModelClient(endpoint, new AzureKeyCredential(apiKey), {apiVersion});
     return client;
   };
+
+  
+
 
   /**
    * Asynchronously creates a new assistant with given instructions.
@@ -813,7 +830,6 @@ export class AiAssistantService {
      * @returns Formatted response object
      */
     private formatResponse(
-      data: string | null,
       inputTokens: number,
       outputTokens: number,
       totalTokens: number,
@@ -824,7 +840,8 @@ export class AiAssistantService {
       
       return {
         statusCode: 200,
-        messages: data || "",
+        messages: "",
+        stream_status: "end",
         inputTokens,
         outputTokens,
         totalTokens,
@@ -1136,21 +1153,42 @@ export class AiAssistantService {
         { role: "system", content: systemPrompt },
         { role: "user", content: userInput },
       ];
-  
+
+      const o1miniMessage: { role: "system" | "user"; content: string } [] = [{ role: "user", content: userInput }]
+      
       try {
         // For GPT-o1 and GPT-o1 Mini models, the response is generated without streaming and with limited parameters
         if (modelVersion === OpenAIModelVersion.GPT_o1 || modelVersion === OpenAIModelVersion.GPT_o1_Mini) {
           const response = await OpenAIclient.chat.completions.create({
             model: modelVersion,
-            messages: messages,
+            messages: modelVersion === OpenAIModelVersion.GPT_o1_Mini ? o1miniMessage : messages,
+            ...(maxTokens > 1 && { max_tokens: maxTokens })
           });
+
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
           
           const data = response.choices[0]?.message?.content || "";
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
           
           if (client.readyState === WebSocket.OPEN) {
             client.send(
               JSON.stringify(this.formatResponse(
-                data,
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
@@ -1233,13 +1271,31 @@ export class AiAssistantService {
             ...(maxTokens > 1 && { max_tokens: maxTokens }),
             ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
           });
+
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
           
           const data = response.choices[0]?.message?.content || "";
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
           
           if (client.readyState === WebSocket.OPEN) {
             client.send(
               JSON.stringify(this.formatResponse(
-                data,
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
@@ -1456,6 +1512,107 @@ export class AiAssistantService {
       throw new BadRequestException(
         "An error occurred while processing the request.",
       );
+    }
+  }
+
+
+  public async promptGeneration(data: ChatBotPayload): Promise<string> {
+    try {
+      const { userInput, authKey, model, modelVersion } = data;
+
+      const promptInstruction =
+        "You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output.";
+
+      const userInstructions = 
+        `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+
+      switch (model) {
+        case Models.OpenAI: {
+          const openai = new OpenAI({ apiKey: authKey });
+
+          // Special handling for o1-mini
+          if (modelVersion === OpenAIModelVersion.GPT_o1_Mini) {
+            const completion = await openai.chat.completions.create({
+              messages: [
+                {
+                  role: "user",
+                  content: userInstructions
+                }
+              ],
+              model: modelVersion
+            });
+
+            const result = completion.choices[0].message.content;
+            return result;
+          }
+
+          const completion = await openai.chat.completions.create({
+            messages: [
+              { role: "system", content: promptInstruction },
+              { role: "user", content: userInput }
+            ],
+            model: modelVersion
+          });
+
+          const result = completion.choices[0].message.content;
+          return result;
+        }
+
+        case Models.Google: {
+          const genAI = await initializeGenAI(authKey);
+          const response = await genAI.models.generateContent({
+            model: modelVersion,
+            contents: userInstructions
+          });
+
+          const result = response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+          return result;
+        }
+
+        case Models.Anthropic: {
+          const anthropic = new Anthropic({ apiKey: authKey });
+          const msg = await anthropic.messages.create({
+            model: modelVersion,
+            max_tokens: 1024,
+            messages: [
+              {
+                role: "user",
+                content: userInstructions
+              }
+            ]
+          });
+
+          const result = msg.content
+            .map((block) => ('text' in block ? block.text : ''))
+            .join('');
+          
+          return result;
+        }
+
+        case Models.DeepSeek: {
+          const deepseek = new OpenAI({
+            baseURL: this.deepseekurl,
+            apiKey: authKey
+          });
+
+          const completion = await deepseek.chat.completions.create({
+            messages: [
+              { role: "system", content: promptInstruction },
+              { role: "user", content: userInput }
+            ],
+            model: modelVersion
+          });
+
+          const result = completion.choices[0].message.content;
+          return result;
+        }
+
+        default:
+          throw new BadRequestException("Unsupported model type.");
+      }
+    } catch (error) {
+      console.error("Error processing prompt generation:", error);
+      throw new BadRequestException("An error occurred while processing the request.");
     }
   }
 }
