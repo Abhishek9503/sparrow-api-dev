@@ -1260,4 +1260,24 @@ export class WorkspaceService {
     );
     return response;
   }
+
+  /**
+   * Retrieves a paginated list of public workspaces.
+   * @param page - The page number (1-based).
+   * @param pageSize - The number of items per page.
+   * @returns A list of public workspaces and total count.
+   */
+  async getPaginatedPublicWorkspaces(
+    page: string,
+    pageSize: number,
+  ): Promise<{
+    workspaces: WithId<Workspace>[];
+    total: number;
+  }> {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    return this.workspaceRepository.getPaginatedPublicWorkspaces(
+      pageNum,
+      pageSize,
+    );
+  }
 }
