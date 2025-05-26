@@ -1034,4 +1034,30 @@ export class collectionController {
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  @Get(":collectionId/workspace/:workspaceId")
+  @ApiOperation({
+    summary: "Get Collection By ID",
+    description:
+      "This will fetch a specific collection using collection ID and workspace ID",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "Collection fetched successfully" })
+  @ApiResponse({ status: 404, description: "Collection not found" })
+  async getCollectionByIdAndWorkspace(
+    @Param("collectionId") collectionId: string,
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.workSpaceService.IsWorkspaceAdminOrEditor(workspaceId);
+
+    const collection = await this.collectionService.getCollection(collectionId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }

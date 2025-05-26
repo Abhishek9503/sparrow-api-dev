@@ -6,7 +6,10 @@ import { ConfigService } from "@nestjs/config";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { MockRequestResponseDto } from "../payloads/mock-server.payload";
 import { v4 as uuidv4 } from "uuid";
-import { MockRequestHistory } from "@src/modules/common/models/collection.model";
+import {
+  BodyModeEnum,
+  MockRequestHistory,
+} from "@src/modules/common/models/collection.model";
 
 /**
  * Mock Server Service - Service responsible for handling operations related to mock server and requests.
@@ -73,28 +76,6 @@ export class MockServerService {
 
                 const duration = Math.round(Date.now() - startTime);
 
-                // Convert request headers to KeyValue format
-                // const requestHeadersKV: KeyValue[] = Object.entries(
-                //   req.headers,
-                // ).map(([key, value]) => ({
-                //   key,
-                //   value: Array.isArray(value)
-                //     ? value.join(", ")
-                //     : String(value),
-                //   checked: true,
-                // }));
-
-                // Convert response headers to KeyValue format
-                // const responseHeadersKV: KeyValue[] = res
-                //   ? Object.entries(res.getHeaders()).map(([key, value]) => ({
-                //       key,
-                //       value: Array.isArray(value)
-                //         ? value.join(", ")
-                //         : String(value),
-                //       checked: true,
-                //     }))
-                //   : [];
-
                 const mockEndpoint = (url: string) => {
                   const regex = /\/api\/mock\/[a-f0-9]+(\/.*)/;
                   const match = url.match(regex);
@@ -123,6 +104,39 @@ export class MockServerService {
             }
           }
 
+          const mockEndpoint = (url: string) => {
+            const regex = /\/api\/mock\/[a-f0-9]+(\/.*)/;
+            const match = url.match(regex);
+            return match ? match[1] : "";
+          };
+
+          // Convert request headers to KeyValue format
+          // const requestHeadersKV: KeyValue[] = Object.entries(req.headers).map(
+          //   ([key, value]) => ({
+          //     key,
+          //     value: Array.isArray(value) ? value.join(", ") : String(value),
+          //     checked: true,
+          //   }),
+          // );
+
+          const duration = Math.round(Date.now() - startTime);
+          const historyEntry: MockRequestHistory = {
+            id: uuidv4(),
+            timestamp: new Date(),
+            name: "",
+            url: mockEndpoint(url),
+            method: req.method as HTTPMethods,
+            responseStatus: HttpStatusCode.NOT_FOUND.toString(),
+            duration: duration,
+            requestHeaders: null,
+            requestBody: null,
+            selectedRequestBodyType: BodyModeEnum["text/plain"],
+            selectedResponseBodyType: BodyModeEnum["text/plain"],
+            responseHeaders: null,
+            responseBody: "URL NOT FOUND",
+          };
+
+          await this.storeRequestHistory(collectionId, historyEntry);
           throw new NotFoundException("URL NOT FOUND");
         }
         return {
