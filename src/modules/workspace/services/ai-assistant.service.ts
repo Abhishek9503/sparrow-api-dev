@@ -46,6 +46,13 @@ import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIM
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
 
+async function initializeGenAI(authKey: string) 
+{
+  const { GoogleGenAI } = await import('@google/genai');
+  const genAI = new GoogleGenAI({apiKey: authKey});
+  return genAI;
+}
+
 /**
  * Service for managing AI Assistant interactions.
  */
@@ -138,6 +145,9 @@ export class AiAssistantService {
     const client = ModelClient(endpoint, new AzureKeyCredential(apiKey), {apiVersion});
     return client;
   };
+
+  
+
 
   /**
    * Asynchronously creates a new assistant with given instructions.
@@ -1089,11 +1099,29 @@ export class AiAssistantService {
     try {
       const { userInput, authKey, model, modelVersion } = data;
 
-      const promptInstruction = "You are an assistant that helps in creating proper prompts of user text. You are provided with user input and you have to understand the user input and make it proper. Give only desired output without any starting or ending explaination.";
+      const promptInstruction =
+        "You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output.";
 
       switch (model) {
         case Models.OpenAI: {
           const openai = new OpenAI({ apiKey: authKey });
+
+          // Special handling for o1-mini
+          if (modelVersion === OpenAIModelVersion.GPT_o1_Mini) {
+            const completion = await openai.chat.completions.create({
+              messages: [
+                {
+                  role: "user",
+                  content: `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+                }
+              ],
+              model: modelVersion
+            });
+
+            const result = completion.choices[0].message.content;
+            return result;
+          }
+
           const completion = await openai.chat.completions.create({
             messages: [
               { role: "system", content: promptInstruction },
@@ -1101,19 +1129,21 @@ export class AiAssistantService {
             ],
             model: modelVersion
           });
-          console.log(completion.choices[0].message.content);
-          return completion.choices[0].message.content;
+
+          const result = completion.choices[0].message.content;
+          return result;
         }
 
-        // case Models.Google: {
-        //   const google = new GoogleGenAI({ apiKey: authKey });
-        //   const response = await google.models.generateContent({
-        //     model: modelVersion,
-        //     contents: `This is the user input - ${userInput}. You are tasked with generating a prompt for this input.`
-        //   });
-        //   console.log(response.text);
-        //   return response.text;
-        // }
+        case Models.Google: {
+          const genAI = await initializeGenAI(authKey);
+          const response = await genAI.models.generateContent({
+            model: modelVersion,
+            contents: `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+          });
+
+          const result = response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+          return result;
+        }
 
         case Models.Anthropic: {
           const anthropic = new Anthropic({ apiKey: authKey });
@@ -1123,11 +1153,16 @@ export class AiAssistantService {
             messages: [
               {
                 role: "user",
-                content: `This is the user input - ${userInput}. You are tasked with generating a prompt for this input.`
+                content: `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
               }
             ]
           });
-          console.log(msg.content);
+
+          const result = msg.content
+            .map((block) => ('text' in block ? block.text : ''))
+            .join('');
+          
+          return result;
         }
 
         case Models.DeepSeek: {
@@ -1135,6 +1170,7 @@ export class AiAssistantService {
             baseURL: "https://api.deepseek.com",
             apiKey: authKey
           });
+
           const completion = await deepseek.chat.completions.create({
             messages: [
               { role: "system", content: promptInstruction },
@@ -1142,8 +1178,9 @@ export class AiAssistantService {
             ],
             model: modelVersion
           });
-          console.log(completion.choices[0].message.content);
-          return completion.choices[0].message.content;
+
+          const result = completion.choices[0].message.content;
+          return result;
         }
 
         default:
