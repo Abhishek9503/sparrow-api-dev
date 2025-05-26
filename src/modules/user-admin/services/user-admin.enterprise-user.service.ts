@@ -3,7 +3,6 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
 import { UserService } from "@src/modules/identity/services/user.service";
 import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
-import { UserDetails } from "@src/modules/identity/controllers/test/mockData/auth.payload";
 
 @Injectable()
 export class AdminUsersService {
