@@ -814,13 +814,16 @@ export class AiAssistantService {
         { role: "system", content: systemPrompt },
         { role: "user", content: userInput },
       ];
-  
+
+      const o1miniMessage: { role: "system" | "user"; content: string } [] = [{ role: "user", content: userInput }]
+      
       try {
         // For GPT-o1 and GPT-o1 Mini models, the response is generated without streaming and with limited parameters
         if (modelVersion === OpenAIModelVersion.GPT_o1 || modelVersion === OpenAIModelVersion.GPT_o1_Mini) {
           const response = await OpenAIclient.chat.completions.create({
             model: modelVersion,
-            messages: messages,
+            messages: modelVersion === OpenAIModelVersion.GPT_o1_Mini ? o1miniMessage : messages,
+            ...(maxTokens > 1 && { max_tokens: maxTokens })
           });
 
           // Signal stream start
