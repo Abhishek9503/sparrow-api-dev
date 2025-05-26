@@ -20,13 +20,8 @@ import { MessagesPage } from "openai/resources/beta/threads/messages";
 import { Thread } from "openai/resources/beta/threads/threads";
 import type { IncomingMessage } from "node:http";
 
-<<<<<<< HEAD
-import { Anthropic } from '@anthropic-ai/sdk';
-
-=======
 // import { GoogleGenAI } from "@google/genai";
 import Anthropic from '@anthropic-ai/sdk';
->>>>>>> 1e783854db33d03014dbd2d56687dc6f6c983008
 
 // ---- Payload
 import {
@@ -51,7 +46,6 @@ import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIM
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
 import { totalmem } from "node:os";
-// import type { GoogleGenAI } from '@google/genai';
 
 async function initializeGenAI(authKey: string) 
 {
@@ -60,12 +54,6 @@ async function initializeGenAI(authKey: string)
   return genAI;
 }
 
-async function initializeGenAI(authKey: string) 
-{
-  const { GoogleGenAI } = await import('@google/genai');
-  const genAI = new GoogleGenAI({apiKey: authKey});
-  return genAI;
-}
 
 /**
  * Service for managing AI Assistant interactions.
@@ -1096,13 +1084,31 @@ export class AiAssistantService {
             ...(maxTokens > 1 && { max_tokens: maxTokens }),
             ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
           });
+
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
           
           const data = response.choices[0]?.message?.content || "";
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
           
           if (client.readyState === WebSocket.OPEN) {
             client.send(
               JSON.stringify(this.formatResponse(
-                data,
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
