@@ -27,7 +27,7 @@ export class CreateBlockTestflowGuard implements CanActivate {
       planData?.limits?.blocksPerTestflow?.value + 1
     ) {
       throw new ForbiddenException(
-        "Can't create new Testflow, Plan limit reached for this Workspace.",
+        "Can't create new Block in Testflow, Plan limit reached for this Workspace.",
       );
     }
     return true;
