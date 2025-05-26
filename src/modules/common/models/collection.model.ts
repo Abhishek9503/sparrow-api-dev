@@ -542,7 +542,7 @@ export class AiRequestMetaData {
   @ApiProperty({ example: "gpt-4o" })
   @IsString()
   @IsNotEmpty()
-  aiModelVariant: string;
+  aiModelVariant: string; //ToDo: Add proper types (for type safety) for possible model versions
 
   @ApiProperty({ example: "Answer the user queries." })
   @IsString()

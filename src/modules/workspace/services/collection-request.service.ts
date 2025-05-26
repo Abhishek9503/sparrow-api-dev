@@ -651,10 +651,6 @@ export class CollectionRequestService {
   async addSocketIO(
     socketio: Partial<CollectionSocketIODto>,
   ): Promise<CollectionItem> {
-    console.log(
-      "socketio ************************\n****************************",
-      socketio,
-    );
     const user = await this.contextService.get("user");
     await this.workspaceService.IsWorkspaceAdminOrEditor(socketio.workspaceId);
     await this.checkPermission(socketio.workspaceId, user._id);
@@ -1287,10 +1283,6 @@ export class CollectionRequestService {
   async addAiRequest(
     aiRequest: Partial<CollectionAiRequestDto>,
   ): Promise<CollectionItem> {
-    console.log(
-      "aiRequest ************************\n****************************",
-      aiRequest,
-    );
     const user = await this.contextService.get("user");
     await this.workspaceService.IsWorkspaceAdminOrEditor(aiRequest.workspaceId);
     await this.checkPermission(aiRequest.workspaceId, user._id);
