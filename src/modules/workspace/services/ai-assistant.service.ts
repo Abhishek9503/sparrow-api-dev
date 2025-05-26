@@ -72,6 +72,7 @@ export class AiAssistantService {
   private deepseekEndpoint: string;
   private deepseekApiKey: string;
   private deepseekApiVersion: string;
+  private deepseekurl: string;
   // Default assistant configuration
   private assistant = {
     name: "API Instructor",
@@ -102,6 +103,7 @@ export class AiAssistantService {
     this.deepseekEndpoint = this.configService.get("ai.deepseekEndpoint");
     this.deepseekApiKey = this.configService.get("ai.deepseekApiKey");
     this.deepseekApiVersion = this.configService.get("ai.deepseekApiVersion");
+    this.deepseekurl = this.configService.get("ai.deepseekURL")
 
     // Initialize the AzureOpenAI client
     try {
@@ -1141,6 +1143,9 @@ export class AiAssistantService {
       const promptInstruction =
         "You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output.";
 
+      const userInstructions = 
+        `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+
       switch (model) {
         case Models.OpenAI: {
           const openai = new OpenAI({ apiKey: authKey });
@@ -1151,7 +1156,7 @@ export class AiAssistantService {
               messages: [
                 {
                   role: "user",
-                  content: `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+                  content: userInstructions
                 }
               ],
               model: modelVersion
@@ -1177,7 +1182,7 @@ export class AiAssistantService {
           const genAI = await initializeGenAI(authKey);
           const response = await genAI.models.generateContent({
             model: modelVersion,
-            contents: `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+            contents: userInstructions
           });
 
           const result = response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
@@ -1192,7 +1197,7 @@ export class AiAssistantService {
             messages: [
               {
                 role: "user",
-                content: `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+                content: userInstructions
               }
             ]
           });
@@ -1206,7 +1211,7 @@ export class AiAssistantService {
 
         case Models.DeepSeek: {
           const deepseek = new OpenAI({
-            baseURL: "https://api.deepseek.com",
+            baseURL: this.deepseekurl,
             apiKey: authKey
           });
 
