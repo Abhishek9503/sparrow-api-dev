@@ -2,6 +2,7 @@ import {
   IsBoolean,
   IsDateString,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   IsNumber,
@@ -52,7 +53,8 @@ export class Plan {
   active?: boolean;
 
   @IsNotEmpty()
-  limits?: Limits;
+  @IsObject()
+  limits: Limits;
 
   @IsDateString()
   createdAt: Date;
@@ -61,8 +63,8 @@ export class Plan {
   updatedAt: Date;
 
   @IsString()
-  createdBy?: string;
+  createdBy: string;
 
   @IsString()
-  updatedBy?: string;
+  updatedBy: string;
 }

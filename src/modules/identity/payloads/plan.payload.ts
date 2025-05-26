@@ -2,7 +2,9 @@ import { Limits } from "@src/modules/common/models/plan.model";
 import {
   IsBoolean,
   IsMongoId,
+  isNotEmpty,
   IsNotEmpty,
+  isObject,
   IsOptional,
   IsString,
 } from "class-validator";
@@ -14,20 +16,25 @@ export class CreateOrUpdatePlanDto {
   name: string;
 
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @IsOptional()
+  description?: string;
+
 
   @IsBoolean()
-  active?: boolean;
+  @isNotEmpty()
+  active: boolean;
 
-  @IsOptional()
-  limits?: Limits;
+  @isObject()
+  @isNotEmpty()
+  limits: Limits;
 }
 
 export class PlanDto {
   @IsMongoId()
+  @isNotEmpty()
   id: ObjectId;
 
   @IsString()
+  @isNotEmpty()
   name: string;
 }
