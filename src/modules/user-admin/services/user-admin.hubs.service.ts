@@ -144,7 +144,7 @@ export class AdminHubsService {
         sortOptions.sortBy,
         sortOptions.sortOrder,
       );
-
+      console.log(teams);
       if (!teams?.data?.length) {
         return {
           totalpages: 0,
