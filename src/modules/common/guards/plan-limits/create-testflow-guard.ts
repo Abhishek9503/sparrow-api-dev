@@ -22,7 +22,7 @@ export class CreateTestflowGuard implements CanActivate {
       workspaceDetails?.plan?.id.toString(),
     );
     if (
-      workspaceDetails?.testflows?.length ===
+      workspaceDetails?.testflows?.length >=
       planData?.limits?.testflowPerWorkspace?.value
     ) {
       throw new ForbiddenException(
