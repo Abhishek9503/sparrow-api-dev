@@ -791,7 +791,7 @@ export class AiAssistantService {
   ): Promise<OpenAI | null> {
     try {
       const DeepSeekClient = new OpenAI({
-        baseURL: 'https://api.deepseek.com',
+        baseURL: this.deepseekurl,
         apiKey: authKey,
       });
       return DeepSeekClient;
