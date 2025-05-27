@@ -41,11 +41,12 @@ import { UserService } from "../../identity/services/user.service";
 // ---- Enums
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { parseWhitelistedEmailList } from "@src/modules/common/util/email.parser.util";
-import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIModelVersion , DeepSeepModelVersion} from "@src/modules/common/enum/ai-services.enum";
+import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIModelVersion , DeepSeepModelVersion , Roles} from "@src/modules/common/enum/ai-services.enum";
 
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
 import { totalmem } from "node:os";
+import { Role } from "nest-access-control";
 
 async function initializeGenAI(authKey: string) 
 {
@@ -569,7 +570,7 @@ export class AiAssistantService {
   ): Promise<void> {
 
     type ChatMessage = {
-      role: "system" | "user" | "assistant";
+      role: Roles.system | Roles.user | Roles.assistant;
       content: string;
     };
 
@@ -637,9 +638,9 @@ export class AiAssistantService {
     const userInput = `{Text: ${text}, API data: ${apiData}}`;
     
     const messageHistory: ChatMessage[] = [
-      { role: "system", content: instructions },
+      { role: Roles.system, content: instructions },
       ...conversationMessages,
-      { role: "user", content: userInput },
+      { role: Roles.user, content: userInput },
     ];
     
     try {
@@ -864,7 +865,7 @@ export class AiAssistantService {
       // ];
 
       type ChatMessage = {
-        role: "user" | "assistant";
+        role: Roles.user | Roles.assistant;
         content: string;
       };
 
@@ -1039,7 +1040,7 @@ export class AiAssistantService {
 
       // Message for Contextual Chatbot 
       type ChatMessage = {
-        role: "system" | "user" | "assistant";
+        role: Roles.system | Roles.user | Roles.assistant;
         content: string;
       };
 
@@ -1211,7 +1212,7 @@ export class AiAssistantService {
 
       // Message for Contextual Chatbot 
       type ChatMessage = {
-        role: "system" | "user" | "assistant";
+        role: Roles.system | Roles.user | Roles.assistant;
         content: string;
       };
 

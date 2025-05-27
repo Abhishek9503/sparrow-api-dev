@@ -43,3 +43,9 @@ export enum DeepSeepModelVersion {
     DeepSeek_R1 = "deepseek-reasoner",
     DeepSeek_V3 = "deepseek-chat"
 }
+
+export enum Roles {
+  system = "system",
+  user = "user",
+  assistant = "assistant"
+}
