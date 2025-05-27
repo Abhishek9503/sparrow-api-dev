@@ -38,10 +38,17 @@ export class AdminHubsRepository {
       };
     }
 
+    const collation = sortBy === "name" ? { locale: "en", strength: 2 } : null;
+
     const collection = this.db.collection("team");
-    const query = collection.find(queryConditions).sort({
-      [sortBy]: sortOrder === "asc" ? 1 : -1,
-    });
+    const query = collection
+      .find(queryConditions)
+      .sort({ [sortBy]: sortOrder === "asc" ? 1 : -1 });
+
+    // Apply collation if sorting by name
+    if (collation) {
+      query.collation(collation);
+    }
 
     const totalCount = await collection.countDocuments(queryConditions);
 
