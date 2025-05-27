@@ -221,6 +221,14 @@ export class ChatBotPayload {
   temperature?: number;
 
   /**
+   * Top p.
+   */
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ required: false, example: "0.0 to 1.0" })
+  topP?: number;
+
+  /**
    * Presence Penalty.
    */
   @IsString()

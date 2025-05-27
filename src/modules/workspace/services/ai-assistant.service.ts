@@ -41,10 +41,12 @@ import { UserService } from "../../identity/services/user.service";
 // ---- Enums
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { parseWhitelistedEmailList } from "@src/modules/common/util/email.parser.util";
-import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIModelVersion , DeepSeepModelVersion} from "@src/modules/common/enum/ai-services.enum";
+import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIModelVersion , DeepSeepModelVersion , Roles} from "@src/modules/common/enum/ai-services.enum";
 
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
+import { totalmem } from "node:os";
+import { Role } from "nest-access-control";
 
 async function initializeGenAI(authKey: string) 
 {
@@ -52,6 +54,7 @@ async function initializeGenAI(authKey: string)
   const genAI = new GoogleGenAI({apiKey: authKey});
   return genAI;
 }
+
 
 /**
  * Service for managing AI Assistant interactions.
@@ -567,7 +570,7 @@ export class AiAssistantService {
   ): Promise<void> {
 
     type ChatMessage = {
-      role: "system" | "user" | "assistant";
+      role: Roles.system | Roles.user | Roles.assistant;
       content: string;
     };
 
@@ -635,9 +638,9 @@ export class AiAssistantService {
     const userInput = `{Text: ${text}, API data: ${apiData}}`;
     
     const messageHistory: ChatMessage[] = [
-      { role: "system", content: instructions },
+      { role: Roles.system, content: instructions },
       ...conversationMessages,
-      { role: "user", content: userInput },
+      { role: Roles.user, content: userInput },
     ];
     
     try {
@@ -761,6 +764,51 @@ export class AiAssistantService {
     }
   }
 
+  private async createAnthropicClient(
+    client: WebSocket,
+    authKey: string
+  ): Promise<Anthropic | null> {
+    try {
+      const Anthropiclient = new Anthropic({
+        apiKey: authKey,
+      });
+      return Anthropiclient;
+    } catch (error: any) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(
+          JSON.stringify({
+            event: "error",
+            message: "Invalid Authentication. Please add a valid Anthropic key.",
+          })
+        );
+      }
+      return null;
+    }
+  }
+
+  private async createDeepSeekClient(
+    client: WebSocket,
+    authKey: string
+  ): Promise<OpenAI | null> {
+    try {
+      const DeepSeekClient = new OpenAI({
+        baseURL: this.deepseekurl,
+        apiKey: authKey,
+      });
+      return DeepSeekClient;
+    } catch (error: any) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(
+          JSON.stringify({
+            event: "error",
+            message: "Invalid Authentication. Please add a valid DeepSeek key.",
+          })
+        );
+      }
+      return null;
+    }
+  }
+
   /**
      * Formats response metrics with timing information
      * @param data Response content
@@ -789,6 +837,351 @@ export class AiAssistantService {
         timeTaken: `${timeTaken}ms`,
       };
     }
+
+    /**
+     * Processes LLM requests through Anthropic API
+     */
+    private async anthropicLLMService(
+      client: WebSocket,
+      Anthropicclient: Anthropic | null,
+      modelVersion: string,
+      systemPrompt: string,
+      userInput: string,
+      streamResponse: boolean,
+      temperature: number,
+      topP: number,
+      maxTokens: number,
+    ): Promise<void> {
+
+      // Return early if Anthropic client creation failed
+      if (!Anthropicclient) return;
+  
+      const startTime = performance.now();
+      
+      // Message format for Anthropic API
+      // const messages: { role: "assistant" | "user"; content: string }[] = [
+      //   { role: "user", content: userInput },
+      //   { role: "assistant", content: systemPrompt }
+      // ];
+
+      type ChatMessage = {
+        role: Roles.user | Roles.assistant;
+        content: string;
+      };
+
+      let messages: ChatMessage[];
+
+      if (typeof userInput === 'string') {
+        try {
+          messages = JSON.parse(userInput) as ChatMessage[];
+        } catch (err) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              statusCode: 400,
+              event: "error",
+              message: "Invalid JSON format for userInput."
+            }));
+          }
+          return;
+        }
+      } else {
+        messages = userInput as ChatMessage[];
+      }
+  
+      try {
+        // Handle streaming response
+        if (streamResponse === true) {
+          
+          const stream = await Anthropicclient.messages.create({
+            messages: messages,
+            model: modelVersion,
+            temperature: temperature,
+            top_p: topP,
+            max_tokens: maxTokens > 0 ? maxTokens : 1024,
+            stream: true
+          });
+          
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
+          for await (const event of stream) {
+            if (client.readyState !== WebSocket.OPEN) break;
+
+            // Handle text deltas
+            if (event.type === 'content_block_delta') {
+              if (event.delta.type === 'text_delta') {
+                client.send(
+                  JSON.stringify({
+                    messages: event.delta.text,
+                    stream_status: 'streaming',
+                  })
+                );
+              }
+            }
+
+            const inputTokens = await Anthropicclient.messages.countTokens({
+              model: modelVersion,
+              messages: messages
+            });
+
+            const input_tokens = inputTokens.input_tokens
+
+            // Final usage and stream end
+            if (event.type === 'message_delta' && event.usage) {
+              const endTime = performance.now();
+              const timeTaken = Math.round(endTime - startTime);
+
+              client.send(
+                JSON.stringify({
+                  statusCode: 200,
+                  messages: "",
+                  stream_status: "end",
+                  inputTokens: input_tokens,
+                  outputTokens: event.usage.output_tokens,
+                  totalTokens: input_tokens + event.usage.output_tokens,
+                  timeTaken: `${timeTaken}ms`,
+                })
+              );
+            }
+          }
+      }
+        // Handle non-streaming response
+        else {
+          const response = await Anthropicclient.messages.create({
+            model: modelVersion,
+            messages: messages,
+            temperature: temperature,
+            top_p: topP,
+            max_tokens: maxTokens > 0 ? maxTokens : 1024
+
+          });
+
+          const data = response.content
+            .map((block) => ('text' in block ? block.text : ''))
+            .join('');
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify(this.formatResponse(
+                response.usage?.input_tokens || 0,
+                response.usage?.output_tokens || 0,
+                response.usage?.input_tokens + response.usage?.output_tokens || 0,
+                startTime
+              ))
+            );
+          }
+        }
+      } catch (error: any) {
+        if (client.readyState === WebSocket.OPEN) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
+          client.send(
+            JSON.stringify({
+              timeTaken: `${timeTaken}ms`,
+              statusCode: error?.status || 500,
+              event: "error",
+              message: error,
+            })
+          );
+        }
+      }
+    }
+
+    /**
+     * Processes LLM requests through DeepSeek API
+     */
+    private async deepseekLLMService(
+      client: WebSocket,
+      DeepSeekClinet: OpenAI | null,
+      modelVersion: string,
+      systemPrompt: string,
+      userInput: string,
+      streamResponse: boolean,
+      jsonResponseFormat: boolean,
+      temperature: number,
+      presencePenalty: number,
+      frequencePenalty: number,
+      maxTokens: number,
+    ): Promise<void> {
+      // Return early if DeepSeek client creation failed
+      if (!DeepSeekClinet) return;
+  
+      const startTime = performance.now();
+      
+      // Message format for DeepSeek API
+      // const messages: { role: "system" | "user"; content: string }[] = [
+      //   { role: "system", content: systemPrompt },
+      //   { role: "user", content: userInput },
+      // ];
+
+      // Message for Contextual Chatbot 
+      type ChatMessage = {
+        role: Roles.system | Roles.user | Roles.assistant;
+        content: string;
+      };
+
+      let messages: ChatMessage[];
+
+      if (typeof userInput === 'string') {
+        try {
+          messages = JSON.parse(userInput) as ChatMessage[];
+        } catch (err) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              statusCode: 400,
+              event: "error",
+              message: "Invalid JSON format for userInput."
+            }));
+          }
+          return;
+        }
+      } else {
+        messages = userInput as ChatMessage[];
+      }
+  
+      try {        
+        // Handle streaming response
+        if (streamResponse === true) {
+          const stream = await DeepSeekClinet.chat.completions.create({
+            model: modelVersion,
+            messages: messages,
+            temperature: temperature,
+            presence_penalty: presencePenalty,
+            frequency_penalty: frequencePenalty,
+            ...(maxTokens > 1 && { max_tokens: maxTokens }),
+            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+            stream: true,
+            stream_options: { include_usage: true }
+          });
+          
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
+          
+          // Process stream chunks
+          for await (const event of stream) {
+            if (client.readyState !== WebSocket.OPEN) break;
+            
+            const choice = event.choices?.[0];
+            
+            // Send content chunk if it exists
+            if (choice?.delta?.content) {
+              client.send(
+                JSON.stringify({
+                  messages: choice.delta.content,
+                  stream_status: "streaming"
+                })
+              );
+            }
+            
+            // Send final usage information when available
+            if (event?.usage) {
+              const endTime = performance.now();
+              const timeTaken = Math.round(endTime - startTime);
+  
+              client.send(
+                JSON.stringify({
+                  statusCode: 200,
+                  messages: "",
+                  stream_status: "end",
+                  inputTokens: event.usage.prompt_tokens,
+                  outputTokens: event.usage.completion_tokens,
+                  totalTokens: event.usage.total_tokens,
+                  timeTaken: `${timeTaken}ms`,
+                })
+              );
+            }
+          }
+        }
+        // Handle non-streaming response
+        else {
+          const response = await DeepSeekClinet.chat.completions.create({
+            model: modelVersion,
+            messages: messages,
+            temperature: temperature,
+            presence_penalty: presencePenalty,
+            frequency_penalty: frequencePenalty,
+            ...(maxTokens > 1 && { max_tokens: maxTokens }),
+            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+          });
+
+          // Signal stream start
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: "",
+                stream_status: "start"
+              })
+            );
+          }
+          
+          const data = response.choices[0]?.message?.content || "";
+
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                messages: data,
+                stream_status: "streaming"
+              })
+            );
+          }
+          
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify(this.formatResponse(
+                response.usage?.prompt_tokens || 0,
+                response.usage?.completion_tokens || 0,
+                response.usage?.total_tokens || 0,
+                startTime
+              ))
+            );
+          }
+        }
+      } catch (error: any) {
+        if (client.readyState === WebSocket.OPEN) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
+          client.send(
+            JSON.stringify({
+              timeTaken: `${timeTaken}ms`,
+              statusCode: error?.status || 500,
+              event: "error",
+              message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
+            })
+          );
+        }
+      }
+    }
   
     /**
      * Processes LLM requests through OpenAI API
@@ -812,10 +1205,35 @@ export class AiAssistantService {
       const startTime = performance.now();
       
       // Message format for OpenAI API
-      const messages: { role: "system" | "user"; content: string }[] = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userInput },
-      ];
+      // const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+      //   { role: "system", content: systemPrompt },
+      //   { role: "user", content: userInput },
+      // ];
+
+      // Message for Contextual Chatbot 
+      type ChatMessage = {
+        role: Roles.system | Roles.user | Roles.assistant;
+        content: string;
+      };
+
+      let messages: ChatMessage[];
+
+      if (typeof userInput === 'string') {
+        try {
+          messages = JSON.parse(userInput) as ChatMessage[];
+        } catch (err) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              statusCode: 400,
+              event: "error",
+              message: "Invalid JSON format for userInput."
+            }));
+          }
+          return;
+        }
+      } else {
+        messages = userInput as ChatMessage[];
+      }
 
       const o1miniMessage: { role: "system" | "user"; content: string } [] = [{ role: "user", content: userInput }]
       
@@ -1047,7 +1465,8 @@ export class AiAssistantService {
                 temperature,
                 presencePenalty,
                 frequencePenalty,
-                maxTokens
+                maxTokens,
+                topP
               } = parsedData;
 
             // Only support OpenAI model currently
@@ -1069,7 +1488,50 @@ export class AiAssistantService {
                 frequencePenalty,
                 maxTokens
               );
-            } else {
+              continue;
+            }
+  
+            if (model === Models.Anthropic) {
+              // Create OpenAI client
+              const Anthropicclient = await this.createAnthropicClient(client, authKey);
+              
+              // Process the LLM request
+              await this.anthropicLLMService(
+                client,
+                Anthropicclient,
+                modelVersion,
+                systemPrompt,
+                userInput,
+                streamResponse,
+                temperature,
+                topP,
+                maxTokens
+              );
+              continue;
+            }
+
+            if (model === Models.DeepSeek) {
+              // Create DeepSeek client
+              const DeepSeekClinet = await this.createDeepSeekClient(client, authKey);
+              
+              // Process the LLM request
+              await this.deepseekLLMService(
+                client,
+                DeepSeekClinet,
+                modelVersion,
+                systemPrompt,
+                userInput,
+                streamResponse,
+                jsonResponseFormat,
+                temperature,
+                presencePenalty,
+                frequencePenalty,
+                maxTokens
+              );
+              continue;
+            }
+            
+            else {
               if (client.readyState === WebSocket.OPEN) {
                 client.send(
                   JSON.stringify({
