@@ -1242,7 +1242,7 @@ export class AiAssistantService {
           const response = await OpenAIclient.chat.completions.create({
             model: modelVersion,
             messages: modelVersion === OpenAIModelVersion.GPT_o1_Mini ? o1miniMessage : messages,
-            ...(maxTokens > 1 && { max_tokens: maxTokens })
+            ...(maxTokens > 1 && { max_completion_tokens: maxTokens })
           });
 
           // Signal stream start
