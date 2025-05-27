@@ -848,7 +848,7 @@ export class AiAssistantService {
       userInput: string,
       streamResponse: boolean,
       temperature: number,
-      presencePenalty: number,
+      topP: number,
       maxTokens: number,
     ): Promise<void> {
 
@@ -895,7 +895,7 @@ export class AiAssistantService {
             messages: messages,
             model: modelVersion,
             temperature: temperature,
-            top_p: presencePenalty,
+            top_p: topP,
             max_tokens: maxTokens > 0 ? maxTokens : 1024,
             stream: true
           });
@@ -956,7 +956,7 @@ export class AiAssistantService {
             model: modelVersion,
             messages: messages,
             temperature: temperature,
-            top_p: presencePenalty,
+            top_p: topP,
             max_tokens: maxTokens > 0 ? maxTokens : 1024
 
           });
@@ -1464,7 +1464,8 @@ export class AiAssistantService {
                 temperature,
                 presencePenalty,
                 frequencePenalty,
-                maxTokens
+                maxTokens,
+                topP
               } = parsedData;
 
             // Only support OpenAI model currently
@@ -1502,7 +1503,7 @@ export class AiAssistantService {
                 userInput,
                 streamResponse,
                 temperature,
-                presencePenalty,
+                topP,
                 maxTokens
               );
               continue;
