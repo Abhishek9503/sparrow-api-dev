@@ -26,6 +26,7 @@ import { curlDto } from "./payloads/curl.payload";
 import { PostmanParserService } from "../common/services/postman.parser.service";
 import { subscribePayload } from "./payloads/subscribe.payload";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
+import { ExtendedFastifyRequest } from "@src/types/fastify";
 /**
  * App Controller
  */
@@ -78,8 +79,16 @@ export class AppController {
       },
     },
   })
-  async parseCurl(@Body() req: curlDto, @Res() res: FastifyReply) {
-    const parsedRequestData = await this.appService.parseCurl(req.curl);
+  async parseCurl(
+    @Body() req: curlDto,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const parsedRequestData = await this.appService.parseCurl(
+      req.curl,
+      user?.username ?? "anonymous",
+    );
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,

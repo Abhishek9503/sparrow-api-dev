@@ -127,7 +127,7 @@ export class AppService {
     return params;
   };
 
-  async parseCurl(req: string): Promise<TransformedRequest> {
+  async parseCurl(req: string, username: string): Promise<TransformedRequest> {
     try {
       const curlconverter = await this.importCurlConverter();
       const { toJsonString } = curlconverter;
@@ -166,7 +166,7 @@ export class AppService {
       if (formDataItems.length > 0) {
         parsedCurl.files = formDataItems;
       }
-      return this.transformRequest(parsedCurl);
+      return this.transformRequest(parsedCurl, username);
     } catch (error) {
       console.error("Error parsing :", error);
       throw new BadRequestException("Invalid Curl");
@@ -177,8 +177,11 @@ export class AppService {
     url = url.replace(/^(https?:\/\/\s*)+(https?:\/\/)/, "$2");
     return url;
   }
-  async transformRequest(requestObject: any): Promise<TransformedRequest> {
-    const user = await this.contextService.get("user");
+  async transformRequest(
+    requestObject: any,
+    username: string,
+  ): Promise<TransformedRequest> {
+    // const user = await this.contextService.get("user");
     const keyValueDefaultObj = {
       key: "",
       value: "",
@@ -234,8 +237,8 @@ export class AppService {
         selectedRequestBodyType: BodyModeEnum["none"],
         selectedRequestAuthType: AuthModeEnum["No Auth"],
       },
-      createdBy: user?.name,
-      updatedBy: user?.name,
+      createdBy: username,
+      updatedBy: username,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -428,7 +431,7 @@ export class AppService {
       }
       // If files is an object with key-value pairs
       else {
-        for (const [key, filename] of Object.entries(requestObject.files)) {
+        for (const key of Object.keys(requestObject.files)) {
           transformedObject.request.body.formdata.text.push({
             key,
             value: "",
@@ -441,7 +444,9 @@ export class AppService {
     // Handle headers and populate auth details
     if (requestObject.headers) {
       for (const [key, value] of Object.entries(requestObject.headers)) {
-        if (!(isFormData && (key === "Content-Type" || key === "content-type"))) {
+        if (
+          !(isFormData && (key === "Content-Type" || key === "content-type"))
+        ) {
           transformedObject.request.headers.push({ key, value, checked: true });
         }
 

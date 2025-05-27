@@ -48,6 +48,7 @@ import {
 } from "@blazity/nest-file-fastify";
 import { CollectionTypeEnum } from "@src/modules/common/models/collection.model";
 import { UserService } from "@src/modules/identity/services/user.service";
+import { ExtendedFastifyRequest } from "@src/types/fastify";
 
 @ApiBearerAuth()
 @ApiTags("collection")
@@ -347,10 +348,11 @@ export class collectionController {
   async addRequest(
     @Body() requestDto: Partial<CollectionRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
     const collectionId = requestDto.collectionId;
     const workspaceId = requestDto.workspaceId;
-    const user = await this.contextService.get("user");
+    const user = request.user;
     await this.workSpaceService.IsWorkspaceAdminOrEditor(
       requestDto.workspaceId,
     );

@@ -54,16 +54,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     this.contextService.set("user", user);
 
-    // if admin role exists we return the whole obj (this is only used for admin api's)
-    if (role) {
-      return {
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        role: role,
-      };
-    }
-
-    return user._id;
+    // Return user object with necessary fields
+    return {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      role: role,
+    };
   }
 }
