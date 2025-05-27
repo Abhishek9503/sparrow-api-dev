@@ -45,7 +45,7 @@ import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import { ObjectId } from "mongodb";
 import { FastifyRequest } from "fastify/types/request";
 import { BodyModeEnum } from "@src/modules/common/models/collection.model";
-import { CreateWorkspaceGuard } from "@src/modules/common/guards/plan-limits/create-workspace-guard";
+import { CreateWorkspaceGuard } from "../guards/plan-limits/create-workspace-guard";
 
 /**
  * Workspace Controller

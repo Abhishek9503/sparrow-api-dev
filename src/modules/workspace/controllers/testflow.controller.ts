@@ -33,7 +33,7 @@ import {
   CreateTestflowDto,
   UpdateTestflowDto,
 } from "../payloads/testflow.payload";
-import { CreateTestflowGuard } from "@src/modules/common/guards/plan-limits/create-testflow-guard";
+import { CreateTestflowGuard } from "../guards/plan-limits/create-testflow-guard";
 
 /**
  * Controller responsible for handling Testflow operations
