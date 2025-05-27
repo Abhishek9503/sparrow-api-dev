@@ -858,10 +858,34 @@ export class AiAssistantService {
       const startTime = performance.now();
       
       // Message format for Anthropic API
-      const messages: { role: "assistant" | "user"; content: string }[] = [
-        { role: "user", content: userInput },
-        { role: "assistant", content: systemPrompt }
-      ];
+      // const messages: { role: "assistant" | "user"; content: string }[] = [
+      //   { role: "user", content: userInput },
+      //   { role: "assistant", content: systemPrompt }
+      // ];
+
+      type ChatMessage = {
+        role: "user" | "assistant";
+        content: string;
+      };
+
+      let messages: ChatMessage[];
+
+      if (typeof userInput === 'string') {
+        try {
+          messages = JSON.parse(userInput) as ChatMessage[];
+        } catch (err) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              statusCode: 400,
+              event: "error",
+              message: "Invalid JSON format for userInput."
+            }));
+          }
+          return;
+        }
+      } else {
+        messages = userInput as ChatMessage[];
+      }
   
       try {
         // Handle streaming response
@@ -1008,10 +1032,35 @@ export class AiAssistantService {
       const startTime = performance.now();
       
       // Message format for DeepSeek API
-      const messages: { role: "system" | "user"; content: string }[] = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userInput },
-      ];
+      // const messages: { role: "system" | "user"; content: string }[] = [
+      //   { role: "system", content: systemPrompt },
+      //   { role: "user", content: userInput },
+      // ];
+
+      // Message for Contextual Chatbot 
+      type ChatMessage = {
+        role: "system" | "user" | "assistant";
+        content: string;
+      };
+
+      let messages: ChatMessage[];
+
+      if (typeof userInput === 'string') {
+        try {
+          messages = JSON.parse(userInput) as ChatMessage[];
+        } catch (err) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              statusCode: 400,
+              event: "error",
+              message: "Invalid JSON format for userInput."
+            }));
+          }
+          return;
+        }
+      } else {
+        messages = userInput as ChatMessage[];
+      }
   
       try {        
         // Handle streaming response
@@ -1155,10 +1204,35 @@ export class AiAssistantService {
       const startTime = performance.now();
       
       // Message format for OpenAI API
-      const messages: { role: "system" | "user"; content: string }[] = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userInput },
-      ];
+      // const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+      //   { role: "system", content: systemPrompt },
+      //   { role: "user", content: userInput },
+      // ];
+
+      // Message for Contextual Chatbot 
+      type ChatMessage = {
+        role: "system" | "user" | "assistant";
+        content: string;
+      };
+
+      let messages: ChatMessage[];
+
+      if (typeof userInput === 'string') {
+        try {
+          messages = JSON.parse(userInput) as ChatMessage[];
+        } catch (err) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              statusCode: 400,
+              event: "error",
+              message: "Invalid JSON format for userInput."
+            }));
+          }
+          return;
+        }
+      } else {
+        messages = userInput as ChatMessage[];
+      }
 
       const o1miniMessage: { role: "system" | "user"; content: string } [] = [{ role: "user", content: userInput }]
       
