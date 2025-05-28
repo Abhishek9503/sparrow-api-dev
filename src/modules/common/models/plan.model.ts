@@ -5,6 +5,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsNumber,
 } from "class-validator";
 
 export enum LimitArea {
@@ -12,16 +13,49 @@ export enum LimitArea {
   HUB = "hub",
   WORKSPACE = "workspace",
   TESTFLOW = "testflow",
+  BLOCK = "block",
   ENVIRONMENT = "environment",
   COLLECTION = "collection",
   AI = "ai",
 }
 
+export class WorkspaceLimit {
+  area: LimitArea.WORKSPACE;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
+export class TestflowLimit {
+  area: LimitArea.TESTFLOW;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
+export class BlocksPerTestflow {
+  area: LimitArea.BLOCK;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
+export class UsersPerHub {
+  area: LimitArea.HUB;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
 export class Limits {
-  usersPerHub: {
-    area: LimitArea;
-    value: number;
-  }
+  workspacesPerHub: WorkspaceLimit;
+  testflowPerWorkspace: TestflowLimit;
+  blocksPerTestflow: BlocksPerTestflow;
+  usersPerHub: UsersPerHub
 }
 
 export class Plan {
