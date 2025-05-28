@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Req,
   Res,
   UseGuards,
   UseInterceptors,
@@ -46,6 +47,7 @@ import {
   UploadedFile,
 } from "@blazity/nest-file-fastify";
 import { CollectionTypeEnum } from "@src/modules/common/models/collection.model";
+import { UserService } from "@src/modules/identity/services/user.service";
 
 @ApiBearerAuth()
 @ApiTags("collection")
@@ -56,6 +58,7 @@ export class collectionController {
     private readonly workSpaceService: WorkspaceService,
     private readonly collectionRequestService: CollectionRequestService,
     private readonly contextService: ContextService,
+    private readonly userService: UserService,
   ) {}
 
   @Post()
@@ -108,10 +111,14 @@ export class collectionController {
   @ApiResponse({ status: 400, description: "Fetch Collection Request Failed" })
   async getCollection(
     @Param("workspaceId") workspaceId: string,
+    @Req() req: any,
     @Res() res: FastifyReply,
   ) {
     const collection =
       await this.collectionService.getAllCollections(workspaceId);
+    await this.userService.updateLastActive(
+      req.user ? req.user.toString() : "",
+    );
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,
@@ -1025,6 +1032,32 @@ export class collectionController {
       HttpStatusCode.OK,
       collection,
     );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Get(":collectionId/workspace/:workspaceId")
+  @ApiOperation({
+    summary: "Get Collection By ID",
+    description:
+      "This will fetch a specific collection using collection ID and workspace ID",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "Collection fetched successfully" })
+  @ApiResponse({ status: 404, description: "Collection not found" })
+  async getCollectionByIdAndWorkspace(
+    @Param("collectionId") collectionId: string,
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.workSpaceService.IsWorkspaceAdminOrEditor(workspaceId);
+
+    const collection = await this.collectionService.getCollection(collectionId);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
+
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 }
