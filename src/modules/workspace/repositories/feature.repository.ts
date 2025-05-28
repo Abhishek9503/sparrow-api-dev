@@ -12,7 +12,6 @@ import {
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 
 // ---- Service
-import { ContextService } from "@src/modules/common/services/context.service";
 
 // ---- Model and Payload
 import { Feature } from "@src/modules/common/models/feature.model";
@@ -26,10 +25,7 @@ import { UpdateFeatureDto } from "../payloads/feature.payload";
  */
 @Injectable()
 export class FeatureRepository {
-  constructor(
-    @Inject("DATABASE_CONNECTION") private db: Db,
-    private readonly contextService: ContextService,
-  ) {}
+  constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
 
   /**
    * Adds a new feature to the database.

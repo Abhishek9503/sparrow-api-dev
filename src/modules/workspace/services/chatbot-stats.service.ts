@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { ObjectId, WithId } from "mongodb";
 
 // ---- Services
-import { ContextService } from "@src/modules/common/services/context.service";
 
 // ---- Models and Payloads
 import {
@@ -24,11 +23,9 @@ import { ChatbotStatsRepository } from "../repositories/chatbot-stats.repositoy"
 export class ChatbotStatsService {
   /**
    * Constructor for ChatbotStatsService.
-   * @param contextService - Service to get context-related data like the current user.
    * @param chatbotStatsRepository - Repository to interact with the chatbot stats data store.
    */
   constructor(
-    private readonly contextService: ContextService,
     private readonly chatbotStatsRepository: ChatbotStatsRepository,
   ) {}
 

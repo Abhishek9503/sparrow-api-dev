@@ -12,12 +12,7 @@ import ModelClient from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { AzureOpenAI, OpenAI } from "openai";
 import { createSseStream } from "@azure/core-sse";
-import {
-  Assistant,
-  AssistantCreateParams,
-} from "openai/resources/beta/assistants";
-import { MessagesPage } from "openai/resources/beta/threads/messages";
-import { Thread } from "openai/resources/beta/threads/threads";
+import { AssistantCreateParams } from "openai/resources/beta/assistants";
 import type { IncomingMessage } from "node:http";
 
 // import { GoogleGenAI } from "@google/genai";
@@ -33,7 +28,7 @@ import {
 } from "../payloads/ai-assistant.payload";
 
 // ---- Services
-import { ContextService } from "@src/modules/common/services/context.service";
+
 import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
 import { ChatbotStatsService } from "./chatbot-stats.service";
 import { UserService } from "../../identity/services/user.service";
@@ -50,7 +45,6 @@ import {
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
 import { DecodedUserObject } from "@src/types/fastify";
-import { ObjectId } from "mongodb";
 
 async function initializeGenAI(authKey: string) {
   const { GoogleGenAI } = await import("@google/genai");
@@ -85,12 +79,10 @@ export class AiAssistantService {
 
   /**
    * Constructor for AiAssistantService.
-   * @param contextService - Context service to get current user information.
    * @param configService - Config service to retrieve environment variables.
    * @param producerService - Kafka producer service to send messages to Kafka topics.
    */
   constructor(
-    private readonly contextService: ContextService,
     private readonly configService: ConfigService,
     private readonly producerService: ProducerService,
     private readonly chatbotStatsService: ChatbotStatsService,
@@ -168,7 +160,7 @@ export class AiAssistantService {
       instructions: _instructions,
     };
     // Create an assistant
-    const assistantResponse: Assistant =
+    const assistantResponse =
       await this.gptAssistantsClient.beta.assistants.create(options);
     return assistantResponse.id;
   };
@@ -219,7 +211,7 @@ export class AiAssistantService {
 
     if (!currentThreadId) {
       // Create an thread if it does not exist
-      const assistantThread: Thread =
+      const assistantThread =
         await this.gptAssistantsClient.beta.threads.create({});
       currentThreadId = assistantThread.id;
     }
@@ -273,13 +265,13 @@ export class AiAssistantService {
     // }
 
     // Get the messages
-    const messageList: MessagesPage =
+    const messageList =
       await this.gptAssistantsClient.beta.threads.messages.list(
         currentThreadId,
       );
     const kafkaMessage = {
-      userId: user._id,
       tokenCount: pollRunner.usage.total_tokens,
+      user,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
       value: JSON.stringify(kafkaMessage),
@@ -307,7 +299,7 @@ export class AiAssistantService {
   public async generateTextStream(
     data: StreamPromptPayload,
     client: Socket,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<void> {
     const { text: prompt, threadId, instructions } = data;
 
@@ -393,7 +385,7 @@ export class AiAssistantService {
     }
     // Save token details
     const kafkaMessage = {
-      userId: userId.toString(),
+      user,
       tokenCount: total_tokens,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {

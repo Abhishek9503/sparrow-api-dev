@@ -20,7 +20,7 @@ import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
 import hbs = require("nodemailer-express-handlebars");
 import path from "path";
 import { TeamService } from "./team.service";
-import { ContextService } from "@src/modules/common/services/context.service";
+
 import { EmailService } from "@src/modules/common/services/email.service";
 import { VerificationPayload } from "../payloads/verification.payload";
 import { HubSpotService } from "./hubspot.service";
@@ -38,7 +38,6 @@ export class UserService {
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
     private readonly teamService: TeamService,
-    private readonly contextService: ContextService,
     private readonly emailService: EmailService,
     private readonly hubspotService: HubSpotService,
   ) {}
@@ -48,8 +47,11 @@ export class UserService {
    * @param {string} id
    * @returns {Promise<IUser>} queried user data
    */
-  async getUserById(id: string): Promise<WithId<User>> {
-    const data = await this.userRepository.getUserById(id);
+  async getUserById(
+    id: string,
+    user?: DecodedUserObject,
+  ): Promise<DecodedUserObject> {
+    const data = await this.userRepository.getUserById(id, user);
     return data;
   }
 
@@ -139,8 +141,13 @@ export class UserService {
   async updateUser(
     userId: string,
     payload: Partial<UpdateUserDto>,
-  ): Promise<WithId<User>> {
-    const data = await this.userRepository.updateUser(userId, payload);
+    currentUser: DecodedUserObject,
+  ): Promise<DecodedUserObject> {
+    const data = await this.userRepository.updateUser(
+      userId,
+      payload,
+      currentUser,
+    );
     return data;
   }
 
@@ -391,8 +398,9 @@ export class UserService {
       name: name,
       email: email,
       role: "",
+      teams: [] as any[],
+      workspaces: [] as any[],
     };
-    this.contextService.set("user", user);
     const firstName = await this.getFirstName(name);
     const teamName = {
       name: firstName + this.configService.get("app.defaultTeamNameSuffix"),
@@ -541,7 +549,6 @@ export class UserService {
     }
     if (magicCode === user.magicCode) {
       await this.userRepository.updateUserMagicCodeStatus(email);
-      this.contextService.set("user", user);
     }
     const tokenPromises = [
       this.authService.createToken(user._id),

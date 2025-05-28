@@ -16,7 +16,6 @@ import {
   AddTo,
   TransformedRequest,
 } from "../common/models/collection.rxdb.model";
-import { ContextService } from "../common/services/context.service";
 import { Kafka } from "kafkajs";
 import axios from "axios";
 import { AppRepository } from "./app.repository";
@@ -35,7 +34,7 @@ export class AppService {
    */
   constructor(
     private config: ConfigService,
-    private contextService: ContextService,
+
     private readonly appRepository: AppRepository,
   ) {}
 

@@ -16,7 +16,6 @@ import { DecodedUserObject } from "@src/types/fastify";
 export class UpdatesService {
   /**
    * Constructor to initialize UpdatesService with required dependencies.
-   * @param contextService - Injected ContextService for accessing user context.
    * @param updatesRepository - Injected UpdatesRepository for database operations.
    */
   constructor(private readonly updatesRepository: UpdatesRepository) {}

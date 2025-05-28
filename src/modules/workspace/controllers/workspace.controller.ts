@@ -126,8 +126,13 @@ export class WorkSpaceController {
   async getAllWorkspaces(
     @Param("userId") userId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    const data = await this.workspaceService.getAllWorkSpaces(userId);
+    const currentUser = request.user;
+    const data = await this.workspaceService.getAllWorkSpaces(
+      userId,
+      currentUser,
+    );
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,
@@ -205,11 +210,7 @@ export class WorkSpaceController {
     @Req() request: ExtendedFastifyRequest,
   ) {
     const user = request.user;
-    await this.workspaceService.update(
-      workspaceId,
-      updateWorkspaceDto,
-      user._id,
-    );
+    await this.workspaceService.update(workspaceId, updateWorkspaceDto, user);
 
     const workspace = await this.workspaceService.get(workspaceId);
     const responseData = new ApiResponseService(
@@ -347,7 +348,7 @@ export class WorkSpaceController {
       workspaceId: workspaceId,
       role: data.role,
     };
-    await this.workspaceService.changeUserRole(params, currentUser._id);
+    await this.workspaceService.changeUserRole(params, currentUser);
     const workspace = await this.workspaceService.get(workspaceId);
     const responseData = new ApiResponseService(
       "Role Changed",
@@ -376,10 +377,7 @@ export class WorkSpaceController {
       userId: userId,
       workspaceId: workspaceId,
     };
-    await this.workspaceService.removeUserFromWorkspace(
-      params,
-      currentUser._id,
-    );
+    await this.workspaceService.removeUserFromWorkspace(params, currentUser);
     const workspace = await this.workspaceService.get(workspaceId);
     const responseData = new ApiResponseService(
       "User Removed",
@@ -539,10 +537,13 @@ export class WorkSpaceController {
     @Param("userId") userId: string,
     @Param("workspaceId") workspaceId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const currentUser = request.user;
     const data = await this.workspaceService.disableWorkspaceNewInvite(
       userId,
       workspaceId,
+      currentUser,
     );
     const responseData = new ApiResponseService(
       "Success",

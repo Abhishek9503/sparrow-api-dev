@@ -82,6 +82,7 @@ export class CollectionService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.COLLECTION,
         workspaceId: createCollectionDto.workspaceId,
       }),
@@ -488,6 +489,7 @@ export class CollectionService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.COLLECTION,
           workspaceId: workspaceId,
         }),
@@ -498,6 +500,7 @@ export class CollectionService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.COLLECTION,
           workspaceId: workspaceId,
         }),
@@ -526,19 +529,20 @@ export class CollectionService {
   async deleteCollection(
     id: string,
     workspaceId: string,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<DeleteResult> {
     const workspace = await this.workspaceService.IsWorkspaceAdminOrEditor(
       workspaceId,
-      userId,
+      user._id,
     );
-    await this.checkPermission(workspaceId, userId);
+    await this.checkPermission(workspaceId, user._id);
     const collection = await this.getCollection(id);
     const data = await this.collectionRepository.delete(id);
     const updateMessage = `"${collection.name}" collection is deleted from "${workspace.name}" workspace`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.COLLECTION,
         workspaceId: workspaceId,
       }),

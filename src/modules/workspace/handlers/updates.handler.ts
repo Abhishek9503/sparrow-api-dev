@@ -30,14 +30,22 @@ export class UpdatesHandler implements OnModuleInit {
       config: { groupId: SUBSCRIPTION.UPDATES_ADDED_SUBSCRIPTION },
       onMessage: async (message) => {
         const data = JSON.parse(message.value.toString());
+        let user = null;
+        if (data.user) {
+          user = data.user;
+          delete data.user;
+        }
         const type = data.type;
         const updateMessage = data.message;
         const workspaceId = data.workspaceId;
-        await this.updatesService.addUpdate({
-          type,
-          message: updateMessage,
-          workspaceId,
-        });
+        await this.updatesService.addUpdate(
+          {
+            type,
+            message: updateMessage,
+            workspaceId,
+          },
+          user,
+        );
       },
       onError: async (error) => {
         throw new BadRequestException(error);

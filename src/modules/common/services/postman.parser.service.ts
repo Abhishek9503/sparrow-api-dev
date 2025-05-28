@@ -6,9 +6,6 @@ import {
   CollectionAuthModeEnum,
 } from "@common/models/collection.model";
 
-// ---- Services
-import { ContextService } from "./context.service";
-
 // ---- Helpers
 import {
   convertItems,
@@ -19,7 +16,7 @@ import { DecodedUserObject } from "@src/types/fastify";
 
 @Injectable()
 export class PostmanParserService {
-  constructor(private readonly contextService: ContextService) {}
+  constructor() {}
   /**
    * Parses a Postman Collection, converts the items, and enriches them with user information.
    * Then, it creates a collection object and flattens the collection before returning it.

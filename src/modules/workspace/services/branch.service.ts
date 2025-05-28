@@ -22,7 +22,6 @@ import { BranchRepository } from "../repositories/branch.repository";
 export class BranchService {
   /**
    * Constructor for BranchService.
-   * @param contextService - Service to get context-related data like the current user.
    * @param branchRepository - Repository to interact with the branch data store.
    * @param workspaceService - Service to handle workspace-specific validations and operations.
    */

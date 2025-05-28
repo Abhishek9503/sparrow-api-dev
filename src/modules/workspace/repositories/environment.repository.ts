@@ -12,14 +12,10 @@ import {
 import { Environment } from "@src/modules/common/models/environment.model";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 import { UpdateEnvironmentDto } from "../payloads/environment.payload";
-import { ContextService } from "@src/modules/common/services/context.service";
 
 @Injectable()
 export class EnvironmentRepository {
-  constructor(
-    @Inject("DATABASE_CONNECTION") private db: Db,
-    private readonly contextService: ContextService,
-  ) {}
+  constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
 
   async addEnvironment(environment: Environment): Promise<InsertOneResult> {
     const response = await this.db

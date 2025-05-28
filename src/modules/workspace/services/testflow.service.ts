@@ -33,6 +33,7 @@ import {
   UpdateTestflowDto,
 } from "../payloads/testflow.payload";
 import { Testflow } from "@src/modules/common/models/testflow.model";
+import { DecodedUserObject } from "@src/types/fastify";
 
 /**
  * Testflow Service
@@ -52,11 +53,11 @@ export class TestflowService {
    */
   async createTestflow(
     createTestflowDto: CreateTestflowDto,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<WithId<Testflow>> {
     const workspace = await this.isWorkspaceAdminorEditor(
       createTestflowDto.workspaceId,
-      userId,
+      user._id,
     );
     const updateMessage = `New testflow "${createTestflowDto.name}" is added under "${workspace.name}" workspace`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
@@ -64,6 +65,7 @@ export class TestflowService {
         message: updateMessage,
         type: UpdatesType.TESTFLOW,
         workspaceId: createTestflowDto.workspaceId,
+        user,
       }),
     });
 
@@ -72,8 +74,8 @@ export class TestflowService {
       workspaceId: createTestflowDto.workspaceId,
       nodes: createTestflowDto.nodes,
       edges: createTestflowDto.edges,
-      createdBy: userId.toString(),
-      updatedBy: userId.toString(),
+      createdBy: user._id.toString(),
+      updatedBy: user._id.toString(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -81,7 +83,7 @@ export class TestflowService {
     await this.workspaceService.addTestflowInWorkSpace(
       createTestflowDto.workspaceId,
       { name: createTestflowDto.name, id: testflowData.insertedId.toString() },
-      userId,
+      user._id,
     );
     const testflow = await this.testflowRepository.get(
       testflowData.insertedId.toString(),
@@ -120,15 +122,18 @@ export class TestflowService {
   async deleteTestflow(
     id: string,
     workspaceId: string,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<DeleteResult> {
-    const workspace = await this.isWorkspaceAdminorEditor(workspaceId, userId);
+    const workspace = await this.isWorkspaceAdminorEditor(
+      workspaceId,
+      user._id,
+    );
     const testflow = await this.testflowRepository.get(id);
     const data = await this.testflowRepository.delete(id);
     await this.workspaceService.deleteTestflowInWorkSpace(
       workspaceId,
       id,
-      userId,
+      user._id,
     );
     const updateMessage = `"${testflow.name}" testflow is deleted from "${workspace.name}" workspace`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
@@ -136,6 +141,7 @@ export class TestflowService {
         message: updateMessage,
         type: UpdatesType.TESTFLOW,
         workspaceId: workspaceId,
+        user,
       }),
     });
     return data;
@@ -191,17 +197,24 @@ export class TestflowService {
     testflowId: string,
     updateTestflowDto: Partial<UpdateTestflowDto>,
     workspaceId: string,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<WithId<Testflow>> {
-    const workspace = await this.isWorkspaceAdminorEditor(workspaceId, userId);
-    await this.testflowRepository.update(testflowId, updateTestflowDto, userId);
+    const workspace = await this.isWorkspaceAdminorEditor(
+      workspaceId,
+      user._id,
+    );
+    await this.testflowRepository.update(
+      testflowId,
+      updateTestflowDto,
+      user._id,
+    );
     const testflow = await this.testflowRepository.get(testflowId);
     if (updateTestflowDto?.name) {
       await this.workspaceService.updateTestflowInWorkSpace(
         workspaceId,
         testflowId,
         updateTestflowDto.name,
-        userId,
+        user._id,
       );
       const updateMessage = `"${testflow.name}" testflow is renamed to "${updateTestflowDto.name}" testflow under "${workspace.name}" workspace`;
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
@@ -209,6 +222,7 @@ export class TestflowService {
           message: updateMessage,
           type: UpdatesType.TESTFLOW,
           workspaceId: workspaceId,
+          user,
         }),
       });
     }

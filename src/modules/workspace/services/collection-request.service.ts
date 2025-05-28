@@ -99,6 +99,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.FOLDER,
         workspaceId: payload.workspaceId,
       }),
@@ -117,13 +118,13 @@ export class CollectionRequestService {
 
   async updateFolder(
     payload: Partial<FolderDto>,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<CollectionItem> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       payload.workspaceId,
-      userId,
+      user._id,
     );
-    await this.checkPermission(payload.workspaceId, userId);
+    await this.checkPermission(payload.workspaceId, user._id);
     const collection = await this.collectionReposistory.getCollection(
       payload.collectionId,
     );
@@ -154,7 +155,7 @@ export class CollectionRequestService {
       const updatedBranch: UpdateBranchDto = {
         items: branch.items,
         updatedAt: new Date(),
-        updatedBy: userId.toString(),
+        updatedBy: user._id.toString(),
       };
       await this.branchRepository.updateBranchById(
         branch._id.toString(),
@@ -165,6 +166,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.FOLDER,
           workspaceId: payload.workspaceId,
         }),
@@ -175,6 +177,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateDescriptionMessage,
+          user,
           type: UpdatesType.FOLDER,
           workspaceId: payload.workspaceId,
         }),
@@ -207,13 +210,13 @@ export class CollectionRequestService {
 
   async deleteFolder(
     payload: DeleteFolderDto,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       payload.workspaceId,
-      userId,
+      user._id,
     );
-    await this.checkPermission(payload.workspaceId, userId);
+    await this.checkPermission(payload.workspaceId, user._id);
     const collection = await this.collectionReposistory.getCollection(
       payload.collectionId,
     );
@@ -244,7 +247,7 @@ export class CollectionRequestService {
       const updatedBranch: UpdateBranchDto = {
         items: branch.items,
         updatedAt: new Date(),
-        updatedBy: userId.toString(),
+        updatedBy: user._id.toString(),
       };
       await this.branchRepository.updateBranchById(
         branch._id.toString(),
@@ -255,6 +258,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.FOLDER,
         workspaceId: payload.workspaceId,
       }),
@@ -286,7 +290,7 @@ export class CollectionRequestService {
     collectionId: string,
     request: Partial<CollectionRequestDto>,
     noOfRequests: number,
-    userName: string,
+    user: DecodedUserObject,
     folderId?: string,
   ): Promise<CollectionItem> {
     const uuid = uuidv4();
@@ -299,8 +303,8 @@ export class CollectionRequestService {
       description: request.items.description,
       source: request.source ?? SourceTypeEnum.USER,
       isDeleted: false,
-      createdBy: userName,
-      updatedBy: userName,
+      createdBy: user.name,
+      updatedBy: user.name,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -323,6 +327,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -337,8 +342,8 @@ export class CollectionRequestService {
           description: request.items.items.description,
           request: { ...request.items.items.request },
           source: SourceTypeEnum.USER,
-          createdBy: userName,
-          updatedBy: userName,
+          createdBy: user.name,
+          updatedBy: user.name,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -362,6 +367,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -406,6 +412,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -416,6 +423,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -428,6 +436,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -469,6 +478,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.REQUEST,
         workspaceId: requestDto.workspaceId,
       }),
@@ -542,6 +552,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.WEBSOCKET,
           workspaceId: websocket.workspaceId,
         }),
@@ -572,6 +583,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.WEBSOCKET,
           workspaceId: websocket.workspaceId,
         }),
@@ -613,6 +625,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.WEBSOCKET,
         workspaceId: websocket.workspaceId,
       }),
@@ -657,6 +670,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.WEBSOCKET,
         workspaceId: websocketDto.workspaceId,
       }),
@@ -710,6 +724,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.SOCKETIO,
           workspaceId: socketio.workspaceId,
         }),
@@ -740,6 +755,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.SOCKETIO,
           workspaceId: socketio.workspaceId,
         }),
@@ -781,6 +797,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.SOCKETIO,
         workspaceId: socketio.workspaceId,
       }),
@@ -825,6 +842,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.SOCKETIO,
         workspaceId: socketioDto.workspaceId,
       }),
@@ -878,6 +896,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.GRAPHQL,
           workspaceId: graphql.workspaceId,
         }),
@@ -908,6 +927,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.GRAPHQL,
           workspaceId: graphql.workspaceId,
         }),
@@ -949,6 +969,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.GRAPHQL,
         workspaceId: graphql.workspaceId,
       }),
@@ -993,6 +1014,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.GRAPHQL,
         workspaceId: graphqlDto.workspaceId,
       }),
@@ -1045,6 +1067,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.REQUEST_RESPONSE,
           workspaceId: requestResponse.workspaceId,
         }),
@@ -1061,6 +1084,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.REQUEST_RESPONSE,
           workspaceId: requestResponse.workspaceId,
         }),
@@ -1107,6 +1131,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.REQUEST_RESPONSE,
         workspaceId: requestResponse.workspaceId,
       }),
@@ -1151,6 +1176,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.REQUEST_RESPONSE,
         workspaceId: requestResponseDto.workspaceId,
       }),
@@ -1162,7 +1188,7 @@ export class CollectionRequestService {
     collectionId: string,
     request: Partial<CollectionRequestDto>,
     noOfRequests: number,
-    userName: string,
+    user: DecodedUserObject,
     folderId?: string,
   ): Promise<CollectionItem> {
     const uuid = uuidv4();
@@ -1176,8 +1202,8 @@ export class CollectionRequestService {
       mockRequest: { ...request.items.mockRequest },
       source: request.source ?? SourceTypeEnum.USER,
       isDeleted: false,
-      createdBy: userName,
-      updatedBy: userName,
+      createdBy: user.name,
+      updatedBy: user.name,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -1193,6 +1219,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.MOCK_REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -1207,8 +1234,8 @@ export class CollectionRequestService {
           description: request.items.items.description,
           mockRequest: { ...request.items.items.mockRequest },
           source: SourceTypeEnum.USER,
-          createdBy: userName,
-          updatedBy: userName,
+          createdBy: user.name,
+          updatedBy: user.name,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -1225,6 +1252,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.MOCK_REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -1261,6 +1289,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.MOCK_REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -1271,6 +1300,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.MOCK_REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -1283,6 +1313,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.MOCK_REQUEST,
           workspaceId: request.workspaceId,
         }),
@@ -1316,6 +1347,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.MOCK_REQUEST,
         workspaceId: requestDto.workspaceId,
       }),

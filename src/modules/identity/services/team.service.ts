@@ -16,10 +16,9 @@ import { ProducerService } from "@src/modules/common/services/kafka/producer.ser
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { ConfigService } from "@nestjs/config";
 import { UserRepository } from "../repositories/user.repository";
-import { ContextService } from "@src/modules/common/services/context.service";
+
 import { MemoryStorageFile } from "@blazity/nest-file-fastify";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
-import { User } from "@src/modules/common/models/user.model";
 import { UserInvitesRepository } from "../repositories/userInvites.repository";
 import { DecodedUserObject } from "@src/types/fastify";
 
@@ -34,7 +33,6 @@ export class TeamService {
     private readonly configService: ConfigService,
     private readonly userInvitesRepository: UserInvitesRepository,
     private readonly userRepository: UserRepository,
-    private readonly contextService: ContextService,
   ) {}
 
   async isImageSizeValid(size: number) {
@@ -126,7 +124,7 @@ export class TeamService {
         githubUrl: "",
       };
     }
-    const createdTeam = await this.teamRepository.create(team);
+    const createdTeam = await this.teamRepository.create(team, user);
     const userData = await this.userRepository.findUserByUserId(
       new ObjectId(user._id),
     );
@@ -150,6 +148,7 @@ export class TeamService {
         name: this.configService.get("app.defaultWorkspaceName"),
         id: createdTeam.insertedId.toString(),
         firstWorkspace: true,
+        user,
       };
       await this.producerService.produce(TOPIC.CREATE_USER_TOPIC, {
         value: JSON.stringify(workspaceObj),
@@ -253,8 +252,11 @@ export class TeamService {
     return data;
   }
 
-  async getAllTeams(userId: string): Promise<WithId<Team>[]> {
-    const user = await this.userRepository.getUserById(userId);
+  async getAllTeams(
+    userId: string,
+    currentUser: DecodedUserObject,
+  ): Promise<WithId<Team>[]> {
+    const user = await this.userRepository.getUserById(userId, currentUser);
     if (!user) {
       throw new BadRequestException(
         "The user with this id does not exist in the system",
@@ -296,7 +298,10 @@ export class TeamService {
         if (specificInvite) {
           createdById = specificInvite.createdBy.toString();
         }
-        const senderData = await this.userRepository.getUserById(createdById);
+        const senderData = await this.userRepository.getUserById(
+          createdById,
+          currentUser,
+        );
         const team: any = {
           _id: teamId,
           logo: teamData.logo,
@@ -362,7 +367,7 @@ export class TeamService {
   async disableTeamNewInvite(
     userId: string,
     teamId: string,
-    user: WithId<User>,
+    user: DecodedUserObject,
   ): Promise<Team> {
     const teams = user.teams.map((team) => {
       if (team.id.toString() === teamId) {

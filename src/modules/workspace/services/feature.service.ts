@@ -8,7 +8,6 @@ import {
 } from "mongodb";
 
 // ---- Service
-import { ContextService } from "@src/modules/common/services/context.service";
 
 // ---- Model & Payload
 import { AddFeatureDto, UpdateFeatureDto } from "../payloads/feature.payload";
@@ -25,10 +24,7 @@ import { FeatureRepository } from "../repositories/feature.repository";
 
 @Injectable()
 export class FeatureService {
-  constructor(
-    private readonly contextService: ContextService,
-    private readonly featureRepository: FeatureRepository,
-  ) {}
+  constructor(private readonly featureRepository: FeatureRepository) {}
 
   /**
    * Adds a new feature.

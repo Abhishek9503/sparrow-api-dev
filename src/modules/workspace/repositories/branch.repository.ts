@@ -3,7 +3,7 @@ import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { Db, InsertOneResult, ObjectId, UpdateResult, WithId } from "mongodb";
 
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
-import { ContextService } from "@src/modules/common/services/context.service";
+
 import { Branch } from "@src/modules/common/models/branch.model";
 import {
   CollectionItem,
@@ -18,10 +18,7 @@ import {
 
 @Injectable()
 export class BranchRepository {
-  constructor(
-    @Inject("DATABASE_CONNECTION") private db: Db,
-    private readonly contextService: ContextService,
-  ) {}
+  constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
 
   async addBranch(branch: Branch): Promise<InsertOneResult<Branch>> {
     const response = await this.db

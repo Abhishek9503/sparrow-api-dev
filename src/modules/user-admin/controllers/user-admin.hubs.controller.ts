@@ -245,8 +245,10 @@ export class AdminHubsController {
     @Res() res: FastifyReply,
     @UploadedFile()
     image: MemoryStorageFile,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamService.update(teamId, updateTeamDto, image);
+    const user = request.user;
+    await this.teamService.update(teamId, updateTeamDto, user._id, image);
     const team = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "Team Updated",

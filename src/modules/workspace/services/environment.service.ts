@@ -11,7 +11,7 @@ import {
   UpdateResult,
   WithId,
 } from "mongodb";
-import { ContextService } from "@src/modules/common/services/context.service";
+
 import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
@@ -44,7 +44,6 @@ export class EnvironmentService {
   constructor(
     private readonly environmentRepository: EnvironmentRepository,
     private readonly workspaceReposistory: WorkspaceRepository,
-    private readonly contextService: ContextService,
     private readonly producerService: ProducerService,
   ) {}
 
@@ -70,6 +69,7 @@ export class EnvironmentService {
             message: updateMessage,
             type: UpdatesType.ENVIRONMENT,
             workspaceId: createEnvironmentDto.workspaceId,
+            user,
           }),
         });
       }
@@ -122,15 +122,19 @@ export class EnvironmentService {
   async deleteEnvironment(
     id: string,
     workspaceId: string,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<DeleteResult> {
-    const workspace = await this.isWorkspaceAdminorEditor(workspaceId, userId);
+    const workspace = await this.isWorkspaceAdminorEditor(
+      workspaceId,
+      user._id,
+    );
     const environment = await this.environmentRepository.get(id);
     const data = await this.environmentRepository.delete(id);
     const updateMessage = `"${environment.name}" environment is deleted from "${workspace.name}" workspace`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.ENVIRONMENT,
         workspaceId: workspaceId,
       }),
@@ -210,6 +214,7 @@ export class EnvironmentService {
           message: updateMessage,
           type: UpdatesType.ENVIRONMENT,
           workspaceId: workspaceId,
+          user,
         }),
       });
     }

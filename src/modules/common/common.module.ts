@@ -15,7 +15,6 @@ import { ConsumerService } from "./services/kafka/consumer.service";
 import { BlobStorageService } from "./services/blobStorage.service";
 import { ApiResponseService } from "./services/api-response.service";
 import { ParserService } from "./services/parser.service";
-import { ContextService } from "./services/context.service";
 import { EmailService } from "./services/email.service";
 import { InsightsService } from "./services/insights.service";
 import { PostmanParserService } from "./services/postman.parser.service";
@@ -75,7 +74,6 @@ import { InstrumentService } from "./services/instrument.service";
         }),
       ),
     },
-    ContextService,
     ApiResponseService,
     ParserService,
     PostmanParserService,
@@ -89,7 +87,6 @@ import { InstrumentService } from "./services/instrument.service";
   exports: [
     "DATABASE_CONNECTION",
     "ErrorLogger",
-    ContextService,
     ApiResponseService,
     ParserService,
     PostmanParserService,

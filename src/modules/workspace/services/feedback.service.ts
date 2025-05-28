@@ -10,7 +10,6 @@ import { AddFeedbackDto } from "../payloads/feedback.payload";
 
 // ---- Service
 import { BlobStorageService } from "@src/modules/common/services/blobStorage.service";
-import { ContextService } from "@src/modules/common/services/context.service";
 
 // ---- Model
 import {
@@ -31,12 +30,11 @@ export class FeedbackService {
    * Constructor for Feedback Service.
    * @param feedbackRepository Repository handling database operations for feedback.
    * @param blobStorageService Service handling blob storage operations.
-   * @param contextService Info about User.
+   * @param  Info about User.
    */
   constructor(
     private readonly feedbackRepository: FeedbackRepository,
     private readonly blobStorageService: BlobStorageService,
-    private readonly contextService: ContextService,
   ) {}
 
   /**

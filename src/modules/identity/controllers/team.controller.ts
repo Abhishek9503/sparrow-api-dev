@@ -192,8 +192,13 @@ export class TeamController {
     description: "All Team Details fetched Succesfully",
   })
   @ApiResponse({ status: 400, description: "Failed to fetch all team details" })
-  async getAllTeams(@Param("userId") userId: string, @Res() res: FastifyReply) {
-    const data = await this.teamService.getAllTeams(userId);
+  async getAllTeams(
+    @Param("userId") userId: string,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const currentUser = request.user;
+    const data = await this.teamService.getAllTeams(userId, currentUser);
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,
@@ -222,11 +227,16 @@ export class TeamController {
     @Param("teamId") teamId: string,
     @Body() addTeamUserDto: AddTeamUserDto,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.sendInvite({
-      teamId,
-      ...addTeamUserDto,
-    });
+    const currentUser = request.user;
+    await this.teamUserService.sendInvite(
+      {
+        teamId,
+        ...addTeamUserDto,
+      },
+      currentUser,
+    );
     const team = await this.teamService.get(teamId);
     const response = {
       ...team,
@@ -251,8 +261,10 @@ export class TeamController {
     @Param("teamId") teamId: string,
     @Param("userId") userId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.removeUser({ teamId, userId });
+    const currentUser = request.user;
+    await this.teamUserService.removeUser({ teamId, userId }, currentUser._id);
     const team = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "User Removed",
@@ -274,8 +286,10 @@ export class TeamController {
     @Param("teamId") teamId: string,
     @Param("userId") userId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.addAdmin({ teamId, userId });
+    const currentUser = request.user;
+    await this.teamUserService.addAdmin({ teamId, userId }, currentUser);
     const team = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "Admin added",
@@ -297,8 +311,10 @@ export class TeamController {
     @Param("teamId") teamId: string,
     @Param("userId") userId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.demoteTeamAdmin({ teamId, userId });
+    const currentUser = request.user;
+    await this.teamUserService.demoteTeamAdmin({ teamId, userId }, currentUser);
     const team = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "Admin Demoted",
@@ -367,12 +383,13 @@ export class TeamController {
     @Param("userId") userId: string,
     @Param("teamId") teamId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    const user = await this.userService.getUserById(userId);
+    const currentUser = request.user;
     const data = await this.teamService.disableTeamNewInvite(
       userId,
       teamId,
-      user,
+      currentUser,
     );
     const responseData = new ApiResponseService(
       "Success",
@@ -427,8 +444,10 @@ export class TeamController {
   async acceptInvite(
     @Param("teamId") teamId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.acceptInvite(teamId);
+    const user = request.user;
+    await this.teamUserService.acceptInvite(teamId, user.email);
     const data = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "User joined the hub",
@@ -455,8 +474,10 @@ export class TeamController {
     @Param("teamId") teamId: string,
     @Param("email") email: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.removeInviteByOwner(teamId, email);
+    const user = request.user;
+    await this.teamUserService.removeInviteByOwner(teamId, user._id, email);
     const data = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "Removed Invite from hub",
@@ -482,8 +503,10 @@ export class TeamController {
   async removeNewInvite(
     @Param("teamId") teamId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.removeInviteUser(teamId);
+    const user = request.user;
+    await this.teamUserService.removeInviteUser(teamId, user.email);
     const responseData = new ApiResponseService(
       "Removed Invite from hub",
       HttpStatusCode.OK,
@@ -508,8 +531,10 @@ export class TeamController {
     @Param("teamId") teamId: string,
     @Param("email") email: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.resendInvite(teamId, email);
+    const user = request.user;
+    await this.teamUserService.resendInvite(teamId, email, user);
     const data = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "Resend Invite to the hub",

@@ -13,7 +13,6 @@ import {
   UpdateWorkspaceDto,
   WorkspaceDtoForIdDocument,
 } from "../payloads/workspace.payload";
-import { ContextService } from "../../common/services/context.service";
 import { CollectionDto } from "@src/modules/common/models/collection.model";
 import { EnvironmentDto } from "@src/modules/common/models/environment.model";
 import { TestflowInfoDto } from "@src/modules/common/models/testflow.model";
@@ -35,7 +34,6 @@ export class WorkspaceRepository {
   constructor(
     @Inject("DATABASE_CONNECTION")
     private db: Db,
-    private contextService: ContextService,
   ) {}
 
   async get(id: string): Promise<WithId<Workspace>> {

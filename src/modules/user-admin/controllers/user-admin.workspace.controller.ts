@@ -231,11 +231,7 @@ export class AdminWorkspaceController {
     @Req() request: ExtendedFastifyRequest,
   ) {
     const user = request.user;
-    await this.workspaceService.update(
-      workspaceId,
-      updateWorkspaceDto,
-      user._id,
-    );
+    await this.workspaceService.update(workspaceId, updateWorkspaceDto, user);
 
     const workspace = await this.workspaceService.get(workspaceId);
     const responseData = new ApiResponseService(
@@ -324,7 +320,7 @@ export class AdminWorkspaceController {
       workspaceId: workspaceId,
       role: data.role,
     };
-    await this.workspaceService.changeUserRole(params, currentUser._id);
+    await this.workspaceService.changeUserRole(params, currentUser);
     const workspace = await this.workspaceService.get(workspaceId);
     const responseData = new ApiResponseService(
       "Role Changed",

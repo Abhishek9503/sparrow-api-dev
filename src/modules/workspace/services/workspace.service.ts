@@ -88,8 +88,11 @@ export class WorkspaceService {
     return data;
   }
 
-  async getAllWorkSpaces(userId: string): Promise<Workspace[]> {
-    const user = await this.userRepository.getUserById(userId);
+  async getAllWorkSpaces(
+    userId: string,
+    currentUser: DecodedUserObject,
+  ): Promise<Workspace[]> {
+    const user = await this.userRepository.getUserById(userId, currentUser);
     if (!user) {
       throw new BadRequestException(
         "The user with this id does not exist in the system",
@@ -107,7 +110,7 @@ export class WorkspaceService {
       workspaces.push(workspaceData);
     }
     if (!workspaces.length) {
-      const teams = await this.teamService.getAllTeams(userId);
+      const teams = await this.teamService.getAllTeams(userId, currentUser);
       for (const team of teams) {
         if (team.owner === userId) {
           const workspace = await this.create(
@@ -208,8 +211,9 @@ export class WorkspaceService {
   async isLastTeamWorkspace(
     workspaceId: string,
     userId: string,
+    currentUser: DecodedUserObject,
   ): Promise<boolean> {
-    const userData = await this.userRepository.getUserById(userId);
+    const userData = await this.userRepository.getUserById(userId, currentUser);
     const workspaceData = await this.workspaceRepository.get(workspaceId);
     let count = 0;
     for (const workspace of userData.workspaces) {
@@ -245,7 +249,7 @@ export class WorkspaceService {
    */
   async create(
     workspaceData: CreateWorkspaceDto,
-    user: DecodedUserObject | WithId<User>,
+    user: DecodedUserObject,
   ): Promise<InsertOneResult<Document>> {
     const teamId = new ObjectId(workspaceData.id);
     let teamData: WithId<Team>;
@@ -357,10 +361,14 @@ export class WorkspaceService {
         message: updateMessage,
         type: UpdatesType.WORKSPACE,
         workspaceId: response.insertedId,
+        user,
       }),
     });
 
-    const userDetails = await this.userRepository.getUserById(teamData.owner);
+    const userDetails = await this.userRepository.getUserById(
+      teamData.owner,
+      user,
+    );
 
     if (!workspaceData?.firstWorkspace) {
       this.newWorkspaceEmail(
@@ -383,11 +391,11 @@ export class WorkspaceService {
   async update(
     id: string,
     updates: Partial<UpdateWorkspaceDto>,
-    userId: ObjectId,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Document>> {
-    const workspace = await this.IsWorkspaceAdminOrEditor(id, userId);
+    const workspace = await this.IsWorkspaceAdminOrEditor(id, user._id);
     const updateNameMessage = `Workspace is renamed from "${workspace.name}" to "${updates.name}"`;
-    const data = await this.workspaceRepository.update(id, updates, userId);
+    const data = await this.workspaceRepository.update(id, updates, user._id);
     const team = await this.teamRepository.findTeamByTeamId(
       new ObjectId(workspace.team.id),
     );
@@ -441,6 +449,7 @@ export class WorkspaceService {
           message: updateNameMessage,
           type: UpdatesType.WORKSPACE,
           workspaceId: id,
+          user,
         }),
       });
     }
@@ -451,6 +460,7 @@ export class WorkspaceService {
           message: updateDescriptionMessage,
           type: UpdatesType.WORKSPACE,
           workspaceId: id,
+          user,
         }),
       });
     }
@@ -707,6 +717,7 @@ export class WorkspaceService {
           message: updateMessage,
           type: UpdatesType.WORKSPACE,
           workspaceId: payload.workspaceId,
+          user,
         }),
       });
     }
@@ -750,12 +761,12 @@ export class WorkspaceService {
 
   async removeUserFromWorkspace(
     payload: removeUserFromWorkspaceDto,
-    currentUserId: ObjectId,
+    currentUser: DecodedUserObject,
   ): Promise<WithId<User>> {
     await this.isWorkspaceAdmin(
       payload.workspaceId,
       payload.userId,
-      currentUserId,
+      currentUser._id,
     );
 
     const workspaceData = await this.workspaceRepository.get(
@@ -792,6 +803,7 @@ export class WorkspaceService {
         message: updateMessage,
         type: UpdatesType.WORKSPACE,
         workspaceId: payload.workspaceId,
+        currentUser,
       }),
     });
     return response;
@@ -799,13 +811,13 @@ export class WorkspaceService {
 
   async changeUserRole(
     payload: UserRoleInWorkspcaeDto,
-    currentUserId: ObjectId,
+    currentUser: DecodedUserObject,
   ) {
     let getUserIndex;
     await this.isWorkspaceAdmin(
       payload.workspaceId,
       payload.userId,
-      currentUserId,
+      currentUser._id,
     );
     await this.roleCheck(payload.role);
     const workspaceData = await this.workspaceRepository.get(
@@ -821,6 +833,7 @@ export class WorkspaceService {
             message: updateMessage,
             type: UpdatesType.WORKSPACE,
             workspaceId: payload.workspaceId,
+            currentUser,
           }),
         });
         workspaceUsers[index].role = payload.role;
@@ -890,8 +903,9 @@ export class WorkspaceService {
   async disableWorkspaceNewInvite(
     userId: string,
     workspaceId: string,
+    currentUser: DecodedUserObject,
   ): Promise<Workspace> {
-    const user = await this.userRepository.getUserById(userId);
+    const user = await this.userRepository.getUserById(userId, currentUser);
     const workspaces = user.workspaces.map((workspace) => {
       if (workspace.workspaceId.toString() === workspaceId) {
         workspace.isNewInvite = false;
@@ -1260,6 +1274,7 @@ export class WorkspaceService {
           message: updateMessage,
           type: UpdatesType.WORKSPACE,
           workspaceId: workspaceId,
+          user,
         }),
       });
     }

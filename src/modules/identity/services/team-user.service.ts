@@ -12,7 +12,7 @@ import {
   TeamInviteMailDto,
 } from "../payloads/teamUser.payload";
 import { ObjectId, WithId } from "mongodb";
-import { ContextService } from "@src/modules/common/services/context.service";
+
 import { UserRepository } from "../repositories/user.repository";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { Invite, Team } from "@src/modules/common/models/team.model";
@@ -33,7 +33,7 @@ export class TeamUserService {
   constructor(
     private readonly teamRepository: TeamRepository,
     private readonly userInvitesRepository: UserInvitesRepository,
-    private readonly contextService: ContextService,
+
     private readonly userRepository: UserRepository,
     private readonly producerService: ProducerService,
     private readonly teamService: TeamService,
@@ -287,14 +287,14 @@ export class TeamUserService {
 
   async addAdmin(
     payload: CreateOrUpdateTeamUserDto,
-    currentUserId: ObjectId,
+    currentUser: DecodedUserObject,
   ): Promise<WithId<Team>> {
     const teamFilter = new ObjectId(payload.teamId);
     const teamData = await this.teamRepository.findTeamByTeamId(teamFilter);
     const teamAdmins = [...teamData.admins];
     await this.teamService.isTeamOwnerOrAdmin(
       new ObjectId(payload.teamId),
-      currentUserId,
+      currentUser._id,
     );
     await this.isUserTeamMember(payload.userId, teamData.users);
     teamAdmins.push(payload.userId);
@@ -308,7 +308,10 @@ export class TeamUserService {
       admins: teamAdmins,
       users: teamUsers,
     };
-    const user = await this.userRepository.getUserById(payload.userId);
+    const user = await this.userRepository.getUserById(
+      payload.userId,
+      currentUser,
+    );
     for (let index = 0; index < user.teams.length; index++) {
       if (user.teams[index].id.toString() === payload.teamId) {
         user.teams[index].role = TeamRole.ADMIN;
@@ -348,7 +351,10 @@ export class TeamUserService {
       value: JSON.stringify(message),
     });
 
-    const userDetails = await this.userRepository.getUserById(payload.userId);
+    const userDetails = await this.userRepository.getUserById(
+      payload.userId,
+      currentUser,
+    );
 
     const role = TeamRole.ADMIN;
     await this.addAdminEmail(
@@ -363,14 +369,14 @@ export class TeamUserService {
 
   async demoteTeamAdmin(
     payload: CreateOrUpdateTeamUserDto,
-    currentUserId: ObjectId,
+    currentUser: DecodedUserObject,
   ): Promise<WithId<Team>> {
     const teamData = await this.teamRepository.findTeamByTeamId(
       new ObjectId(payload.teamId),
     );
     await this.teamService.isTeamOwnerOrAdmin(
       new ObjectId(payload.teamId),
-      currentUserId,
+      currentUser._id,
     );
     const updatedTeamAdmins = teamData.admins.filter(
       (id) => id !== payload.userId,
@@ -385,7 +391,10 @@ export class TeamUserService {
       admins: updatedTeamAdmins,
       users: teamUsers,
     };
-    const userData = await this.userRepository.getUserById(payload.userId);
+    const userData = await this.userRepository.getUserById(
+      payload.userId,
+      currentUser,
+    );
     const userTeams = [...userData.teams];
     for (let index = 0; index < userTeams.length; index++) {
       if (userTeams[index].id.toString() === payload.teamId) {
@@ -411,7 +420,10 @@ export class TeamUserService {
       value: JSON.stringify(message),
     });
 
-    const userDetails = await this.userRepository.getUserById(payload.userId);
+    const userDetails = await this.userRepository.getUserById(
+      payload.userId,
+      currentUser,
+    );
 
     const role = TeamRole.MEMBER;
     await this.demoteTeamAdminEmail(
@@ -1317,12 +1329,7 @@ export class TeamUserService {
     return data;
   }
 
-  async resendInvite(
-    teamId: string,
-    email: string,
-    senderName: string,
-    currentUserId: ObjectId,
-  ) {
+  async resendInvite(teamId: string, email: string, user: DecodedUserObject) {
     if (!email) {
       throw new BadRequestException("Email is required");
     }
@@ -1342,10 +1349,7 @@ export class TeamUserService {
       }
     }
 
-    await this.teamService.isTeamOwnerOrAdmin(
-      new ObjectId(teamId),
-      currentUserId,
-    );
+    await this.teamService.isTeamOwnerOrAdmin(new ObjectId(teamId), user._id);
     const invites = teamData.invites || [];
     const inviteIndex = invites.findIndex(
       (invite: any) => invite.email === email,
@@ -1396,9 +1400,9 @@ export class TeamUserService {
           teamId: teamId,
           role: invitedRole,
           email: inviteEmail,
-          senderName: senderName,
+          senderName: user.name,
         },
-        subject: `${senderName} has invited you to the hub “${teamData.name}”`,
+        subject: `${user.name} has invited you to the hub “${teamData.name}”`,
       };
 
       const promise = [this.emailService.sendEmail(transporter, mailOptions)];

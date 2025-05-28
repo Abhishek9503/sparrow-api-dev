@@ -10,7 +10,7 @@ import {
   WithId,
 } from "mongodb";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
-import { ContextService } from "@src/modules/common/services/context.service";
+
 import {
   CollectionBranch,
   Collection,
@@ -31,10 +31,7 @@ import { Workspace } from "@src/modules/common/models/workspace.model";
 import { DecodedUserObject } from "@src/types/fastify";
 @Injectable()
 export class CollectionRepository {
-  constructor(
-    @Inject("DATABASE_CONNECTION") private db: Db,
-    private readonly contextService: ContextService,
-  ) {}
+  constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
   async addCollection(collection: Collection): Promise<InsertOneResult> {
     const response = await this.db
       .collection<Collection>(Collections.COLLECTION)

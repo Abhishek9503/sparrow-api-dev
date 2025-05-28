@@ -8,7 +8,6 @@ import {
 } from "../models/collection.model";
 import { OpenAPI303 } from "../models/openapi303.model";
 import { Injectable } from "@nestjs/common";
-import { ContextService } from "./context.service";
 import { CollectionService } from "@src/modules/workspace/services/collection.service";
 import { ObjectId, WithId } from "mongodb";
 import { resolveAllRefs } from "./helper/parser.helper";
@@ -29,7 +28,6 @@ interface ActiveSyncResponsePayload {
 @Injectable()
 export class ParserService {
   constructor(
-    private readonly contextService: ContextService,
     private readonly collectionService: CollectionService,
     private readonly branchService: BranchService,
   ) {}
