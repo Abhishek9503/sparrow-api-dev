@@ -106,11 +106,11 @@ export class WorkspaceRepository {
    * @param {Partial<Workspace>} updates
    * @returns {Promise<UpdateWriteOpResult>} result of the update operation
    */
-  update(id: string, updates: UpdateWorkspaceDto) {
+  update(id: string, updates: UpdateWorkspaceDto, userId: ObjectId) {
     const _id = new ObjectId(id);
     const defaultParams = {
       updatedAt: new Date(),
-      updatedBy: this.contextService.get("user")._id,
+      updatedBy: userId.toString(),
     };
     return this.db
       .collection(Collections.WORKSPACE)

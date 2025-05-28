@@ -15,7 +15,6 @@ import {
   WorkspaceType,
   WorkspaceWithNewInviteTag,
 } from "@src/modules/common/models/workspace.model";
-import { ContextService } from "@src/modules/common/services/context.service";
 import {
   DeleteResult,
   InsertOneResult,
@@ -55,6 +54,7 @@ import { ProducerService } from "@src/modules/common/services/kafka/producer.ser
 import { UpdatesType } from "@src/modules/common/enum/updates.enum";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { TestflowInfoDto } from "@src/modules/common/models/testflow.model";
+import { DecodedUserObject } from "@src/types/fastify";
 
 /**
  * Workspace Service
@@ -63,7 +63,6 @@ import { TestflowInfoDto } from "@src/modules/common/models/testflow.model";
 export class WorkspaceService {
   constructor(
     private readonly workspaceRepository: WorkspaceRepository,
-    private readonly contextService: ContextService,
     private readonly teamRepository: TeamRepository,
     private readonly environmentService: EnvironmentService,
     private readonly userRepository: UserRepository,
@@ -111,10 +110,13 @@ export class WorkspaceService {
       const teams = await this.teamService.getAllTeams(userId);
       for (const team of teams) {
         if (team.owner === userId) {
-          const workspace = await this.create({
-            id: team._id.toString(),
-            name: "My Workspace",
-          });
+          const workspace = await this.create(
+            {
+              id: team._id.toString(),
+              name: "My Workspace",
+            },
+            user,
+          );
           if (workspace) {
             const workspaceData: WithId<WorkspaceWithNewInviteTag> =
               await this.get(workspace.insertedId.toString());
@@ -136,9 +138,11 @@ export class WorkspaceService {
     return workspaces;
   }
 
-  async IsWorkspaceAdminOrEditor(id: string): Promise<Workspace> {
+  async IsWorkspaceAdminOrEditor(
+    id: string,
+    userId: ObjectId,
+  ): Promise<Workspace> {
     const workspaceData = await this.get(id);
-    const userId = this.contextService.get("user")._id;
     if (workspaceData) {
       for (const item of workspaceData.users) {
         if (
@@ -170,9 +174,9 @@ export class WorkspaceService {
   async isWorkspaceAdmin(
     workspaceId: string,
     userId: string,
+    currentUserId: ObjectId,
   ): Promise<boolean> {
     const workspaceData = await this.workspaceRepository.get(workspaceId);
-    const user = await this.contextService.get("user");
     for (const admin of workspaceData.admins) {
       if (admin.id === userId) {
         throw new BadRequestException(
@@ -181,7 +185,7 @@ export class WorkspaceService {
       }
     }
     for (const admin of workspaceData.admins) {
-      if (admin.id === user._id.toString()) {
+      if (admin.id === currentUserId.toString()) {
         return true;
       }
     }
@@ -224,11 +228,10 @@ export class WorkspaceService {
     return true;
   }
 
-  async checkAdminRole(workspaceId: string) {
-    const user = await this.contextService.get("user");
+  async checkAdminRole(workspaceId: string, userId: ObjectId) {
     const workspace = await this.workspaceRepository.get(workspaceId);
     for (const item of workspace.admins) {
-      if (item.id === user._id.toString()) {
+      if (item.id === userId.toString()) {
         return true;
       }
     }
@@ -242,14 +245,14 @@ export class WorkspaceService {
    */
   async create(
     workspaceData: CreateWorkspaceDto,
+    user: DecodedUserObject | WithId<User>,
   ): Promise<InsertOneResult<Document>> {
-    const userId = this.contextService.get("user")._id;
     const teamId = new ObjectId(workspaceData.id);
     let teamData: WithId<Team>;
     if (workspaceData?.firstWorkspace) {
       teamData = await this.teamRepository.findTeamByTeamId(teamId);
     } else {
-      teamData = await this.teamService.isTeamOwnerOrAdmin(teamId);
+      teamData = await this.teamService.isTeamOwnerOrAdmin(teamId, user._id);
     }
     const createEnvironmentDto: CreateEnvironmentDto = {
       name: DefaultEnvironment.GLOBAL,
@@ -264,6 +267,7 @@ export class WorkspaceService {
     const envData = await this.environmentService.createEnvironment(
       createEnvironmentDto,
       EnvironmentType.GLOBAL,
+      user,
     );
     const environment = await this.environmentService.getEnvironment(
       envData.insertedId.toString(),
@@ -306,9 +310,9 @@ export class WorkspaceService {
         },
       ],
       createdAt: new Date(),
-      createdBy: userId,
+      createdBy: user._id.toString(),
       updatedAt: new Date(),
-      updatedBy: userId,
+      updatedBy: user._id.toString(),
     };
     const response = await this.workspaceRepository.addWorkspace(params);
     const teamWorkspaces = [...teamData.workspaces];
@@ -379,10 +383,11 @@ export class WorkspaceService {
   async update(
     id: string,
     updates: Partial<UpdateWorkspaceDto>,
+    userId: ObjectId,
   ): Promise<UpdateResult<Document>> {
-    const workspace = await this.IsWorkspaceAdminOrEditor(id);
+    const workspace = await this.IsWorkspaceAdminOrEditor(id, userId);
     const updateNameMessage = `Workspace is renamed from "${workspace.name}" to "${updates.name}"`;
-    const data = await this.workspaceRepository.update(id, updates);
+    const data = await this.workspaceRepository.update(id, updates, userId);
     const team = await this.teamRepository.findTeamByTeamId(
       new ObjectId(workspace.team.id),
     );
@@ -457,8 +462,8 @@ export class WorkspaceService {
    * @param {string} id
    * @returns {Promise<DeleteWriteOpResultObject>} result of the delete operation
    */
-  async delete(id: string): Promise<DeleteResult> {
-    await this.checkAdminRole(id);
+  async delete(id: string, userId: ObjectId): Promise<DeleteResult> {
+    await this.checkAdminRole(id, userId);
     const workspace = await this.workspaceRepository.get(id);
     const teamData = await this.teamRepository.findTeamByTeamId(
       new ObjectId(workspace.team.id),
@@ -504,8 +509,9 @@ export class WorkspaceService {
   async addCollectionInWorkSpace(
     workspaceId: string,
     collection: CollectionDto,
+    userId: ObjectId,
   ): Promise<void> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     await this.workspaceRepository.addCollectionInWorkspace(
       workspaceId,
       collection,
@@ -517,8 +523,9 @@ export class WorkspaceService {
     workspaceId: string,
     collectionId: string,
     name: string,
+    userId: ObjectId,
   ): Promise<void> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     await this.workspaceRepository.updateCollectioninWorkspace(
       workspaceId,
       collectionId,
@@ -530,8 +537,9 @@ export class WorkspaceService {
   async deleteCollectionInWorkSpace(
     workspaceId: string,
     collectionId: string,
+    userId: ObjectId,
   ): Promise<void> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     const data = await this.get(workspaceId);
 
     const filteredCollections = data.collection.filter((collection) => {
@@ -551,8 +559,9 @@ export class WorkspaceService {
   async addEnvironmentInWorkSpace(
     workspaceId: string,
     environment: EnvironmentDto,
+    userId: ObjectId,
   ): Promise<void> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     await this.workspaceRepository.addEnvironmentInWorkspace(
       workspaceId,
       environment,
@@ -568,8 +577,9 @@ export class WorkspaceService {
   async deleteEnvironmentInWorkSpace(
     workspaceId: string,
     environmentId: string,
+    userId: ObjectId,
   ): Promise<void> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     const data = await this.get(workspaceId);
 
     const filteredEnvironments = data.environments.filter((env) => {
@@ -591,8 +601,9 @@ export class WorkspaceService {
     workspaceId: string,
     environmentId: string,
     name: string,
+    userId: ObjectId,
   ): Promise<void> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     await this.workspaceRepository.updateEnvironmentinWorkspace(
       workspaceId,
       environmentId,
@@ -604,8 +615,8 @@ export class WorkspaceService {
   async inviteUserInWorkspaceEmail(
     payload: WorkspaceInviteMailDto,
     userRole: string,
+    currentUsername?: string,
   ) {
-    const currentUser = await this.contextService.get("user");
     const transporter = this.emailService.createTransporter();
 
     const promiseArray = [];
@@ -617,7 +628,7 @@ export class WorkspaceService {
         template: "inviteWorkspaceEmail",
         context: {
           firstname: user.name.split(" ")[0],
-          username: currentUser.name.split(" ")[0],
+          username: currentUsername.split(" ")[0],
           userRole: userRole.charAt(0).toUpperCase() + userRole.slice(1),
           workspacename: payload.workspaceName,
           sparrowEmail: this.configService.get("support.sparrowEmail"),
@@ -633,9 +644,12 @@ export class WorkspaceService {
     await Promise.all(promiseArray);
   }
 
-  async addUserInWorkspace(payload: AddUserInWorkspaceDto): Promise<object> {
+  async addUserInWorkspace(
+    payload: AddUserInWorkspaceDto,
+    user: DecodedUserObject,
+  ): Promise<object> {
     let workspaceData = await this.workspaceRepository.get(payload.workspaceId);
-    await this.checkAdminRole(payload.workspaceId);
+    await this.checkAdminRole(payload.workspaceId, user._id);
     await this.roleCheck(payload.role);
     const usersExist = [];
     const usersNotExist = [];
@@ -712,17 +726,20 @@ export class WorkspaceService {
       payload.role,
     );
 
-    await this.teamUserService.sendInvite({
-      teamId: workspaceData.team.id,
-      users: usersNotExist,
-      role: payload.role,
-      workspaces: [
-        {
-          id: workspaceData._id.toString(),
-          name: workspaceData.name,
-        },
-      ],
-    });
+    await this.teamUserService.sendInvite(
+      {
+        teamId: workspaceData.team.id,
+        users: usersNotExist,
+        role: payload.role,
+        workspaces: [
+          {
+            id: workspaceData._id.toString(),
+            name: workspaceData.name,
+          },
+        ],
+      },
+      user,
+    );
 
     const response = {
       notExistInTeam: usersNotExist,
@@ -733,8 +750,13 @@ export class WorkspaceService {
 
   async removeUserFromWorkspace(
     payload: removeUserFromWorkspaceDto,
+    currentUserId: ObjectId,
   ): Promise<WithId<User>> {
-    await this.isWorkspaceAdmin(payload.workspaceId, payload.userId);
+    await this.isWorkspaceAdmin(
+      payload.workspaceId,
+      payload.userId,
+      currentUserId,
+    );
 
     const workspaceData = await this.workspaceRepository.get(
       payload.workspaceId,
@@ -775,9 +797,16 @@ export class WorkspaceService {
     return response;
   }
 
-  async changeUserRole(payload: UserRoleInWorkspcaeDto) {
+  async changeUserRole(
+    payload: UserRoleInWorkspcaeDto,
+    currentUserId: ObjectId,
+  ) {
     let getUserIndex;
-    await this.isWorkspaceAdmin(payload.workspaceId, payload.userId);
+    await this.isWorkspaceAdmin(
+      payload.workspaceId,
+      payload.userId,
+      currentUserId,
+    );
     await this.roleCheck(payload.role);
     const workspaceData = await this.workspaceRepository.get(
       payload.workspaceId,
@@ -1049,8 +1078,9 @@ export class WorkspaceService {
   async addTestflowInWorkSpace(
     workspaceId: string,
     testflow: TestflowInfoDto,
+    userId: ObjectId,
   ): Promise<UpdateResult<Document>> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     const response = await this.workspaceRepository.addTestflowInWorkspace(
       workspaceId,
       testflow,
@@ -1066,8 +1096,9 @@ export class WorkspaceService {
   async deleteTestflowInWorkSpace(
     workspaceId: string,
     testflowId: string,
+    userId: ObjectId,
   ): Promise<UpdateResult<Document>> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     const data = await this.get(workspaceId);
 
     const filteredTestflows = data.testflows.filter((flow) => {
@@ -1090,8 +1121,9 @@ export class WorkspaceService {
     workspaceId: string,
     testflowId: string,
     name: string,
+    userId: ObjectId,
   ): Promise<UpdateResult<Document>> {
-    await this.IsWorkspaceAdminOrEditor(workspaceId);
+    await this.IsWorkspaceAdminOrEditor(workspaceId, userId);
     const response = await this.workspaceRepository.updateTestflowInWorkspace(
       workspaceId,
       testflowId,
@@ -1107,8 +1139,8 @@ export class WorkspaceService {
    */
   async inviteUsersWithRolesInWorkspaceEmail(
     payload: WorkspaceInviteMailWIthRoleDto,
+    currentUserName: string,
   ) {
-    const currentUser = await this.contextService.get("user");
     // Create an email transporter instance
     const transporter = this.emailService.createTransporter();
     const promiseArray = [];
@@ -1121,7 +1153,7 @@ export class WorkspaceService {
         template: "inviteWorkspaceEmail",
         context: {
           firstname: user.name.split(" ")[0],
-          username: currentUser.name.split(" ")[0],
+          username: currentUserName.split(" ")[0],
           userRole: user.role.charAt(0).toUpperCase() + user.role.slice(1),
           workspacename: payload.workspaceName,
           sparrowEmail: this.configService.get("support.sparrowEmail"),
@@ -1165,9 +1197,10 @@ export class WorkspaceService {
   async addUsersWithRolesInWorkspace(
     payload: AddUsersWithRolesInWorkspaceDto,
     workspaceId: string,
+    user: DecodedUserObject,
   ): Promise<object> {
     let workspaceData = await this.workspaceRepository.get(workspaceId);
-    await this.checkAdminRole(workspaceId);
+    await this.checkAdminRole(workspaceId, user._id);
     await this.isRolesValid(payload.users);
     const usersExist: UsersWithRolesDto[] = [];
     const usersNotExist = [];
@@ -1238,10 +1271,13 @@ export class WorkspaceService {
       userExistData.push({ ...userData, role: users.role });
     }
 
-    await this.inviteUsersWithRolesInWorkspaceEmail({
-      users: userExistData,
-      workspaceName: workspaceData.name,
-    });
+    await this.inviteUsersWithRolesInWorkspaceEmail(
+      {
+        users: userExistData,
+        workspaceName: workspaceData.name,
+      },
+      user.name,
+    );
     const response = {
       notExistInTeam: usersNotExist,
       existInWorkspace: alreadyWorkspaceMember,
@@ -1252,8 +1288,9 @@ export class WorkspaceService {
   async updateWorkspaceType(
     workspaceId: string,
     type: WorkspaceType,
+    userId: ObjectId,
   ): Promise<WithId<Workspace>> {
-    await this.checkAdminRole(workspaceId);
+    await this.checkAdminRole(workspaceId, userId);
     const response = await this.workspaceRepository.updateWorkspaceTypeById(
       new ObjectId(workspaceId),
       type,

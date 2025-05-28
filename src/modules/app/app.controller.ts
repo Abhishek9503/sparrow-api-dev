@@ -87,7 +87,7 @@ export class AppController {
     const user = request.user;
     const parsedRequestData = await this.appService.parseCurl(
       req.curl,
-      user?.username ?? "anonymous",
+      user?.name ?? "anonymous",
     );
     const responseData = new ApiResponseService(
       "Success",
@@ -161,7 +161,11 @@ export class AppController {
    * @returns {Promise<FastifyReply>} The result of the validation (valid or invalid).
    * @throws {HttpStatus.BAD_REQUEST} If both OAPI and Postman formats are invalid.
    */
-  async validateFile(@Req() request: FastifyRequest, @Res() res: FastifyReply) {
+  async validateFile(
+    @Req() request: FastifyRequest,
+    @Res() res: FastifyReply,
+    @Req() req: ExtendedFastifyRequest,
+  ) {
     try {
       // Attempt to validate the OAPI specification in the request
       await this.parserService.validateOapi(request);
@@ -174,7 +178,8 @@ export class AppController {
       // If OAPI validation fails, attempt to validate the Postman collection
       try {
         const body = request.body;
-        await this.postmanParserSerivce.parsePostmanCollection(body);
+        const user = req.user;
+        await this.postmanParserSerivce.parsePostmanCollection(body, user);
         return res.status(HttpStatus.OK).send({
           valid: true,
           msg: "Provided Postman Collection is valid.",
@@ -262,8 +267,13 @@ export class AppController {
   async importJsonCollection(
     @Res() res: FastifyReply,
     @Body() jsonObj: string,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    const collectionObj = await this.parserService.parseOAPICollection(jsonObj);
+    const user = request.user;
+    const collectionObj = await this.parserService.parseOAPICollection(
+      jsonObj,
+      user,
+    );
 
     const responseData = new ApiResponseService(
       "Collection Parsed",

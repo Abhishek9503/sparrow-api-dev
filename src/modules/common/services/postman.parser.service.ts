@@ -15,6 +15,7 @@ import {
   countTotalRequests,
   flattenPostmanCollection,
 } from "./helper/postman.parser";
+import { DecodedUserObject } from "@src/types/fastify";
 
 @Injectable()
 export class PostmanParserService {
@@ -26,9 +27,10 @@ export class PostmanParserService {
    * @param postmanCollection - The Postman Collection object to be parsed.
    * @returns The processed and flattened Postman Collection.
    */
-  async parsePostmanCollection(postmanCollection: any) {
-    const user = await this.contextService.get("user");
-
+  async parsePostmanCollection(
+    postmanCollection: any,
+    user: DecodedUserObject,
+  ) {
     // Destructure the 'info' and 'item' properties from the Postman collection
     const { info, item: items } =
       postmanCollection.collection ?? postmanCollection;
@@ -51,7 +53,7 @@ export class PostmanParserService {
       totalRequests: countTotalRequests(items),
       createdBy: user?.name,
       updatedBy: {
-        id: user?._id ?? "",
+        id: user?._id.toString() ?? "",
         name: user?.name ?? "",
       },
       createdAt: new Date(),

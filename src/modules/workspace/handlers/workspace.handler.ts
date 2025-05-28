@@ -34,7 +34,6 @@ export class WorkspaceHandler implements OnModuleInit {
           const messageString = message.value.toString();
           const messageJson = JSON.parse(messageString);
           const workspace = await this.workspaceService.create(messageJson);
-          // const user = await this.contextService.get("user");
           // const teams = await this.teamService.getTeams();
           // for (const team of teams) {
           //   const matchedInvite = team?.invites?.find(

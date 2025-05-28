@@ -38,6 +38,7 @@ import { RefreshTokenRequest } from "./auth.controller";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import { ConfigService } from "@nestjs/config";
 import { VerificationPayload } from "../payloads/verification.payload";
+import { ExtendedFastifyRequest } from "@src/types/fastify";
 /**
  * User Controller
  */
@@ -58,8 +59,13 @@ export class UserController {
   @ApiResponse({ status: 201, description: "Registration Completed" })
   @ApiResponse({ status: 400, description: "Bad Request" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  async register(@Body() payload: RegisterPayload, @Res() res: FastifyReply) {
-    const data = await this.userService.createUser(payload);
+  async register(
+    @Body() payload: RegisterPayload,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const data = await this.userService.createUser(payload, user);
     const responseData = new ApiResponseService(
       "User Created",
       HttpStatusCode.CREATED,

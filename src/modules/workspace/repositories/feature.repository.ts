@@ -4,6 +4,7 @@ import {
   Db,
   DeleteResult,
   InsertOneResult,
+  ObjectId,
   UpdateResult,
   WithId,
 } from "mongodb";
@@ -79,10 +80,11 @@ export class FeatureRepository {
   async updateFeature(
     name: string,
     updateFeatureDto: UpdateFeatureDto,
+    userId: ObjectId,
   ): Promise<UpdateResult> {
     const defaultParams = {
       updatedAt: new Date(),
-      updatedBy: this.contextService.get("user")._id,
+      updatedBy: userId.toString(),
     };
     const data = await this.db
       .collection(Collections.FEATURES)

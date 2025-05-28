@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { Db, InsertOneResult } from "mongodb";
+import { Db, InsertOneResult, ObjectId } from "mongodb";
 
 // ---- Enum
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
@@ -29,18 +29,18 @@ export class AiLogRepository {
 
   async addLogs(
     payload: AiLogs,
-    userId: string = null,
+    userId?: string,
+    currentUserId?: ObjectId,
   ): Promise<InsertOneResult<Document>> {
     const defaultParams = {
       createdAt: new Date(),
-      createdBy: this.contextService.get("user")?._id ?? userId,
+      createdBy: currentUserId.toString() ?? userId,
     };
-  
+
     const data = await this.db
       .collection(Collections.AILOGS)
       .insertOne({ ...payload, ...defaultParams });
-  
+
     return data;
   }
-
 }

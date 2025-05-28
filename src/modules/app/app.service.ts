@@ -181,7 +181,6 @@ export class AppService {
     requestObject: any,
     username: string,
   ): Promise<TransformedRequest> {
-    // const user = await this.contextService.get("user");
     const keyValueDefaultObj = {
       key: "",
       value: "",

@@ -5,12 +5,12 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Socket } from "socket.io";
-import { Server, WebSocket, MessageEvent } from "ws";
+import { WebSocket, MessageEvent } from "ws";
 
 // ---- OpenAI
 import ModelClient from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
-import { AzureOpenAI , OpenAI } from "openai";
+import { AzureOpenAI, OpenAI } from "openai";
 import { createSseStream } from "@azure/core-sse";
 import {
   Assistant,
@@ -21,7 +21,7 @@ import { Thread } from "openai/resources/beta/threads/threads";
 import type { IncomingMessage } from "node:http";
 
 // import { GoogleGenAI } from "@google/genai";
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic from "@anthropic-ai/sdk";
 
 // ---- Payload
 import {
@@ -41,15 +41,20 @@ import { UserService } from "../../identity/services/user.service";
 // ---- Enums
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { parseWhitelistedEmailList } from "@src/modules/common/util/email.parser.util";
-import {  Models , AiService , ClaudeModelVersion , GoogleModelVersion , OpenAIModelVersion , DeepSeepModelVersion} from "@src/modules/common/enum/ai-services.enum";
+import {
+  Models,
+  AiService,
+  OpenAIModelVersion,
+} from "@src/modules/common/enum/ai-services.enum";
 
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
+import { DecodedUserObject } from "@src/types/fastify";
+import { ObjectId } from "mongodb";
 
-async function initializeGenAI(authKey: string) 
-{
-  const { GoogleGenAI } = await import('@google/genai');
-  const genAI = new GoogleGenAI({apiKey: authKey});
+async function initializeGenAI(authKey: string) {
+  const { GoogleGenAI } = await import("@google/genai");
+  const genAI = new GoogleGenAI({ apiKey: authKey });
   return genAI;
 }
 
@@ -103,7 +108,7 @@ export class AiAssistantService {
     this.deepseekEndpoint = this.configService.get("ai.deepseekEndpoint");
     this.deepseekApiKey = this.configService.get("ai.deepseekApiKey");
     this.deepseekApiVersion = this.configService.get("ai.deepseekApiVersion");
-    this.deepseekurl = this.configService.get("ai.deepseekURL")
+    this.deepseekurl = this.configService.get("ai.deepseekURL");
 
     // Initialize the AzureOpenAI client
     try {
@@ -143,13 +148,12 @@ export class AiAssistantService {
     const endpoint = this.deepseekEndpoint;
     const apiKey = this.deepseekApiKey;
     const apiVersion = this.deepseekApiVersion;
-  
-    const client = ModelClient(endpoint, new AzureKeyCredential(apiKey), {apiVersion});
+
+    const client = ModelClient(endpoint, new AzureKeyCredential(apiKey), {
+      apiVersion,
+    });
     return client;
   };
-
-  
-
 
   /**
    * Asynchronously creates a new assistant with given instructions.
@@ -175,8 +179,10 @@ export class AiAssistantService {
    * @returns A promise that resolves with the generated text, thread ID, and message ID.
    * @throws BadRequestException if the assistant cannot be created.
    */
-  public async generateText(data: PromptPayload): Promise<AIResponseDto> {
-    const user = this.contextService.get("user");
+  public async generateText(
+    data: PromptPayload,
+    user: DecodedUserObject,
+  ): Promise<AIResponseDto> {
     const stat = await this.chatbotStatsService.getIndividualStat(
       user?._id?.toString(),
     );
@@ -219,10 +225,13 @@ export class AiAssistantService {
     }
 
     // Add a user question to the existing thread
-    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
-      role,
-      content: message,
-    });
+    await this.gptAssistantsClient.beta.threads.messages.create(
+      currentThreadId,
+      {
+        role,
+        content: message,
+      },
+    );
 
     // Run the thread and poll it until it is in a terminal state
 
@@ -265,9 +274,11 @@ export class AiAssistantService {
 
     // Get the messages
     const messageList: MessagesPage =
-      await this.gptAssistantsClient.beta.threads.messages.list(currentThreadId);
+      await this.gptAssistantsClient.beta.threads.messages.list(
+        currentThreadId,
+      );
     const kafkaMessage = {
-      userId: this.contextService.get("user")._id,
+      userId: user._id,
       tokenCount: pollRunner.usage.total_tokens,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
@@ -296,6 +307,7 @@ export class AiAssistantService {
   public async generateTextStream(
     data: StreamPromptPayload,
     client: Socket,
+    userId: ObjectId,
   ): Promise<void> {
     const { text: prompt, threadId, instructions } = data;
 
@@ -309,17 +321,19 @@ export class AiAssistantService {
 
     // Create thread
     if (!currentThreadId) {
-      const assistantThread = await this.gptAssistantsClient.beta.threads.create(
-        {},
-      );
+      const assistantThread =
+        await this.gptAssistantsClient.beta.threads.create({});
       currentThreadId = assistantThread.id;
     }
 
     // Send message in thread
-    await this.gptAssistantsClient.beta.threads.messages.create(currentThreadId, {
-      role: "user",
-      content: prompt,
-    });
+    await this.gptAssistantsClient.beta.threads.messages.create(
+      currentThreadId,
+      {
+        role: "user",
+        content: prompt,
+      },
+    );
 
     // Create Stream for the run in thread
     const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
@@ -379,14 +393,13 @@ export class AiAssistantService {
     }
     // Save token details
     const kafkaMessage = {
-      userId: this.contextService.get("user")._id,
+      userId: userId.toString(),
       tokenCount: total_tokens,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
       value: JSON.stringify(kafkaMessage),
     });
   }
-
 
   /**
    * Handles interaction with the GPT model.
@@ -405,7 +418,7 @@ export class AiAssistantService {
     tabId: string,
     threadId?: string,
     model?: string,
-    activity?: string
+    activity?: string,
   ): Promise<void> {
     // Fetch user details
     const user = await this.userService.getUserByEmail(emailId);
@@ -418,20 +431,20 @@ export class AiAssistantService {
     );
     let parsedWhiteListEmails: string[] = [];
     if (whitelistEmails) {
-      parsedWhiteListEmails =
-        parseWhitelistedEmailList(whitelistEmails) || [];
+      parsedWhiteListEmails = parseWhitelistedEmailList(whitelistEmails) || [];
     }
 
     // Check if user exceeded token limit
     if (
       (stat?.aiModel &&
         stat.aiModel?.yearMonth === currentYearMonth &&
-        (stat.aiModel.gpt + stat.aiModel.deepseek) > (this.monthlyTokenLimit || 0) &&
+        stat.aiModel.gpt + stat.aiModel.deepseek >
+          (this.monthlyTokenLimit || 0) &&
         !parsedWhiteListEmails.includes(emailId)) ||
       (stat?.aiModel &&
         stat.aiModel?.yearMonth === currentYearMonth &&
         parsedWhiteListEmails.includes(emailId) &&
-        (stat.aiModel.gpt + stat.aiModel.deepseek) > this.whiteListUserTokenLimit)
+        stat.aiModel.gpt + stat.aiModel.deepseek > this.whiteListUserTokenLimit)
     ) {
       client.send(
         JSON.stringify({
@@ -442,74 +455,84 @@ export class AiAssistantService {
       );
       return;
     }
-  
+
     // Validate input
     if (!text) {
       throw new BadRequestException("Invalid input: 'text' field is required.");
     }
-  
+
     if (!this.gptAssistantsClient) {
-      throw new InternalServerErrorException("AI assistant client is not initialized.");
+      throw new InternalServerErrorException(
+        "AI assistant client is not initialized.",
+      );
     }
-  
+
     if (!threadId) {
-      const assistantThread = await this.gptAssistantsClient.beta.threads.create({});
+      const assistantThread =
+        await this.gptAssistantsClient.beta.threads.create({});
       threadId = assistantThread.id;
     }
-  
+
     await this.gptAssistantsClient.beta.threads.messages.create(threadId, {
       role: "user",
       content: `{Text: ${text}, API data: ${apiData}}`,
     });
-  
-    client.send(JSON.stringify({
-      messages: "",
-      thread_Id: threadId,
-      tab_id: tabId,
-      stream_status: "start",
-    }));
-  
-    this.gptAssistantsClient.beta.threads.runs.stream(threadId, {
-      assistant_id: this.assistantId,
-    })
-      .on('textDelta', (textDelta) => {
-        const chunk = textDelta.value;
-        client.send(JSON.stringify({
-          messages: chunk,
-          thread_Id: threadId,
-          tab_id: tabId,
-          stream_status: "streaming",
-        }));
+
+    client.send(
+      JSON.stringify({
+        messages: "",
+        thread_Id: threadId,
+        tab_id: tabId,
+        stream_status: "start",
+      }),
+    );
+
+    this.gptAssistantsClient.beta.threads.runs
+      .stream(threadId, {
+        assistant_id: this.assistantId,
       })
-      .on('end', async () => {
-        try {
-          client.send(JSON.stringify({
-            messages: "",
+      .on("textDelta", (textDelta) => {
+        const chunk = textDelta.value;
+        client.send(
+          JSON.stringify({
+            messages: chunk,
             thread_Id: threadId,
             tab_id: tabId,
-            stream_status: "end",
-          }));
-  
-          const runsList = await this.gptAssistantsClient.beta.threads.runs.list(threadId);
+            stream_status: "streaming",
+          }),
+        );
+      })
+      .on("end", async () => {
+        try {
+          client.send(
+            JSON.stringify({
+              messages: "",
+              thread_Id: threadId,
+              tab_id: tabId,
+              stream_status: "end",
+            }),
+          );
+
+          const runsList =
+            await this.gptAssistantsClient.beta.threads.runs.list(threadId);
           const latestRun = runsList.data[0];
-  
+
           if (latestRun?.usage) {
             const tokenUsage = latestRun.usage.total_tokens;
-  
+
             const kafkaMessage = {
               userId: user._id.toString(),
               tokenCount: tokenUsage,
-              model: model
+              model: model,
             };
-            
+
             await this.producerService.produce(
               TOPIC.AI_RESPONSE_GENERATED_TOPIC,
               {
                 value: JSON.stringify(kafkaMessage),
               },
             );
-            
-            
+
             // Update the actvity log in the database
             const activityLog = {
               userId: user._id.toString(),
@@ -517,34 +540,30 @@ export class AiAssistantService {
               model: model,
               tokenConsumed: tokenUsage,
               threadId: threadId,
-            }
-            
+            };
+
             // Send activity log to Kafka topic
-            await this.producerService.produce(
-              TOPIC.AI_ACTIVITY_LOG_TOPIC,
-              {
-                value: JSON.stringify(activityLog),
-              },
-            );
-          
+            await this.producerService.produce(TOPIC.AI_ACTIVITY_LOG_TOPIC, {
+              value: JSON.stringify(activityLog),
+            });
           } else {
             console.warn("Run usage not yet available.");
           }
-
-
         } catch (err) {
           console.error("Error handling usage after stream:", err);
         }
       })
-      .on('error', () => {
-        client.send(JSON.stringify({
-          messages: "Some issue occurred while processing your request. Please try again.",
-          thread_Id: threadId,
-          tab_id: tabId,
-        }));
+      .on("error", () => {
+        client.send(
+          JSON.stringify({
+            messages:
+              "Some issue occurred while processing your request. Please try again.",
+            thread_Id: threadId,
+            tab_id: tabId,
+          }),
+        );
       });
   }
-
 
   /**
    * Handles interaction with the Deepseek model.
@@ -563,9 +582,8 @@ export class AiAssistantService {
     tabId: string,
     conversation?: string,
     model?: string,
-    activity?: string
+    activity?: string,
   ): Promise<void> {
-
     type ChatMessage = {
       role: "system" | "user" | "assistant";
       content: string;
@@ -582,20 +600,20 @@ export class AiAssistantService {
     );
     let parsedWhiteListEmails: string[] = [];
     if (whitelistEmails) {
-      parsedWhiteListEmails =
-        parseWhitelistedEmailList(whitelistEmails) || [];
+      parsedWhiteListEmails = parseWhitelistedEmailList(whitelistEmails) || [];
     }
 
     // Check if user exceeded token limit
     if (
       (stat?.aiModel &&
         stat.aiModel?.yearMonth === currentYearMonth &&
-        (stat.aiModel.gpt + stat.aiModel.deepseek) > (this.monthlyTokenLimit || 0) &&
+        stat.aiModel.gpt + stat.aiModel.deepseek >
+          (this.monthlyTokenLimit || 0) &&
         !parsedWhiteListEmails.includes(emailId)) ||
       (stat?.aiModel &&
         stat.aiModel?.yearMonth === currentYearMonth &&
         parsedWhiteListEmails.includes(emailId) &&
-        (stat.aiModel.gpt + stat.aiModel.deepseek) > this.whiteListUserTokenLimit)
+        stat.aiModel.gpt + stat.aiModel.deepseek > this.whiteListUserTokenLimit)
     ) {
       client.send(
         JSON.stringify({
@@ -606,14 +624,16 @@ export class AiAssistantService {
       );
       return;
     }
-    
+
     // Validate user input
     if (!text) {
       throw new BadRequestException("Invalid input: 'text' field is required.");
     }
 
     if (!this.deepseekClient) {
-      throw new InternalServerErrorException("DeepSeek AI client is not initialized.");
+      throw new InternalServerErrorException(
+        "DeepSeek AI client is not initialized.",
+      );
     }
 
     let conversationMessages: ChatMessage[] = [];
@@ -633,70 +653,79 @@ export class AiAssistantService {
     }
 
     const userInput = `{Text: ${text}, API data: ${apiData}}`;
-    
+
     const messageHistory: ChatMessage[] = [
       { role: "system", content: instructions },
       ...conversationMessages,
       { role: "user", content: userInput },
     ];
-    
-    try {
-      client.send(JSON.stringify({
-        messages: "",
-        thread_Id: null,
-        tab_id: tabId,
-        stream_status: "start",
-      })); 
 
-      const response = await this.deepseekClient.path("/chat/completions").post({
-        body: {
-          messages: messageHistory,
-          max_tokens: 2048,
-          temperature: 0.8,
-          top_p: 0.1,
-          presence_penalty: 0,
-          frequency_penalty: 0,
-          model: "DeepSeek-V3-DEV",
-          stream: true
-        }
-      }).asNodeStream();
+    try {
+      client.send(
+        JSON.stringify({
+          messages: "",
+          thread_Id: null,
+          tab_id: tabId,
+          stream_status: "start",
+        }),
+      );
+
+      const response = await this.deepseekClient
+        .path("/chat/completions")
+        .post({
+          body: {
+            messages: messageHistory,
+            max_tokens: 2048,
+            temperature: 0.8,
+            top_p: 0.1,
+            presence_penalty: 0,
+            frequency_penalty: 0,
+            model: "DeepSeek-V3-DEV",
+            stream: true,
+          },
+        })
+        .asNodeStream();
 
       const stream = response.body;
-    
+
       const sses = createSseStream(stream as IncomingMessage);
-    
+
       for await (const event of sses) {
         if (event.data === "[DONE]") {
           // Send end-of-stream signal
-          client.send(JSON.stringify({
-            messages: "",
-            thread_Id: null,
-            tab_id: tabId,
-            stream_status: "end",
-          }));
+          client.send(
+            JSON.stringify({
+              messages: "",
+              thread_Id: null,
+              tab_id: tabId,
+              stream_status: "end",
+            }),
+          );
           return;
         }
-      
+
         try {
           const parsed = JSON.parse(event.data);
           for (const choice of parsed.choices) {
-            client.send(JSON.stringify({
-              messages: choice.delta?.content ?? "",
-              thread_Id: null,
-              tab_id: tabId,
-              stream_status: "streaming",
-            }));
+            client.send(
+              JSON.stringify({
+                messages: choice.delta?.content ?? "",
+                thread_Id: null,
+                tab_id: tabId,
+                stream_status: "streaming",
+              }),
+            );
           }
 
           if (parsed?.usage) {
             const tokenUsage = parsed.usage.total_tokens;
-  
+
             const kafkaMessage = {
               userId: user._id.toString(),
               tokenCount: tokenUsage,
-              model: model
+              model: model,
             };
-  
+
             await this.producerService.produce(
               TOPIC.AI_RESPONSE_GENERATED_TOPIC,
               {
@@ -710,38 +739,35 @@ export class AiAssistantService {
               model: model,
               tokenConsumed: tokenUsage,
               threadId: "null",
-            }
-            
+            };
+
             // Send activity log to Kafka topic
-            await this.producerService.produce(
-              TOPIC.AI_ACTIVITY_LOG_TOPIC,
-              {
-                value: JSON.stringify(activityLog),
-              },
-            );
+            await this.producerService.produce(TOPIC.AI_ACTIVITY_LOG_TOPIC, {
+              value: JSON.stringify(activityLog),
+            });
           } else {
             console.warn("Run usage not yet available.");
           }
-
         } catch (e) {
           console.error("Invalid JSON in event data:", event.data, e);
         }
       }
-      
-      
     } catch (error) {
       console.error("DeepSeek error:", error);
-      client.send(JSON.stringify({
-        messages: "Some issue occurred while processing your request. Please try again.",
-        thread_Id: null,
-        tab_id: tabId,
-      }));
+      client.send(
+        JSON.stringify({
+          messages:
+            "Some issue occurred while processing your request. Please try again.",
+          thread_Id: null,
+          tab_id: tabId,
+        }),
+      );
     }
   }
 
   private async createOpenAIClient(
     client: WebSocket,
-    authKey: string
+    authKey: string,
   ): Promise<OpenAI | null> {
     try {
       const OpenAIclient = new OpenAI({
@@ -753,8 +779,9 @@ export class AiAssistantService {
         client.send(
           JSON.stringify({
             event: "error",
-            message: "Invalid Authentication. Please add a valid OpenAI API key.",
-          })
+            message:
+              "Invalid Authentication. Please add a valid OpenAI API key.",
+          }),
         );
       }
       return null;
@@ -762,227 +789,245 @@ export class AiAssistantService {
   }
 
   /**
-     * Formats response metrics with timing information
-     * @param data Response content
-     * @param inputTokens Number of input tokens used
-     * @param outputTokens Number of output tokens generated
-     * @param totalTokens Total tokens used in the request
-     * @param startTime Performance start time for timing calculation
-     * @returns Formatted response object
-     */
-    private formatResponse(
-      inputTokens: number,
-      outputTokens: number,
-      totalTokens: number,
-      startTime: number
-    ) {
-      const endTime = performance.now();
-      const timeTaken = Math.round(endTime - startTime);
-      
-      return {
-        statusCode: 200,
-        messages: "",
-        stream_status: "end",
-        inputTokens,
-        outputTokens,
-        totalTokens,
-        timeTaken: `${timeTaken}ms`,
-      };
-    }
-  
-    /**
-     * Processes LLM requests through OpenAI API
-     */
-    private async openaiLLMService(
-      client: WebSocket,
-      OpenAIclient: OpenAI | null,
-      modelVersion: string,
-      systemPrompt: string,
-      userInput: string,
-      streamResponse: boolean,
-      jsonResponseFormat: boolean,
-      temperature: number,
-      presencePenalty: number,
-      frequencePenalty: number,
-      maxTokens: number,
-    ): Promise<void> {
-      // Return early if OpenAI client creation failed
-      if (!OpenAIclient) return;
-  
-      const startTime = performance.now();
-      
-      // Message format for OpenAI API
-      const messages: { role: "system" | "user"; content: string }[] = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userInput },
-      ];
+   * Formats response metrics with timing information
+   * @param data Response content
+   * @param inputTokens Number of input tokens used
+   * @param outputTokens Number of output tokens generated
+   * @param totalTokens Total tokens used in the request
+   * @param startTime Performance start time for timing calculation
+   * @returns Formatted response object
+   */
+  private formatResponse(
+    inputTokens: number,
+    outputTokens: number,
+    totalTokens: number,
+    startTime: number,
+  ) {
+    const endTime = performance.now();
+    const timeTaken = Math.round(endTime - startTime);
 
-      const o1miniMessage: { role: "system" | "user"; content: string } [] = [{ role: "user", content: userInput }]
-      
-      try {
-        // For GPT-o1 and GPT-o1 Mini models, the response is generated without streaming and with limited parameters
-        if (modelVersion === OpenAIModelVersion.GPT_o1 || modelVersion === OpenAIModelVersion.GPT_o1_Mini) {
-          const response = await OpenAIclient.chat.completions.create({
-            model: modelVersion,
-            messages: modelVersion === OpenAIModelVersion.GPT_o1_Mini ? o1miniMessage : messages,
-            ...(maxTokens > 1 && { max_completion_tokens: maxTokens })
-          });
+    return {
+      statusCode: 200,
+      messages: "",
+      stream_status: "end",
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      timeTaken: `${timeTaken}ms`,
+    };
+  }
 
-          // Signal stream start
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify({
-                messages: "",
-                stream_status: "start"
-              })
-            );
-          }
-          
-          const data = response.choices[0]?.message?.content || "";
+  /**
+   * Processes LLM requests through OpenAI API
+   */
+  private async openaiLLMService(
+    client: WebSocket,
+    OpenAIclient: OpenAI | null,
+    modelVersion: string,
+    systemPrompt: string,
+    userInput: string,
+    streamResponse: boolean,
+    jsonResponseFormat: boolean,
+    temperature: number,
+    presencePenalty: number,
+    frequencePenalty: number,
+    maxTokens: number,
+  ): Promise<void> {
+    // Return early if OpenAI client creation failed
+    if (!OpenAIclient) return;
 
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify({
-                messages: data,
-                stream_status: "streaming"
-              })
-            );
-          }
-          
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify(this.formatResponse(
+    const startTime = performance.now();
+
+    // Message format for OpenAI API
+    const messages: { role: "system" | "user"; content: string }[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userInput },
+    ];
+
+    const o1miniMessage: { role: "system" | "user"; content: string }[] = [
+      { role: "user", content: userInput },
+    ];
+
+    try {
+      // For GPT-o1 and GPT-o1 Mini models, the response is generated without streaming and with limited parameters
+      if (
+        modelVersion === OpenAIModelVersion.GPT_o1 ||
+        modelVersion === OpenAIModelVersion.GPT_o1_Mini
+      ) {
+        const response = await OpenAIclient.chat.completions.create({
+          model: modelVersion,
+          messages:
+            modelVersion === OpenAIModelVersion.GPT_o1_Mini
+              ? o1miniMessage
+              : messages,
+          ...(maxTokens > 1 && { max_completion_tokens: maxTokens }),
+        });
+
+        // Signal stream start
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              messages: "",
+              stream_status: "start",
+            }),
+          );
+        }
+
+        const data = response.choices[0]?.message?.content || "";
+
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              messages: data,
+              stream_status: "streaming",
+            }),
+          );
+        }
+
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify(
+              this.formatResponse(
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
-                startTime
-              ))
-            );
-          }
-          return;
+                startTime,
+              ),
+            ),
+          );
         }
-        
-        // Handle streaming response
-        if (streamResponse === true) {
-          const stream = await OpenAIclient.chat.completions.create({
-            model: modelVersion,
-            messages: messages,
-            ...(modelVersion !== OpenAIModelVersion.GPT_o3_Mini && {
-              temperature: temperature,
-              presence_penalty: presencePenalty,
-              frequency_penalty: frequencePenalty,
-            }),
-            ...(maxTokens > 1 && { max_tokens: maxTokens }),
-            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
-            stream: true,
-            stream_options: { include_usage: true }
-          });
-          
-          // Signal stream start
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify({
-                messages: "",
-                stream_status: "start"
-              })
-            );
-          }
-          
-          // Process stream chunks
-          for await (const event of stream) {
-            if (client.readyState !== WebSocket.OPEN) break;
-            
-            const choice = event.choices?.[0];
-            
-            // Send content chunk if it exists
-            if (choice?.delta?.content) {
-              client.send(
-                JSON.stringify({
-                  messages: choice.delta.content,
-                  stream_status: "streaming"
-                })
-              );
-            }
-            
-            // Send final usage information when available
-            if (event?.usage) {
-              const endTime = performance.now();
-              const timeTaken = Math.round(endTime - startTime);
-  
-              client.send(
-                JSON.stringify({
-                  statusCode: 200,
-                  messages: "",
-                  stream_status: "end",
-                  inputTokens: event.usage.prompt_tokens,
-                  outputTokens: event.usage.completion_tokens,
-                  totalTokens: event.usage.total_tokens,
-                  timeTaken: `${timeTaken}ms`,
-                })
-              );
-            }
-          }
-        }
-        // Handle non-streaming response
-        else {
-          const response = await OpenAIclient.chat.completions.create({
-            model: modelVersion,
-            messages: messages,
+        return;
+      }
+
+      // Handle streaming response
+      if (streamResponse === true) {
+        const stream = await OpenAIclient.chat.completions.create({
+          model: modelVersion,
+          messages: messages,
+          ...(modelVersion !== OpenAIModelVersion.GPT_o3_Mini && {
             temperature: temperature,
             presence_penalty: presencePenalty,
             frequency_penalty: frequencePenalty,
-            ...(maxTokens > 1 && { max_tokens: maxTokens }),
-            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
-          });
+          }),
+          ...(maxTokens > 1 && { max_tokens: maxTokens }),
+          ...(jsonResponseFormat && {
+            response_format: { type: "json_object" },
+          }),
+          stream: true,
+          stream_options: { include_usage: true },
+        });
 
-          // Signal stream start
-          if (client.readyState === WebSocket.OPEN) {
+        // Signal stream start
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              messages: "",
+              stream_status: "start",
+            }),
+          );
+        }
+
+        // Process stream chunks
+        for await (const event of stream) {
+          if (client.readyState !== WebSocket.OPEN) break;
+
+          const choice = event.choices?.[0];
+
+          // Send content chunk if it exists
+          if (choice?.delta?.content) {
             client.send(
               JSON.stringify({
+                messages: choice.delta.content,
+                stream_status: "streaming",
+              }),
+            );
+          }
+
+          // Send final usage information when available
+          if (event?.usage) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
+
+            client.send(
+              JSON.stringify({
+                statusCode: 200,
                 messages: "",
-                stream_status: "start"
-              })
+                stream_status: "end",
+                inputTokens: event.usage.prompt_tokens,
+                outputTokens: event.usage.completion_tokens,
+                totalTokens: event.usage.total_tokens,
+                timeTaken: `${timeTaken}ms`,
+              }),
             );
           }
-          
-          const data = response.choices[0]?.message?.content || "";
+        }
+      }
+      // Handle non-streaming response
+      else {
+        const response = await OpenAIclient.chat.completions.create({
+          model: modelVersion,
+          messages: messages,
+          temperature: temperature,
+          presence_penalty: presencePenalty,
+          frequency_penalty: frequencePenalty,
+          ...(maxTokens > 1 && { max_tokens: maxTokens }),
+          ...(jsonResponseFormat && {
+            response_format: { type: "json_object" },
+          }),
+        });
 
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify({
-                messages: data,
-                stream_status: "streaming"
-              })
-            );
-          }
-          
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify(this.formatResponse(
+        // Signal stream start
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              messages: "",
+              stream_status: "start",
+            }),
+          );
+        }
+
+        const data = response.choices[0]?.message?.content || "";
+
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              messages: data,
+              stream_status: "streaming",
+            }),
+          );
+        }
+
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify(
+              this.formatResponse(
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
-                startTime
-              ))
-            );
-          }
-        }
-      } catch (error: any) {
-        if (client.readyState === WebSocket.OPEN) {
-            const endTime = performance.now();
-            const timeTaken = Math.round(endTime - startTime);
-          client.send(
-            JSON.stringify({
-              timeTaken: `${timeTaken}ms`,
-              statusCode: error?.status || 500,
-              event: "error",
-              message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
-            })
+                startTime,
+              ),
+            ),
           );
         }
       }
+    } catch (error: any) {
+      if (client.readyState === WebSocket.OPEN) {
+        const endTime = performance.now();
+        const timeTaken = Math.round(endTime - startTime);
+        client.send(
+          JSON.stringify({
+            timeTaken: `${timeTaken}ms`,
+            statusCode: error?.status || 500,
+            event: "error",
+            message:
+              error?.error?.message ||
+              "Some Issue Occurred in Processing your Request. Please try again",
+          }),
+        );
+      }
     }
-    
+  }
+
   /**
    * Generates stream wise response based on a given prompt using an assistant.
    * @param data - Prompt input data to generate a response.
@@ -1014,73 +1059,88 @@ export class AiAssistantService {
 
         const feature = parsedData.feature;
 
-        if (feature === AiService.SparrowAI) 
-          {
-            const text = parsedData.userInput;
-            let threadId = parsedData.threadId;
-            const tabId = parsedData.tabId;
-            const emailId = parsedData.emailId;
-            const apiData = parsedData.apiData || "Data not available";
-            const model = parsedData.model || "deepseek";
-            const conversation = parsedData.conversation || "";
-            const activity = parsedData.activity || "chat";
-    
-            if (model === Models.GPT) {
-              await this.handleGptModelInteraction(client, emailId, text, apiData, tabId, threadId, model, activity);
-              continue;
-            }
-            else if (model === Models.DeepSeek) {
-              await this.handleDeepseekModelInteraction(client, emailId, text, apiData, tabId, conversation, model, activity);
-              continue;
-            }
-          }
-        else if (feature === AiService.LlmEvaluation)
-          {
-              const {
-                model,
-                modelVersion,
-                authKey = "",
-                systemPrompt,
-                userInput,
-                streamResponse,
-                jsonResponseFormat,
-                temperature,
-                presencePenalty,
-                frequencePenalty,
-                maxTokens
-              } = parsedData;
+        if (feature === AiService.SparrowAI) {
+          const text = parsedData.userInput;
+          const threadId = parsedData.threadId;
+          const tabId = parsedData.tabId;
+          const emailId = parsedData.emailId;
+          const apiData = parsedData.apiData || "Data not available";
+          const model = parsedData.model || "deepseek";
+          const conversation = parsedData.conversation || "";
+          const activity = parsedData.activity || "chat";
 
-            // Only support OpenAI model currently
-            if (model === Models.OpenAI) {
-              // Create OpenAI client
-              const OpenAIclient = await this.createOpenAIClient(client, authKey);
-              
-              // Process the LLM request
-              await this.openaiLLMService(
-                client,
-                OpenAIclient,
-                modelVersion,
-                systemPrompt,
-                userInput,
-                streamResponse,
-                jsonResponseFormat,
-                temperature,
-                presencePenalty,
-                frequencePenalty,
-                maxTokens
+          if (model === Models.GPT) {
+            await this.handleGptModelInteraction(
+              client,
+              emailId,
+              text,
+              apiData,
+              tabId,
+              threadId,
+              model,
+              activity,
+            );
+            continue;
+          } else if (model === Models.DeepSeek) {
+            await this.handleDeepseekModelInteraction(
+              client,
+              emailId,
+              text,
+              apiData,
+              tabId,
+              conversation,
+              model,
+              activity,
+            );
+            continue;
+          }
+        } else if (feature === AiService.LlmEvaluation) {
+          const {
+            model,
+            modelVersion,
+            authKey = "",
+            systemPrompt,
+            userInput,
+            streamResponse,
+            jsonResponseFormat,
+            temperature,
+            presencePenalty,
+            frequencePenalty,
+            maxTokens,
+          } = parsedData;
+
+          // Only support OpenAI model currently
+          if (model === Models.OpenAI) {
+            // Create OpenAI client
+            const OpenAIclient = await this.createOpenAIClient(client, authKey);
+
+            // Process the LLM request
+            await this.openaiLLMService(
+              client,
+              OpenAIclient,
+              modelVersion,
+              systemPrompt,
+              userInput,
+              streamResponse,
+              jsonResponseFormat,
+              temperature,
+              presencePenalty,
+              frequencePenalty,
+              maxTokens,
+            );
+          } else {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(
+                JSON.stringify({
+                  statusCode: 404,
+                  event: "error",
+                  message:
+                    "Unsupported model. Currently only 'openai' is supported.",
+                }),
               );
-            } else {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(
-                  JSON.stringify({
-                    statusCode: 404,
-                    event: "error",
-                    message: "Unsupported model. Currently only 'openai' is supported."
-                  })
-                );
-              }
             }
           }
+        }
       }
     } catch (error) {
       console.error("Error in WebSocket loop:", error);
@@ -1135,7 +1195,6 @@ export class AiAssistantService {
     }
   }
 
-
   public async promptGeneration(data: ChatBotPayload): Promise<string> {
     try {
       const { userInput, authKey, model, modelVersion } = data;
@@ -1143,8 +1202,7 @@ export class AiAssistantService {
       const promptInstruction =
         "You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output.";
 
-      const userInstructions = 
-        `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`
+      const userInstructions = `You're an assistant that helps create well-structured prompts from user text. You are provided with user input and must generate a clean, optimized prompt. Return only the generated prompt—no explanations or additional output. This is the user text ${userInput}`;
 
       switch (model) {
         case Models.OpenAI: {
@@ -1156,10 +1214,10 @@ export class AiAssistantService {
               messages: [
                 {
                   role: "user",
-                  content: userInstructions
-                }
+                  content: userInstructions,
+                },
               ],
-              model: modelVersion
+              model: modelVersion,
             });
 
             const result = completion.choices[0].message.content;
@@ -1169,9 +1227,9 @@ export class AiAssistantService {
           const completion = await openai.chat.completions.create({
             messages: [
               { role: "system", content: promptInstruction },
-              { role: "user", content: userInput }
+              { role: "user", content: userInput },
             ],
-            model: modelVersion
+            model: modelVersion,
           });
 
           const result = completion.choices[0].message.content;
@@ -1182,10 +1240,11 @@ export class AiAssistantService {
           const genAI = await initializeGenAI(authKey);
           const response = await genAI.models.generateContent({
             model: modelVersion,
-            contents: userInstructions
+            contents: userInstructions,
           });
 
-          const result = response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+          const result =
+            response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
           return result;
         }
 
@@ -1197,30 +1256,30 @@ export class AiAssistantService {
             messages: [
               {
                 role: "user",
-                content: userInstructions
-              }
-            ]
+                content: userInstructions,
+              },
+            ],
           });
 
           const result = msg.content
-            .map((block) => ('text' in block ? block.text : ''))
-            .join('');
-          
+            .map((block) => ("text" in block ? block.text : ""))
+            .join("");
+
           return result;
         }
 
         case Models.DeepSeek: {
           const deepseek = new OpenAI({
             baseURL: this.deepseekurl,
-            apiKey: authKey
+            apiKey: authKey,
           });
 
           const completion = await deepseek.chat.completions.create({
             messages: [
               { role: "system", content: promptInstruction },
-              { role: "user", content: userInput }
+              { role: "user", content: userInput },
             ],
-            model: modelVersion
+            model: modelVersion,
           });
 
           const result = completion.choices[0].message.content;
@@ -1232,7 +1291,9 @@ export class AiAssistantService {
       }
     } catch (error) {
       console.error("Error processing prompt generation:", error);
-      throw new BadRequestException("An error occurred while processing the request.");
+      throw new BadRequestException(
+        "An error occurred while processing the request.",
+      );
     }
   }
 }

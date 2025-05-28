@@ -24,6 +24,7 @@ import { ContextService } from "@src/modules/common/services/context.service";
 import { EmailService } from "@src/modules/common/services/email.service";
 import { VerificationPayload } from "../payloads/verification.payload";
 import { HubSpotService } from "./hubspot.service";
+import { DecodedUserObject } from "@src/types/fastify";
 export interface IGenericMessageBody {
   message: string;
 }
@@ -103,10 +104,10 @@ export class UserService {
    * @param {RegisterPayload} payload user payload
    * @returns {Promise<IUser>} created user data
    */
-  async createUser(payload: RegisterPayload) {
+  async createUser(payload: RegisterPayload, user: DecodedUserObject) {
     payload.email = payload.email.toLowerCase();
-    const user = await this.getUserByEmail(payload.email);
-    if (user) {
+    const userExist = await this.getUserByEmail(payload.email);
+    if (userExist) {
       throw new BadRequestException(
         "The account with the provided email currently exists. Please choose another one.",
       );
@@ -122,7 +123,7 @@ export class UserService {
       name: firstName + this.configService.get("app.defaultTeamNameSuffix"),
       firstTeam: true,
     };
-    await this.teamService.create(teamName);
+    await this.teamService.create(teamName, user);
     // Disabling the welcome email due to hubspot integration
     // await this.sendSignUpEmail(firstName, payload.email);
     await this.sendUserVerificationEmail({ email: payload.email });
@@ -389,6 +390,7 @@ export class UserService {
       _id: createdUser.insertedId,
       name: name,
       email: email,
+      role: "",
     };
     this.contextService.set("user", user);
     const firstName = await this.getFirstName(name);
@@ -396,7 +398,7 @@ export class UserService {
       name: firstName + this.configService.get("app.defaultTeamNameSuffix"),
       firstTeam: true,
     };
-    await this.teamService.create(teamName);
+    await this.teamService.create(teamName, user);
     return createdUser;
   }
 

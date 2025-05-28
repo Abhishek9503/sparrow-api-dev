@@ -21,6 +21,7 @@ import { MemoryStorageFile } from "@blazity/nest-file-fastify";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { User } from "@src/modules/common/models/user.model";
 import { UserInvitesRepository } from "../repositories/userInvites.repository";
+import { DecodedUserObject } from "@src/types/fastify";
 
 /**
  * Team Service
@@ -89,6 +90,7 @@ export class TeamService {
    */
   async create(
     teamData: CreateOrUpdateTeamDto,
+    user: DecodedUserObject,
     image?: MemoryStorageFile,
   ): Promise<InsertOneResult<Team>> {
     let team;
@@ -125,7 +127,6 @@ export class TeamService {
       };
     }
     const createdTeam = await this.teamRepository.create(team);
-    const user = await this.contextService.get("user");
     const userData = await this.userRepository.findUserByUserId(
       new ObjectId(user._id),
     );
@@ -187,9 +188,10 @@ export class TeamService {
   async update(
     id: string,
     teamData: Partial<UpdateTeamDto>,
+    userId: ObjectId,
     image?: MemoryStorageFile,
   ): Promise<UpdateResult<Team>> {
-    const teamOwner = await this.isTeamOwner(id);
+    const teamOwner = await this.isTeamOwner(id, userId);
     if (!teamOwner) {
       throw new BadRequestException("You don't have Access");
     }
@@ -314,26 +316,27 @@ export class TeamService {
     return await this.teamRepository.getTeams();
   }
 
-  async isTeamOwner(id: string): Promise<boolean> {
-    const user = await this.contextService.get("user");
+  async isTeamOwner(id: string, userId: ObjectId): Promise<boolean> {
     const teamDetails = await this.teamRepository.findTeamByTeamId(
       new ObjectId(id),
     );
-    if (teamDetails.owner.toString() !== user._id.toString()) {
+    if (teamDetails.owner.toString() !== userId.toString()) {
       return false;
     }
     return true;
   }
 
-  async isTeamOwnerOrAdmin(id: ObjectId): Promise<WithId<Team>> {
+  async isTeamOwnerOrAdmin(
+    id: ObjectId,
+    currentUserId: ObjectId,
+  ): Promise<WithId<Team>> {
     const data = await this.teamRepository.findTeamByTeamId(id);
-    const userId = this.contextService.get("user")._id;
     if (data) {
-      if (data.owner.toString() === userId.toString()) {
+      if (data.owner.toString() === currentUserId.toString()) {
         return data;
       } else {
         for (const item of data.admins) {
-          if (item.toString() === userId.toString()) {
+          if (item.toString() === currentUserId.toString()) {
             return data;
           }
         }

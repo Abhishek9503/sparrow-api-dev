@@ -50,11 +50,12 @@ export class EnvironmentRepository {
   async update(
     id: string,
     updateEnvironmentDto: Partial<UpdateEnvironmentDto>,
+    username: string,
   ): Promise<UpdateResult> {
     const environmentId = new ObjectId(id);
     const defaultParams = {
       updatedAt: new Date(),
-      updatedBy: this.contextService.get("user").name,
+      updatedBy: username,
     };
     const data = await this.db
       .collection(Collections.ENVIRONMENT)

@@ -65,11 +65,12 @@ export class ChatbotStatsRepository {
   async updateStats(
     id: ObjectId,
     payload: UpdateChatbotDto,
-    userId: string = null,
+    userId?: string,
+    currentUserId?: ObjectId,
   ): Promise<UpdateResult> {
     const defaultParams = {
       updatedAt: new Date(),
-      updatedBy: this.contextService.get("user")?._id ?? userId,
+      updatedBy: currentUserId.toString() ?? userId,
     };
     const data = await this.db
       .collection(Collections.CHATBOTSTATS)

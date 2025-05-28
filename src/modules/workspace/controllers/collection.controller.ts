@@ -387,15 +387,16 @@ export class collectionController {
     @Param("requestId") requestId: string,
     @Body() requestDto: Partial<CollectionRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
     const collectionId = requestDto.collectionId;
     const workspaceId = requestDto.workspaceId;
     await this.workSpaceService.IsWorkspaceAdminOrEditor(
       requestDto.workspaceId,
     );
-    const user = await this.contextService.get("user");
+    const user = request.user;
     await this.collectionRequestService.checkPermission(workspaceId, user._id);
-    const request = await this.collectionRequestService.updateRequest(
+    await this.collectionRequestService.updateRequest(
       collectionId,
       requestId,
       requestDto,
@@ -422,13 +423,14 @@ export class collectionController {
     @Param("requestId") requestId: string,
     @Body() requestDto: Partial<CollectionRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
     const collectionId = requestDto.collectionId;
     const workspaceId = requestDto.workspaceId;
     await this.workSpaceService.IsWorkspaceAdminOrEditor(
       requestDto.workspaceId,
     );
-    const user = await this.contextService.get("user");
+    const user = request.user;
     await this.collectionRequestService.checkPermission(workspaceId, user._id);
     const noOfRequests =
       await this.collectionRequestService.getNoOfRequest(collectionId);
@@ -601,13 +603,16 @@ export class collectionController {
     @Res() res: FastifyReply,
     @UploadedFile()
     file: MemoryStorageFile,
+    @Req() req: ExtendedFastifyRequest,
   ) {
     const dataBuffer = file.buffer;
     const dataString = dataBuffer.toString("utf8");
     const dataObj = JSON.parse(dataString);
+    const user = req.user;
     const collection = await this.collectionService.importPostmanCollection(
       dataObj,
       workspaceId,
+      user,
     );
     const responseData = new ApiResponseService(
       "Postman Collection Imported",
@@ -772,10 +777,13 @@ export class collectionController {
     @Param("graphqlId") graphqlId: string,
     @Body() graphqlDto: Partial<CollectionGraphQLDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const graphql = await this.collectionRequestService.updateGraphQL(
       graphqlId,
       graphqlDto,
+      user,
     );
 
     const responseData = new ApiResponseService(
@@ -808,8 +816,14 @@ export class collectionController {
     @Param("graphqlId") graphqlId: string,
     @Body() graphqlDto: Partial<CollectionGraphQLDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.collectionRequestService.deleteGraphQL(graphqlId, graphqlDto);
+    const user = request.user;
+    await this.collectionRequestService.deleteGraphQL(
+      graphqlId,
+      graphqlDto,
+      user,
+    );
     const collection = await this.collectionService.getCollection(
       graphqlDto.collectionId,
     );
@@ -839,10 +853,13 @@ export class collectionController {
   async addRequestResponse(
     @Body() requestResponseDto: Partial<CollectionRequestResponseDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const requestResponseObj =
       await this.collectionRequestService.addRequestResponse(
         requestResponseDto,
+        user,
       );
     const responseData = new ApiResponseService(
       "Success",
@@ -872,11 +889,14 @@ export class collectionController {
     @Param("responseId") responseId: string,
     @Body() requestResponseDto: Partial<UpdateCollectionRequestResponseDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const requestResponse =
       await this.collectionRequestService.updateRequestResponse(
         responseId,
         requestResponseDto,
+        user,
       );
 
     const responseData = new ApiResponseService(
@@ -907,10 +927,13 @@ export class collectionController {
     @Param("responseId") responseId: string,
     @Body() requestResponseDto: Partial<CollectionRequestResponseDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     await this.collectionRequestService.deleteRequestResponse(
       responseId,
       requestResponseDto,
+      user,
     );
     const collection = await this.collectionService.getCollection(
       requestResponseDto.collectionId,
@@ -935,12 +958,14 @@ export class collectionController {
   async addMockRequest(
     @Body() requestDto: Partial<CollectionRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const collectionId = requestDto.collectionId;
     const workspaceId = requestDto.workspaceId;
-    const user = await this.contextService.get("user");
     await this.workSpaceService.IsWorkspaceAdminOrEditor(
       requestDto.workspaceId,
+      user._id,
     );
     await this.collectionRequestService.checkPermission(workspaceId, user._id);
     const noOfRequests =
@@ -973,18 +998,21 @@ export class collectionController {
     @Param("requestId") requestId: string,
     @Body() requestDto: Partial<CollectionRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const collectionId = requestDto.collectionId;
     const workspaceId = requestDto.workspaceId;
     await this.workSpaceService.IsWorkspaceAdminOrEditor(
       requestDto.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.collectionRequestService.checkPermission(workspaceId, user._id);
-    const request = await this.collectionRequestService.updateMockRequest(
+    await this.collectionRequestService.updateMockRequest(
       collectionId,
       requestId,
       requestDto,
+      user,
     );
 
     const responseData = new ApiResponseService(
@@ -1011,13 +1039,15 @@ export class collectionController {
     @Param("requestId") requestId: string,
     @Body() requestDto: Partial<CollectionRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const collectionId = requestDto.collectionId;
     const workspaceId = requestDto.workspaceId;
     await this.workSpaceService.IsWorkspaceAdminOrEditor(
       requestDto.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.collectionRequestService.checkPermission(workspaceId, user._id);
     const noOfRequests =
       await this.collectionRequestService.getNoOfRequest(collectionId);
@@ -1026,6 +1056,7 @@ export class collectionController {
       requestId,
       noOfRequests,
       requestDto,
+      user,
     );
     const collection = await this.collectionService.getCollection(collectionId);
 
@@ -1050,8 +1081,10 @@ export class collectionController {
     @Param("collectionId") collectionId: string,
     @Param("workspaceId") workspaceId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.workSpaceService.IsWorkspaceAdminOrEditor(workspaceId);
+    const user = request.user;
+    await this.workSpaceService.IsWorkspaceAdminOrEditor(workspaceId, user._id);
 
     const collection = await this.collectionService.getCollection(collectionId);
     const responseData = new ApiResponseService(

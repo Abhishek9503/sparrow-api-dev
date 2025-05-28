@@ -7,6 +7,7 @@ import { JwtPayload } from "../payloads/jwt.payload";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 import { ContextService } from "@src/modules/common/services/context.service";
 import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
+import { DecodedUserObject } from "@src/types/fastify";
 
 /**
  * Jwt Strategy Class
@@ -54,12 +55,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     this.contextService.set("user", user);
 
-    // Return user object with necessary fields
-    return {
+    const userObj: DecodedUserObject = {
       _id: user._id,
       email: user.email,
       name: user.name,
       role: role,
     };
+
+    // Return user object with necessary fields
+    return userObj;
   }
 }

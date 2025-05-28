@@ -6,7 +6,6 @@ import {
 import { CollectionRepository } from "../repositories/collection.repository";
 import { WorkspaceRepository } from "../repositories/workspace.repository";
 import { ObjectId, UpdateResult } from "mongodb";
-import { ContextService } from "@src/modules/common/services/context.service";
 import {
   CollectionGraphQLDto,
   CollectionRequestDto,
@@ -25,7 +24,6 @@ import {
   ItemTypeEnum,
   SourceTypeEnum,
 } from "@src/modules/common/models/collection.model";
-import { CollectionService } from "./collection.service";
 import { WorkspaceService } from "./workspace.service";
 import { BranchRepository } from "../repositories/branch.repository";
 import { UpdateBranchDto } from "../payloads/branch.payload";
@@ -33,21 +31,25 @@ import { Branch } from "@src/modules/common/models/branch.model";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { UpdatesType } from "@src/modules/common/enum/updates.enum";
 import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { DecodedUserObject } from "@src/types/fastify";
 @Injectable()
 export class CollectionRequestService {
   constructor(
     private readonly collectionReposistory: CollectionRepository,
     private readonly workspaceReposistory: WorkspaceRepository,
-    private readonly contextService: ContextService,
-    private readonly collectionService: CollectionService,
     private readonly workspaceService: WorkspaceService,
     private readonly branchRepository: BranchRepository,
     private readonly producerService: ProducerService,
   ) {}
 
-  async addFolder(payload: Partial<FolderDto>): Promise<CollectionItem> {
-    await this.workspaceService.IsWorkspaceAdminOrEditor(payload.workspaceId);
-    const user = await this.contextService.get("user");
+  async addFolder(
+    payload: Partial<FolderDto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      payload.workspaceId,
+      user._id,
+    );
     const uuid = uuidv4();
     await this.checkPermission(payload.workspaceId, user._id);
     const collection = await this.collectionReposistory.getCollection(
@@ -86,7 +88,7 @@ export class CollectionRequestService {
       const updatedBranch: UpdateBranchDto = {
         items: branch.items,
         updatedAt: new Date(),
-        updatedBy: this.contextService.get("user")._id,
+        updatedBy: user._id.toString(),
       };
       await this.branchRepository.updateBranchById(
         branch._id.toString(),
@@ -113,10 +115,15 @@ export class CollectionRequestService {
     throw new BadRequestException("Folder Doesn't Exist");
   }
 
-  async updateFolder(payload: Partial<FolderDto>): Promise<CollectionItem> {
-    await this.workspaceService.IsWorkspaceAdminOrEditor(payload.workspaceId);
-    const user = await this.contextService.get("user");
-    await this.checkPermission(payload.workspaceId, user._id);
+  async updateFolder(
+    payload: Partial<FolderDto>,
+    userId: ObjectId,
+  ): Promise<CollectionItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      payload.workspaceId,
+      userId,
+    );
+    await this.checkPermission(payload.workspaceId, userId);
     const collection = await this.collectionReposistory.getCollection(
       payload.collectionId,
     );
@@ -147,7 +154,7 @@ export class CollectionRequestService {
       const updatedBranch: UpdateBranchDto = {
         items: branch.items,
         updatedAt: new Date(),
-        updatedBy: user._id,
+        updatedBy: userId.toString(),
       };
       await this.branchRepository.updateBranchById(
         branch._id.toString(),
@@ -200,10 +207,13 @@ export class CollectionRequestService {
 
   async deleteFolder(
     payload: DeleteFolderDto,
+    userId: ObjectId,
   ): Promise<UpdateResult<Collection>> {
-    await this.workspaceService.IsWorkspaceAdminOrEditor(payload.workspaceId);
-    const user = await this.contextService.get("user");
-    await this.checkPermission(payload.workspaceId, user._id);
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      payload.workspaceId,
+      userId,
+    );
+    await this.checkPermission(payload.workspaceId, userId);
     const collection = await this.collectionReposistory.getCollection(
       payload.collectionId,
     );
@@ -234,7 +244,7 @@ export class CollectionRequestService {
       const updatedBranch: UpdateBranchDto = {
         items: branch.items,
         updatedAt: new Date(),
-        updatedBy: user._id,
+        updatedBy: userId.toString(),
       };
       await this.branchRepository.updateBranchById(
         branch._id.toString(),
@@ -364,6 +374,7 @@ export class CollectionRequestService {
     collectionId: string,
     requestId: string,
     request: Partial<CollectionRequestDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionRequestItem> {
     const collectionData =
       await this.collectionReposistory.getCollection(collectionId);
@@ -375,6 +386,7 @@ export class CollectionRequestService {
       collectionId,
       requestId,
       request,
+      user,
     );
     if (request?.currentBranch) {
       await this.branchRepository.updateRequestInBranch(
@@ -382,6 +394,7 @@ export class CollectionRequestService {
         request.currentBranch,
         requestId,
         request,
+        user._id,
       );
     }
     if (
@@ -428,6 +441,7 @@ export class CollectionRequestService {
     requestId: string,
     noOfRequests: number,
     requestDto: Partial<CollectionRequestDto>,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     const collectionData =
       await this.collectionReposistory.getCollection(collectionId);
@@ -439,6 +453,7 @@ export class CollectionRequestService {
       collectionId,
       requestId,
       noOfRequests,
+      user,
       requestDto?.folderId,
     );
     if (requestDto.currentBranch) {
@@ -446,6 +461,7 @@ export class CollectionRequestService {
         collectionId,
         requestDto.currentBranch,
         requestId,
+        user._id,
         requestDto.folderId,
       );
     }
@@ -490,9 +506,12 @@ export class CollectionRequestService {
    */
   async addWebSocket(
     websocket: Partial<CollectionWebSocketDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionItem> {
-    const user = await this.contextService.get("user");
-    await this.workspaceService.IsWorkspaceAdminOrEditor(websocket.workspaceId);
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      websocket.workspaceId,
+      user._id,
+    );
     await this.checkPermission(websocket.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(websocket.collectionId);
     const uuid = uuidv4();
@@ -572,14 +591,18 @@ export class CollectionRequestService {
   async updateWebSocket(
     websocketId: string,
     websocket: Partial<CollectionWebSocketDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionRequestItem> {
-    await this.workspaceService.IsWorkspaceAdminOrEditor(websocket.workspaceId);
-    const user = await this.contextService.get("user");
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      websocket.workspaceId,
+      user._id,
+    );
     await this.checkPermission(websocket.workspaceId, user._id);
     const collection = await this.collectionReposistory.updateWebSocket(
       websocket.collectionId,
       websocketId,
       websocket,
+      user,
     );
     const collectionData = await this.collectionReposistory.getCollection(
       websocket.collectionId,
@@ -608,11 +631,12 @@ export class CollectionRequestService {
   async deleteWebSocket(
     websocketId: string,
     websocketDto: Partial<CollectionWebSocketDto>,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       websocketDto.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.checkPermission(websocketDto.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(websocketDto.collectionId);
     const collectionData = await this.collectionReposistory.getCollection(
@@ -626,6 +650,7 @@ export class CollectionRequestService {
       websocketDto.collectionId,
       websocketId,
       noOfRequests,
+      user,
       websocketDto?.folderId,
     );
     const updateMessage = `WebSocket "${websocketData?.name}" is deleted from "${collectionData?.name}" collection`;
@@ -649,9 +674,12 @@ export class CollectionRequestService {
    */
   async addSocketIO(
     socketio: Partial<CollectionSocketIODto>,
+    user: DecodedUserObject,
   ): Promise<CollectionItem> {
-    const user = await this.contextService.get("user");
-    await this.workspaceService.IsWorkspaceAdminOrEditor(socketio.workspaceId);
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      socketio.workspaceId,
+      user._id,
+    );
     await this.checkPermission(socketio.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(socketio.collectionId);
     const uuid = uuidv4();
@@ -731,14 +759,18 @@ export class CollectionRequestService {
   async updateSocketIO(
     socketioId: string,
     socketio: Partial<CollectionSocketIODto>,
+    user: DecodedUserObject,
   ): Promise<CollectionRequestItem> {
-    await this.workspaceService.IsWorkspaceAdminOrEditor(socketio.workspaceId);
-    const user = await this.contextService.get("user");
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      socketio.workspaceId,
+      user._id,
+    );
     await this.checkPermission(socketio.workspaceId, user._id);
     const collection = await this.collectionReposistory.updateSocketIO(
       socketio.collectionId,
       socketioId,
       socketio,
+      user,
     );
     const collectionData = await this.collectionReposistory.getCollection(
       socketio.collectionId,
@@ -767,11 +799,12 @@ export class CollectionRequestService {
   async deleteSocketIO(
     socketioId: string,
     socketioDto: Partial<CollectionSocketIODto>,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       socketioDto.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.checkPermission(socketioDto.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(socketioDto.collectionId);
     const collectionData = await this.collectionReposistory.getCollection(
@@ -785,6 +818,7 @@ export class CollectionRequestService {
       socketioDto.collectionId,
       socketioId,
       noOfRequests,
+      user,
       socketioDto?.folderId,
     );
     const updateMessage = `Socket.IO "${socketioData?.name}" is deleted from "${collectionData?.name}" collection`;
@@ -808,9 +842,12 @@ export class CollectionRequestService {
    */
   async addGraphQL(
     graphql: Partial<CollectionGraphQLDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionItem> {
-    const user = await this.contextService.get("user");
-    await this.workspaceService.IsWorkspaceAdminOrEditor(graphql.workspaceId);
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      graphql.workspaceId,
+      user._id,
+    );
     await this.checkPermission(graphql.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(graphql.collectionId);
     const uuid = uuidv4();
@@ -890,14 +927,18 @@ export class CollectionRequestService {
   async updateGraphQL(
     graphqlId: string,
     graphql: Partial<CollectionGraphQLDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionRequestItem> {
-    await this.workspaceService.IsWorkspaceAdminOrEditor(graphql.workspaceId);
-    const user = await this.contextService.get("user");
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      graphql.workspaceId,
+      user._id,
+    );
     await this.checkPermission(graphql.workspaceId, user._id);
     const collection = await this.collectionReposistory.updateGraphQL(
       graphql.collectionId,
       graphqlId,
       graphql,
+      user,
     );
     const collectionData = await this.collectionReposistory.getCollection(
       graphql.collectionId,
@@ -926,11 +967,12 @@ export class CollectionRequestService {
   async deleteGraphQL(
     graphqlId: string,
     graphqlDto: Partial<CollectionGraphQLDto>,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       graphqlDto.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.checkPermission(graphqlDto.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(graphqlDto.collectionId);
     const collectionData = await this.collectionReposistory.getCollection(
@@ -944,6 +986,7 @@ export class CollectionRequestService {
       graphqlDto.collectionId,
       graphqlId,
       noOfRequests,
+      user,
       graphqlDto?.folderId,
     );
     const updateMessage = `GraphQL "${graphqlData?.name}" is deleted from "${collectionData?.name}" collection`;
@@ -967,10 +1010,11 @@ export class CollectionRequestService {
    */
   async addRequestResponse(
     requestResponse: Partial<CollectionRequestResponseDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionItem> {
-    const user = await this.contextService.get("user");
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       requestResponse.workspaceId,
+      user._id,
     );
     await this.checkPermission(requestResponse.workspaceId, user._id);
     const uuid = uuidv4();
@@ -1037,16 +1081,18 @@ export class CollectionRequestService {
   async updateRequestResponse(
     responseId: string,
     requestResponse: Partial<UpdateCollectionRequestResponseDto>,
+    user: DecodedUserObject,
   ): Promise<Partial<UpdateCollectionRequestResponseDto>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       requestResponse.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.checkPermission(requestResponse.workspaceId, user._id);
     const collection = await this.collectionReposistory.updateRequestResponse(
       requestResponse.collectionId,
       responseId,
       requestResponse,
+      user,
     );
     const collectionData = await this.collectionReposistory.getCollection(
       requestResponse.collectionId,
@@ -1080,11 +1126,12 @@ export class CollectionRequestService {
   async deleteRequestResponse(
     responseId: string,
     requestResponseDto: Partial<CollectionRequestResponseDto>,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       requestResponseDto.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.checkPermission(requestResponseDto.workspaceId, user._id);
     const collectionData = await this.collectionReposistory.getCollection(
       requestResponseDto.collectionId,
@@ -1097,6 +1144,7 @@ export class CollectionRequestService {
       requestResponseDto.collectionId,
       requestResponseDto.requestId,
       responseId,
+      user,
       requestResponseDto?.folderId,
     );
     const updateMessage = `Response "${requestResponseData?.name}" is deleted from "${collectionData?.name}" collection`;
@@ -1189,6 +1237,7 @@ export class CollectionRequestService {
     collectionId: string,
     requestId: string,
     request: Partial<CollectionRequestDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionRequestItem> {
     const collectionData =
       await this.collectionReposistory.getCollection(collectionId);
@@ -1200,6 +1249,7 @@ export class CollectionRequestService {
       collectionId,
       requestId,
       request,
+      user,
     );
 
     if (
@@ -1246,6 +1296,7 @@ export class CollectionRequestService {
     requestId: string,
     noOfRequests: number,
     requestDto: Partial<CollectionRequestDto>,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     const collectionData =
       await this.collectionReposistory.getCollection(collectionId);
@@ -1257,6 +1308,7 @@ export class CollectionRequestService {
       collectionId,
       requestId,
       noOfRequests,
+      user,
       requestDto?.folderId,
     );
 

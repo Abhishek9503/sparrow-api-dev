@@ -98,11 +98,12 @@ export class TestflowRepository {
   async update(
     id: string,
     updateTestflowDto: Partial<UpdateTestflowDto>,
+    userId: ObjectId,
   ): Promise<UpdateResult> {
     const testflowId = new ObjectId(id);
     const defaultParams = {
       updatedAt: new Date(),
-      updatedBy: this.contextService.get("user")._id.toString(),
+      updatedBy: userId.toString(),
     };
     const data = await this.db
       .collection(Collections.TESTFLOW)

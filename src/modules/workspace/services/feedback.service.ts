@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { InsertOneResult } from "mongodb";
+import { InsertOneResult, ObjectId } from "mongodb";
 import { MemoryStorageFile } from "@blazity/nest-file-fastify";
 
 // ---- Repository
@@ -84,6 +84,7 @@ export class FeedbackService {
   async addFeedback(
     feedback: AddFeedbackDto,
     files: MemoryStorageFile[],
+    userId: ObjectId,
   ): Promise<InsertOneResult<Feedback>> {
     // Validate the uploaded files
     await this.isFeedbackFilesValid(files);
@@ -97,7 +98,7 @@ export class FeedbackService {
     const uploadFeedbackParams = {
       ...feedback,
       files: uploadResults,
-      createdBy: this.contextService.get("user")._id,
+      createdBy: userId.toString(),
       createdAt: new Date(),
     };
 
