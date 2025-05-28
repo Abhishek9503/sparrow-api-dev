@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   Injectable,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { PlanService } from "@src/modules/identity/services/plan.service";
 import { TeamService } from "@src/modules/identity/services/team.service";
 import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";

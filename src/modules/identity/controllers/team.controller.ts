@@ -33,8 +33,8 @@ import {
 } from "@blazity/nest-file-fastify";
 import { UserService } from "../services/user.service";
 import { PlanService } from "../services/plan.service";
-import { CreateTeamGuard } from "@src/modules/common/guards/plan-limits/create-team-guard";
-import { HubInviteGuard } from "@src/modules/common/guards/plan-limits/hub-invite.guard";
+import { CreateTeamGuard } from "@src/modules/identity/guards/create-team-guard";
+import { HubInviteGuard } from "@src/modules/identity/guards/hub-invite.guard";
 /**
  * Team Controller
  */
