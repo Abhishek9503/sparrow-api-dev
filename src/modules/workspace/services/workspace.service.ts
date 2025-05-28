@@ -1332,4 +1332,32 @@ export class WorkspaceService {
       pageSize,
     );
   }
+
+  /**
+   * Searches public workspaces by name, team name, and description.
+   * @param searchTerm - The search term to match against workspace names, team names, and descriptions.
+   * @param page - The page number for pagination.
+   * @param pageSize - The number of results per page.
+   * @returns An object containing the list of workspaces and total count.
+   */
+  async searchPublicWorkspacesByName(
+    searchTerm: string,
+    page: string,
+    pageSize: number,
+  ): Promise<{ workspaces: WithId<Workspace>[]; total: number }> {
+    if (!searchTerm || searchTerm.trim().length === 0) {
+      throw new BadRequestException("Search term cannot be empty");
+    }
+
+    const pageNumber = parseInt(page, 10);
+    if (isNaN(pageNumber) || pageNumber < 1) {
+      throw new BadRequestException("Invalid page number");
+    }
+
+    return this.workspaceRepository.searchPublicWorkspacesByName(
+      searchTerm.trim(),
+      pageNumber,
+      pageSize,
+    );
+  }
 }

@@ -153,7 +153,11 @@ export class ChatBotPayload {
    */
   @IsString()
   @IsOptional()
-  @ApiProperty({ required: true, example: '[{"role": "user", "content": "Hello!"}, {"role": "assistant", "content": "Hi there! How can I help you?"}]' })
+  @ApiProperty({
+    required: true,
+    example:
+      '[{"role": "user", "content": "Hello!"}, {"role": "assistant", "content": "Hi there! How can I help you?"}]',
+  })
   conversation?: string;
 
   /**
@@ -219,6 +223,14 @@ export class ChatBotPayload {
   @IsOptional()
   @ApiProperty({ required: false, example: "0.0 to 1.0" })
   temperature?: number;
+
+  /**
+   * Top p.
+   */
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ required: false, example: "0.0 to 1.0" })
+  topP?: number;
 
   /**
    * Presence Penalty.

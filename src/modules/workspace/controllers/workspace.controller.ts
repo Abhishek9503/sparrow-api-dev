@@ -646,4 +646,50 @@ export class WorkSpaceController {
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  /**
+   * Searches public workspaces by name, team name, and description.
+   * @route GET /api/workspace/public/search?name=searchTerm&page=1
+   * @param name - The search query parameter
+   * @param page - The page number (query param, default 1)
+   * @returns Paginated list of public workspaces matching the search term
+   */
+  @Get("public-search")
+  @ApiOperation({
+    summary: "Search public workspaces by name, team name, and description",
+    description:
+      "Returns a paginated list of public workspaces that match the search term in name, team name, or description",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Public workspaces search completed successfully",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid search parameters",
+  })
+  async searchPublicWorkspaces(
+    @Query("name") searchTerm: string,
+    @Query("page") page: string = "1",
+    @Res() res: FastifyReply,
+  ) {
+    const pageSize = 9;
+    const { workspaces, total } =
+      await this.workspaceService.searchPublicWorkspacesByName(
+        searchTerm,
+        page,
+        pageSize,
+      );
+
+    const responseData = new ApiResponseService("Success", HttpStatusCode.OK, {
+      workspaces,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+      searchTerm,
+    });
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }
