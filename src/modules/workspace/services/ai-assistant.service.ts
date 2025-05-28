@@ -1225,7 +1225,7 @@ export class AiAssistantService {
               timeTaken: `${timeTaken}ms`,
               statusCode: error?.status || 500,
               event: "error",
-              message: error,
+              message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
             })
           );
         }
