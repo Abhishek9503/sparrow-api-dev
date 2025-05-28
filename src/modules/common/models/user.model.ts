@@ -130,10 +130,6 @@ export class User {
   @IsOptional()
   @IsDate()
   lastActive?: Date;
-
-  @IsDate()
-  @IsOptional()
-  joinedAt?: Date;
 }
 
 export class UserDto {
