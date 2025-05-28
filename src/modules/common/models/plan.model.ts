@@ -43,10 +43,19 @@ export class BlocksPerTestflow {
   value: number;
 }
 
+export class UsersPerHub {
+  area: LimitArea.HUB;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
 export class Limits {
   workspacesPerHub: WorkspaceLimit;
   testflowPerWorkspace: TestflowLimit;
   blocksPerTestflow: BlocksPerTestflow;
+  usersPerHub: UsersPerHub
 }
 
 export class Plan {

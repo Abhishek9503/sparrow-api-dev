@@ -40,6 +40,10 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.BLOCK,
               value: 5,
             },
+            usersPerHub:{
+              area: LimitArea.BLOCK,
+              value: 3,
+            }
           },
           createdAt: new Date(),
           updatedAt: new Date(),
