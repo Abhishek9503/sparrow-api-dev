@@ -105,6 +105,7 @@ export class UserRepository {
         password: createHmac("sha256", payload.password).digest("hex"),
         teams: [],
         workspaces: [],
+        joinedAt: new Date(),
       });
     const user = {
       _id: createdUser.insertedId,
