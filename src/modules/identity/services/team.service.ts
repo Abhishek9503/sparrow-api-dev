@@ -200,6 +200,8 @@ export class TeamService {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       logo: data.logo,
+      createdBy: data.createdBy,
+      updatedBy: data.updatedBy,
     };
   }
 

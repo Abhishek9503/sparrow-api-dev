@@ -108,7 +108,7 @@ export class TeamController {
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 
-  @Get("/public/:teamId")
+  @Get("public/:teamId")
   @ApiOperation({
     summary: "Retrieve Public Team Details",
     description: "This will retrieve Public team details",
