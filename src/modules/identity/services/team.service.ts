@@ -179,6 +179,30 @@ export class TeamService {
     return data;
   }
 
+   /**
+   * Fetches a public team from database by UUID
+   * @param {string} id
+   * @returns {Promise<Team>} queried team data
+   */
+  async getPublic(id: string): Promise<WithId<Team>> {
+    const data = await this.teamRepository.get(id);
+    const owner = data.users?.filter(user => user.role === "owner") || [];
+    return {
+      _id: data._id,
+      name: data.name,
+      description: data.description,
+      hubUrl: data.hubUrl,
+      linkedinUrl: data.linkedinUrl,
+      xUrl: data.xUrl,
+      githubUrl: data.githubUrl,
+      users: owner,
+      owner: data.owner, 
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      logo: data.logo,
+    };
+  }
+
   /**
    * Updates a team name
    * @param {string} id
