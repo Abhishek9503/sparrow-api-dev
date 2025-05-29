@@ -41,7 +41,7 @@ export class WorkspaceInviteGuard implements CanActivate {
       planData?.limits?.usersPerHub?.value
     ) {
       throw new ForbiddenException(
-        "Can't invite a new member, Plan limit reached for this team.",
+        "Plan limit reached",
       );
     }
     return true;

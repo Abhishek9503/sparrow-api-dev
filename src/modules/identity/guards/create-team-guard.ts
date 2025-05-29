@@ -32,7 +32,7 @@ export class CreateTeamGuard implements CanActivate {
       return false;
     });
     if (ownedTeams.length === communityPlansCount) { // if user has 'n' owned hub and all are community then throw error.
-      throw new ForbiddenException("Can't create new Hub, Plan limit reached.");
+      throw new ForbiddenException("Plan limit reached");
     }
     return true;
   }
