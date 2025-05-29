@@ -36,6 +36,7 @@ jobs:
            with:
               kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
+            
          - uses: Azure/k8s-deploy@v4
            with:
               action: deploy
