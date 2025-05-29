@@ -11,6 +11,7 @@ import {
   Res,
   UseGuards,
   UseInterceptors,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -1059,5 +1060,60 @@ export class collectionController {
     );
 
     return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Post(":collectionId/workspace/:workspaceId/create-mock")
+  @ApiOperation({
+    summary: "Create Mock Collection from Existing Collection",
+    description:
+      "This will create a mock collection based on an existing collection, converting all requests to mock requests with their most recent responses",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 201,
+    description: "Mock Collection Created Successfully",
+  })
+  @ApiResponse({ status: 400, description: "Failed to create mock collection" })
+  @ApiResponse({ status: 404, description: "Original collection not found" })
+  async createMockCollectionFromExisting(
+    @Param("collectionId") collectionId: string,
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+  ) {
+    try {
+      const mockCollection =
+        await this.collectionService.createMockCollectionFromExisting(
+          collectionId,
+          workspaceId,
+        );
+
+      const createdCollection = await this.collectionService.getCollection(
+        mockCollection.insertedId.toString(),
+      );
+
+      const responseData = new ApiResponseService(
+        "Mock Collection Created Successfully",
+        HttpStatusCode.CREATED,
+        createdCollection,
+      );
+
+      return res.status(responseData.httpStatusCode).send(responseData);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        const responseData = new ApiResponseService(
+          error.message,
+          HttpStatusCode.BAD_REQUEST,
+          null,
+        );
+        return res.status(responseData.httpStatusCode).send(responseData);
+      }
+
+      const responseData = new ApiResponseService(
+        "Failed to create mock collection",
+        HttpStatusCode.INTERNAL_SERVER_ERROR,
+        null,
+      );
+      return res.status(responseData.httpStatusCode).send(responseData);
+    }
   }
 }
