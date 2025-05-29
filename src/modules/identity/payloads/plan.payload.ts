@@ -4,7 +4,7 @@ import {
   IsMongoId,
   isNotEmpty,
   IsNotEmpty,
-  isObject,
+  IsObject,
   IsOptional,
   IsString,
 } from "class-validator";
@@ -21,20 +21,20 @@ export class CreateOrUpdatePlanDto {
 
 
   @IsBoolean()
-  @isNotEmpty()
+  @IsNotEmpty()
   active: boolean;
 
-  @isObject()
-  @isNotEmpty()
+  @IsObject()
+  @IsNotEmpty()
   limits: Limits;
 }
 
 export class PlanDto {
   @IsMongoId()
-  @isNotEmpty()
+  @IsNotEmpty()
   id: ObjectId;
 
   @IsString()
-  @isNotEmpty()
+  @IsNotEmpty()
   name: string;
 }
