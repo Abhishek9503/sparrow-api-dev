@@ -1046,12 +1046,13 @@ export class AiAssistantService {
         if (client.readyState === WebSocket.OPEN) {
             const endTime = performance.now();
             const timeTaken = Math.round(endTime - startTime);
+            const message = (error.message.match(/"message":"([^"]+)"/) || [])[1] || "Some Issue Occurred in Processing your Request. Please try again";
           client.send(
             JSON.stringify({
               timeTaken: `${timeTaken}ms`,
-              statusCode: error?.status || 500,
+              statusCode: error?.status || error?.error?.code || 500,
               event: "error",
-              message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
+              message: message
             })
           );
         }
@@ -1225,7 +1226,7 @@ export class AiAssistantService {
               timeTaken: `${timeTaken}ms`,
               statusCode: error?.status || 500,
               event: "error",
-              message: error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
+              message: error?.error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
             })
           );
         }
