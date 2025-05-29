@@ -66,4 +66,16 @@ export class PlanRepository {
       .toArray();
     return plans;
   }
+
+  async getPlansByIds(ids: string[]): Promise<WithId<Plan>[]> {
+    const objectIds = ids.map((id) => new ObjectId(id));
+    const plans = await this.db
+      .collection<Plan>(Collections.PLAN)
+      .find({ _id: { $in: objectIds } })
+      .toArray();
+    if (!plans || plans.length === 0) {
+      throw new NotFoundException("No matching plans found.");
+    }
+    return plans;
+  }
 }

@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Res, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Res,
+  Body,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FastifyReply } from "fastify";
 import { ApiResponseService } from "@src/modules/common/services/api-response.service";
@@ -85,5 +93,26 @@ export class PlanController {
       data,
     );
     res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Post("details")
+  @ApiOperation({
+    summary: "Retrieve Multiple Plan Details",
+    description: "This will retrieve plan details for given plan IDs",
+  })
+  @ApiResponse({ status: 200, description: "Fetched Plan Details" })
+  @ApiResponse({ status: 404, description: "Not Found Plan Details." })
+  @ApiResponse({ status: 400, description: "Invalid Request" })
+  async getPlans(
+    @Body() body: { planIds: string[] },
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.planService.getPlansByIds(body.planIds);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
   }
 }

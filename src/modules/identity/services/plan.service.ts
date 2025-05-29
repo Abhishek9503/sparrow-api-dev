@@ -42,4 +42,14 @@ export class PlanService {
     const data = await this.planRepository.getPlans();
     return data;
   }
+
+  /**
+   * Fetches a plans from database by UUID
+   * @param  ids[]
+   * @returns queried plan data
+   */
+  async getPlansByIds(ids: string[]): Promise<WithId<Plan>[]> {
+    const data = await this.planRepository.getPlansByIds(ids);
+    return data;
+  }
 }
