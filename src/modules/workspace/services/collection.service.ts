@@ -645,9 +645,7 @@ export class CollectionService {
       collectionType: CollectionTypeEnum.MOCK,
       totalRequests: this.countValidRequests(mockItems),
       createdBy: originalCollection.createdBy,
-      selectedAuthType:
-        originalCollection.selectedAuthType ||
-        CollectionAuthModeEnum["No Auth"],
+      selectedAuthType: CollectionAuthModeEnum["No Auth"],
       items: mockItems,
       updatedBy: { name: originalCollection.createdBy },
       createdAt: new Date(),
