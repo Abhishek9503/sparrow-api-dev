@@ -1080,40 +1080,22 @@ export class collectionController {
     @Param("workspaceId") workspaceId: string,
     @Res() res: FastifyReply,
   ) {
-    try {
-      const mockCollection =
-        await this.collectionService.createMockCollectionFromExisting(
-          collectionId,
-          workspaceId,
-        );
-
-      const createdCollection = await this.collectionService.getCollection(
-        mockCollection.insertedId.toString(),
+    const mockCollection =
+      await this.collectionService.createMockCollectionFromExisting(
+        collectionId,
+        workspaceId,
       );
 
-      const responseData = new ApiResponseService(
-        "Mock Collection Created Successfully",
-        HttpStatusCode.CREATED,
-        createdCollection,
-      );
+    const createdCollection = await this.collectionService.getCollection(
+      mockCollection.insertedId.toString(),
+    );
 
-      return res.status(responseData.httpStatusCode).send(responseData);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        const responseData = new ApiResponseService(
-          error.message,
-          HttpStatusCode.BAD_REQUEST,
-          null,
-        );
-        return res.status(responseData.httpStatusCode).send(responseData);
-      }
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.CREATED,
+      createdCollection,
+    );
 
-      const responseData = new ApiResponseService(
-        "Failed to create mock collection",
-        HttpStatusCode.INTERNAL_SERVER_ERROR,
-        null,
-      );
-      return res.status(responseData.httpStatusCode).send(responseData);
-    }
+    return res.status(responseData.httpStatusCode).send(responseData);
   }
 }
