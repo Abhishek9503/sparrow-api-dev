@@ -10,6 +10,7 @@ import { WorkspaceService } from "@src/modules/workspace/services/workspace.serv
 import { AdminUpdatesRepository } from "../repositories/user-admin.updates.repository";
 import { ObjectId } from "mongodb";
 import { AdminMembersRepository } from "../repositories/user-admin.members.repository";
+import { TeamRole } from "@src/modules/common/enum/roles.enum";
 
 @Injectable()
 export class AdminUsersService {
@@ -185,33 +186,81 @@ export class AdminUsersService {
 
       if (!teams || teams.length === 0) {
         return {
-          users: { total: 0, changeFromLastMonth: 0 },
+          users: {
+            total: 0,
+            changeFromLastMonth: 0,
+            admins: 0,
+            members: 0,
+          },
           hubs: { total: 0, changeFromLastMonth: 0 },
           invites: { total: 0, changeFromLastMonth: 0 },
         };
       }
 
-      // Count totals and changes
+      // Count hubs
       const totalHubs = teams.length;
       const newHubs = teams.filter(
         (team) =>
           team.createdAt && new Date(team.createdAt) >= firstDayThisMonth,
       ).length;
 
-      // Count users per hub (if a user appears in multiple hubs, count them multiple times)
-      let totalUsers = 0;
-      let newUsers = 0;
+      // Track unique users by their highest role - similar to graph functions
+      const userHighestRoleMap = new Map<
+        string,
+        TeamRole.ADMIN | TeamRole.MEMBER
+      >();
+      const newUserHighestRoleMap = new Map<
+        string,
+        TeamRole.ADMIN | TeamRole.MEMBER
+      >();
       let totalInvites = 0;
       let newInvites = 0;
 
       teams.forEach((team) => {
-        // Count users in each hub
+        // Process users
         (team.users || []).forEach((user: any) => {
-          totalUsers++;
+          const userId = user.id.toString();
+          const role =
+            user.role === TeamRole.OWNER || user.role === TeamRole.ADMIN
+              ? TeamRole.ADMIN
+              : TeamRole.MEMBER;
 
-          // Check if user joined this month
+          // Track user's highest role across all teams
+          if (!userHighestRoleMap.has(userId)) {
+            userHighestRoleMap.set(userId, role);
+          } else if (
+            userHighestRoleMap.get(userId) === TeamRole.MEMBER &&
+            role === TeamRole.ADMIN
+          ) {
+            // Upgrade role to admin if previously marked as member
+            userHighestRoleMap.set(userId, TeamRole.ADMIN);
+          }
+
+          // Check if this user is new this month - special handling for owners
+          let isNewThisMonth = false;
+
           if (user.joinedAt && new Date(user.joinedAt) >= firstDayThisMonth) {
-            newUsers++;
+            // Regular users with joinedAt date
+            isNewThisMonth = true;
+          } else if (
+            user.role === TeamRole.OWNER &&
+            team.createdAt &&
+            new Date(team.createdAt) >= firstDayThisMonth
+          ) {
+            // Team owners of newly created teams
+            isNewThisMonth = true;
+          }
+
+          if (isNewThisMonth) {
+            if (!newUserHighestRoleMap.has(userId)) {
+              newUserHighestRoleMap.set(userId, role);
+            } else if (
+              newUserHighestRoleMap.get(userId) === TeamRole.MEMBER &&
+              role === TeamRole.ADMIN
+            ) {
+              // Upgrade role to admin if previously marked as member
+              newUserHighestRoleMap.set(userId, TeamRole.ADMIN);
+            }
           }
         });
 
@@ -226,10 +275,38 @@ export class AdminUsersService {
         ).length;
       });
 
+      // Count users by role
+      let adminCount = 0;
+      let memberCount = 0;
+      let newAdminCount = 0;
+      let newMemberCount = 0;
+
+      userHighestRoleMap.forEach((role) => {
+        if (role === TeamRole.ADMIN) {
+          adminCount++;
+        } else {
+          memberCount++;
+        }
+      });
+
+      newUserHighestRoleMap.forEach((role) => {
+        if (role === TeamRole.ADMIN) {
+          newAdminCount++;
+        } else {
+          newMemberCount++;
+        }
+      });
+
+      // Calculate totals (consistent with graph functions)
+      const totalUsers = adminCount + memberCount;
+      const newUsers = newAdminCount + newMemberCount;
+
       return {
         users: {
           total: totalUsers,
           changeFromLastMonth: newUsers,
+          admins: adminCount,
+          members: memberCount,
         },
         hubs: {
           total: totalHubs,
@@ -247,7 +324,6 @@ export class AdminUsersService {
       );
     }
   }
-
   /**
    * Get activity records for all users in the admin's teams
    */
@@ -402,35 +478,58 @@ export class AdminUsersService {
       throw new NotFoundException("No teams found for this user");
     }
 
-    // Count user roles per hub - if a user appears in multiple hubs, count them multiple times
-    let adminCount = 0;
-    let memberCount = 0;
+    // Track unique users by their highest role
+    const userHighestRoleMap = new Map<
+      string,
+      TeamRole.ADMIN | TeamRole.MEMBER
+    >();
 
-    // Count each user in each hub
+    // First pass: determine each user's highest role
     for (const hub of teams.data) {
       for (const user of hub.users) {
+        const userId = user.id.toString();
         const role =
-          user.role === "owner" || user.role === "admin" ? "admin" : "member";
+          user.role === TeamRole.OWNER || user.role === TeamRole.ADMIN
+            ? TeamRole.ADMIN
+            : TeamRole.MEMBER;
 
-        if (role === "admin") {
-          adminCount++;
-        } else {
-          memberCount++;
+        if (!userHighestRoleMap.has(userId)) {
+          userHighestRoleMap.set(userId, role);
+        } else if (
+          userHighestRoleMap.get(userId) === TeamRole.MEMBER &&
+          role === TeamRole.ADMIN
+        ) {
+          // Upgrade role to admin if previously marked as member
+          userHighestRoleMap.set(userId, TeamRole.ADMIN);
         }
       }
     }
 
-    // Format for pie chart with percentages
+    // Count unique users by role
+    let adminCount = 0;
+    let memberCount = 0;
+
+    userHighestRoleMap.forEach((role) => {
+      if (role === TeamRole.ADMIN) {
+        adminCount++;
+      } else {
+        memberCount++;
+      }
+    });
+
+    // Format for pie chart
     return [
       {
         label: "Admin",
         value: adminCount,
         color: "#2B9ACA",
+        uniqueUsers: true,
       },
       {
         label: "Members",
         value: memberCount,
         color: "#CA2689",
+        uniqueUsers: true,
       },
     ];
   }
@@ -455,7 +554,7 @@ export class AdminUsersService {
       for (let i = 11; i >= 1; i--) {
         const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
         datePoints.push({
-          date: month.toISOString().slice(0, 10), // Format as YYYY-MM-DD
+          date: month.toISOString().slice(0, 10),
           month: month,
         });
       }
@@ -473,7 +572,7 @@ export class AdminUsersService {
         month: now,
       });
 
-      // Initialize result structure with two series (Admin and Member)
+      // Initialize result structure with two series
       const adminSeries = {
         name: "Admin",
         color: "#30A5D6",
@@ -492,16 +591,13 @@ export class AdminUsersService {
         })),
       };
 
-      // Rest of the function remains the same...
+      // For each date point, count unique users who had joined by that date
       datePoints.forEach((dp, index) => {
-        // existing logic for counting users at each date point
-        let adminCount = 0;
-        let memberCount = 0;
+        // Track unique users by ID and role
+        const userRoleMap = new Map<string, TeamRole.ADMIN | TeamRole.MEMBER>();
 
         // Loop through each team
         for (const team of teams.data) {
-          // existing team counting logic...
-
           // Get team creation date
           const teamCreatedAt = team.createdAt
             ? new Date(team.createdAt)
@@ -512,10 +608,8 @@ export class AdminUsersService {
             continue;
           }
 
-          // Count users in this team/hub
+          // Track unique users in this team/hub as of this date
           for (const user of team.users || []) {
-            // existing user counting logic...
-
             // Get user join date (default to team creation if not specified)
             const userJoinedAt = user.joinedAt
               ? new Date(user.joinedAt)
@@ -523,19 +617,36 @@ export class AdminUsersService {
 
             // Only count users who had joined by this date point
             if (userJoinedAt && userJoinedAt <= dp.month) {
+              const userId = user.id.toString();
               const role =
-                user.role === "owner" || user.role === "admin"
-                  ? "admin"
-                  : "member";
+                user.role === TeamRole.OWNER || user.role === TeamRole.ADMIN
+                  ? TeamRole.ADMIN
+                  : TeamRole.MEMBER;
 
-              if (role === "admin") {
-                adminCount++;
-              } else {
-                memberCount++;
+              if (!userRoleMap.has(userId)) {
+                userRoleMap.set(userId, role);
+              } else if (
+                userRoleMap.get(userId) === TeamRole.MEMBER &&
+                role === TeamRole.ADMIN
+              ) {
+                // Upgrade to admin if previously marked as member
+                userRoleMap.set(userId, TeamRole.ADMIN);
               }
             }
           }
         }
+
+        // Count unique users by role
+        let adminCount = 0;
+        let memberCount = 0;
+
+        userRoleMap.forEach((role) => {
+          if (role === TeamRole.ADMIN) {
+            adminCount++;
+          } else {
+            memberCount++;
+          }
+        });
 
         // Update the series data
         adminSeries.data[index].value = adminCount;
