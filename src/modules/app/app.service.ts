@@ -130,14 +130,13 @@ export class AppService {
   async parseCurl(req: string): Promise<TransformedRequest> {
     try {
       const curlconverter = await this.importCurlConverter();
-      const { toJsonString } = curlconverter;
+      const { toJsonObject } = curlconverter;
       const curl = req as string;
       const updatedCurl = await this.formatCurl(curl);
       if (!curl || !curl.length) {
         throw new Error();
       }
-      const stringifiedCurl = toJsonString(updatedCurl);
-      const parsedCurl = JSON.parse(stringifiedCurl);
+      const parsedCurl = toJsonObject(updatedCurl);
 
       // Fallback: Manually extracting query params, in case "curlConverter" isn't able to process query params
       if (!parsedCurl.queries || parsedCurl.url.includes("?")) {
@@ -200,7 +199,7 @@ export class AppService {
     ) {
       method = "INVALID";
     }
-    const url = await this.handleFormatUrl(requestObject.url);
+    const url = await this.handleFormatUrl(requestObject.raw_url);
     const transformedObject: TransformedRequest = {
       name: url || "",
       description: "",
@@ -240,11 +239,16 @@ export class AppService {
       updatedAt: new Date(),
     };
 
-    // Handle URL with query parameters
-    if (requestObject.queries) {
-      const queryParams = [];
-      for (const [key, value] of Object.entries(requestObject.queries)) {
+    // Extract the query parameter from the URL
+    const queryString = url.split("?")[1];
+    const queryParams = [];
+    if (queryString) {
+      const pairs = queryString.split("&");
+      for (const pair of pairs) {
+        const [key, rawValue] = pair.split("=");
+        const value = rawValue || "";
         queryParams.push({ key, value, checked: true });
+
         if (
           key.toLowerCase() === "api-key" ||
           key.toLowerCase() === "x-api-key"
@@ -258,8 +262,10 @@ export class AppService {
             AuthModeEnum["API Key"];
         }
       }
-      transformedObject.request.url = url;
+      queryParams.push({ key: "", value: "", checked: false });
+
       transformedObject.request.queryParams = queryParams;
+      transformedObject.request.url = url;
     }
     let isFormData = false;
 
@@ -441,7 +447,9 @@ export class AppService {
     // Handle headers and populate auth details
     if (requestObject.headers) {
       for (const [key, value] of Object.entries(requestObject.headers)) {
-        if (!(isFormData && (key === "Content-Type" || key === "content-type"))) {
+        if (
+          !(isFormData && (key === "Content-Type" || key === "content-type"))
+        ) {
           transformedObject.request.headers.push({ key, value, checked: true });
         }
 
