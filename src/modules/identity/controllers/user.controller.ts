@@ -59,13 +59,8 @@ export class UserController {
   @ApiResponse({ status: 201, description: "Registration Completed" })
   @ApiResponse({ status: 400, description: "Bad Request" })
   @ApiResponse({ status: 401, description: "Unauthorized" })
-  async register(
-    @Body() payload: RegisterPayload,
-    @Res() res: FastifyReply,
-    @Req() request: ExtendedFastifyRequest,
-  ) {
-    const user = request.user;
-    const data = await this.userService.createUser(payload, user);
+  async register(@Body() payload: RegisterPayload, @Res() res: FastifyReply) {
+    const data = await this.userService.createUser(payload);
     const responseData = new ApiResponseService(
       "User Created",
       HttpStatusCode.CREATED,

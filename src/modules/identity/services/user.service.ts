@@ -106,7 +106,7 @@ export class UserService {
    * @param {RegisterPayload} payload user payload
    * @returns {Promise<IUser>} created user data
    */
-  async createUser(payload: RegisterPayload, user: DecodedUserObject) {
+  async createUser(payload: RegisterPayload) {
     payload.email = payload.email.toLowerCase();
     const userExist = await this.getUserByEmail(payload.email);
     if (userExist) {
@@ -114,7 +114,14 @@ export class UserService {
         "The account with the provided email currently exists. Please choose another one.",
       );
     }
-    await this.userRepository.createUser(payload);
+    const user = await this.userRepository.createUser(payload);
+
+    const userData = {
+      _id: user.insertedId,
+      name: payload.name,
+      email: payload.email,
+      role: "",
+    };
 
     const data = {
       isUserCreated: true,
@@ -125,7 +132,7 @@ export class UserService {
       name: firstName + this.configService.get("app.defaultTeamNameSuffix"),
       firstTeam: true,
     };
-    await this.teamService.create(teamName, user);
+    await this.teamService.create(teamName, userData);
     // Disabling the welcome email due to hubspot integration
     // await this.sendSignUpEmail(firstName, payload.email);
     await this.sendUserVerificationEmail({ email: payload.email });
