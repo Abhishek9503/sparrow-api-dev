@@ -138,11 +138,6 @@ export class AppService {
       }
       const parsedCurl = toJsonObject(updatedCurl);
 
-      // Fallback: Manually extracting query params, in case "curlConverter" isn't able to process query params
-      if (!parsedCurl.queries || parsedCurl.url.includes("?")) {
-        parsedCurl.queries = this.extractQueryParamsFromUrl(parsedCurl.url);
-      }
-
       // Match all -F flags with their key-value pairs
       const formDataMatches = curl.match(/-F\s+'([^=]+)=@([^;]+)/g);
       const formDataItems = formDataMatches
