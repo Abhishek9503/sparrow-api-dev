@@ -30,7 +30,7 @@ import { UpdateBranchDto } from "../payloads/branch.payload";
 import { Branch } from "@src/modules/common/models/branch.model";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { UpdatesType } from "@src/modules/common/enum/updates.enum";
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 import { DecodedUserObject } from "@src/types/fastify";
 @Injectable()
 export class CollectionRequestService {

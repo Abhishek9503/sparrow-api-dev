@@ -29,7 +29,7 @@ import {
   WorkspaceType,
 } from "@src/modules/common/models/workspace.model";
 import { WorkspaceRole } from "@src/modules/common/enum/roles.enum";
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { UpdatesType } from "@src/modules/common/enum/updates.enum";
 import { DecodedUserObject } from "@src/types/fastify";

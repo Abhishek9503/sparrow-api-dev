@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { Db, InsertOneResult, ObjectId } from "mongodb";
+import { Db, InsertOneResult } from "mongodb";
 
 // ---- Enum
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
@@ -25,11 +25,10 @@ export class AiLogRepository {
   async addLogs(
     payload: AiLogs,
     userId?: string,
-    currentUserId?: ObjectId,
   ): Promise<InsertOneResult<Document>> {
     const defaultParams = {
       createdAt: new Date(),
-      createdBy: currentUserId.toString() ?? userId,
+      createdBy: userId,
     };
 
     const data = await this.db
