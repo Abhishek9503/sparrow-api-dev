@@ -130,13 +130,14 @@ export class AppService {
   async parseCurl(req: string): Promise<TransformedRequest> {
     try {
       const curlconverter = await this.importCurlConverter();
-      const { toJsonObject } = curlconverter;
+      const { toJsonString } = curlconverter;
       const curl = req as string;
       const updatedCurl = await this.formatCurl(curl);
       if (!curl || !curl.length) {
         throw new Error();
       }
-      const parsedCurl = toJsonObject(updatedCurl);
+      const stringifiedCurl = toJsonString(updatedCurl);
+      const parsedCurl = JSON.parse(stringifiedCurl);
 
       // Match all -F flags with their key-value pairs
       const formDataMatches = curl.match(/-F\s+'([^=]+)=@([^;]+)/g);
