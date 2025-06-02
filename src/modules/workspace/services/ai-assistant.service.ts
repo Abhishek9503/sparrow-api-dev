@@ -911,19 +911,20 @@ export class AiAssistantService {
       parsedHistory = []; // fall back to empty history
     }
 
-    try {
-      // Handle streaming response
-      if (streamResponse === true) {
-        const requestPayload: any = {
-          model: modelVersion,
-          config: {
-            systemInstruction: systemPrompt,
-            maxOutputTokens: maxTokens,
-            temperature: temperature,
-            topP: topP,
-            ...(jsonResponseFormat && { responseMimeType: "application/json" }),
-          },
-        };
+      try {        
+
+        // Handle streaming response
+        if (streamResponse === true) {
+          const requestPayload: any = {
+            model: modelVersion,
+            config: {
+              systemInstruction: systemPrompt,
+              maxOutputTokens: maxTokens,
+              temperature: temperature,
+              topP: topP,
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
+            }
+          };
 
         if (conversation) {
           try {
@@ -953,35 +954,36 @@ export class AiAssistantService {
           );
         }
 
-        // Process stream chunks
-        for await (const event of response1) {
-          if (client.readyState !== WebSocket.OPEN) break;
+          // Process stream chunks
+          for await (const event of response1) {
+            if (client.readyState !== WebSocket.OPEN) break;
+            
+            const choice = event.text;
+            
+            // Send content chunk if it exists
+              client.send(
+                JSON.stringify({
+                  messages: choice,
+                  stream_status: "streaming"
+                })
+              );
+          }
+            
+          const TokensResponse = await GoogleClient.models.generateContent({
+            config: {
+              systemInstruction: systemPrompt,
+              maxOutputTokens: maxTokens,
+              temperature: temperature,
+              topP: topP,
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
+            },
+            model: modelVersion,
+            contents: conversation || userInput,
+          });
 
-          const choice = event.text;
-
-          // Send content chunk if it exists
-          client.send(
-            JSON.stringify({
-              messages: choice,
-              stream_status: "streaming",
-            }),
-          );
-        }
-
-        const TokensResponse = await GoogleClient.models.generateContent({
-          config: {
-            systemInstruction: systemPrompt,
-            maxOutputTokens: maxTokens,
-            temperature: temperature,
-            topP: topP,
-            ...(jsonResponseFormat && { responseMimeType: "application/json" }),
-          },
-          model: modelVersion,
-          contents: conversation || userInput,
-        });
-
-        const endTime = performance.now();
-        const timeTaken = Math.round(endTime - startTime);
+        
+          const endTime = performance.now();
+          const timeTaken = Math.round(endTime - startTime);
 
         client.send(
           JSON.stringify({
@@ -996,18 +998,18 @@ export class AiAssistantService {
         );
       }
 
-      // Handle non-streaming response
-      else {
-        const requestPayload: any = {
-          model: modelVersion,
-          config: {
-            systemInstruction: systemPrompt,
-            maxOutputTokens: maxTokens > 0 ? maxTokens : 1024,
-            temperature: temperature,
-            topP: topP,
-            ...(jsonResponseFormat && { responseMimeType: "application/json" }),
-          },
-        };
+        // Handle non-streaming response
+        else {
+          const requestPayload: any = {
+            model: modelVersion,
+            config: {
+              systemInstruction: systemPrompt,
+              maxOutputTokens: maxTokens > 0 ? maxTokens : 1024,
+              temperature: temperature,
+              topP: topP,
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
+            }
+          };
 
         if (conversation) {
           try {
@@ -1025,17 +1027,18 @@ export class AiAssistantService {
         const response = await GoogleClient.chats.create(requestPayload);
         const response1 = await response.sendMessage({ message: userInput });
 
-        const TokensResponse = await GoogleClient.models.generateContent({
-          config: {
-            systemInstruction: systemPrompt,
-            maxOutputTokens: maxTokens,
-            temperature: temperature,
-            topP: topP,
-            ...(jsonResponseFormat && { responseMimeType: "application/json" }),
-          },
-          model: modelVersion,
-          contents: conversation || userInput,
-        });
+          const TokensResponse = await GoogleClient.models.generateContent({
+            config: {
+              systemInstruction: systemPrompt,
+              maxOutputTokens: maxTokens,
+              temperature: temperature,
+              topP: topP,
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
+            },
+            model: modelVersion,
+            contents: conversation || userInput,
+          });
+
 
         // Signal stream start
         if (client.readyState === WebSocket.OPEN) {
@@ -1241,32 +1244,27 @@ export class AiAssistantService {
               this.formatResponse(
                 response.usage?.input_tokens || 0,
                 response.usage?.output_tokens || 0,
-                response.usage?.input_tokens + response.usage?.output_tokens ||
-                  0,
-                startTime,
-              ),
-            ),
+                response.usage?.input_tokens + response.usage?.output_tokens || 0,
+                startTime
+              ))
+            );
+          }
+        }
+      } catch (error: any) {
+        if (client.readyState === WebSocket.OPEN) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
+          client.send(
+            JSON.stringify({
+              timeTaken: `${timeTaken}ms`,
+              statusCode: error?.status || 500,
+              event: "error",
+              message: error?.message || error?.error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
+            })
           );
         }
       }
-    } catch (error: any) {
-      if (client.readyState === WebSocket.OPEN) {
-        const endTime = performance.now();
-        const timeTaken = Math.round(endTime - startTime);
-        client.send(
-          JSON.stringify({
-            timeTaken: `${timeTaken}ms`,
-            statusCode: error?.status || 500,
-            event: "error",
-            message:
-              error?.message ||
-              error?.error?.error?.message ||
-              "Some Issue Occurred in Processing your Request. Please try again",
-          }),
-        );
-      }
     }
-  }
 
   /**
    * Processes LLM requests through DeepSeek API
@@ -1426,85 +1424,81 @@ export class AiAssistantService {
                 response.usage?.prompt_tokens || 0,
                 response.usage?.completion_tokens || 0,
                 response.usage?.total_tokens || 0,
-                startTime,
-              ),
-            ),
+                startTime
+              ))
+            );
+          }
+        }
+      } catch (error: any) {
+        if (client.readyState === WebSocket.OPEN) {
+            const endTime = performance.now();
+            const timeTaken = Math.round(endTime - startTime);
+          client.send(
+            JSON.stringify({
+              timeTaken: `${timeTaken}ms`,
+              statusCode: error?.status || 500,
+              event: "error",
+              message: error?.message || error?.error?.message || "Some Issue Occurred in Processing your Request. Please try again",
+            })
           );
         }
       }
-    } catch (error: any) {
-      if (client.readyState === WebSocket.OPEN) {
-        const endTime = performance.now();
-        const timeTaken = Math.round(endTime - startTime);
-        client.send(
-          JSON.stringify({
-            timeTaken: `${timeTaken}ms`,
-            statusCode: error?.status || 500,
-            event: "error",
-            message:
-              error?.message ||
-              error?.error?.message ||
-              "Some Issue Occurred in Processing your Request. Please try again",
-          }),
-        );
-      }
     }
-  }
+  
+    /**
+     * Processes LLM requests through OpenAI API
+     */
+    private async openaiLLMService(
+      client: WebSocket,
+      OpenAIclient: OpenAI | null,
+      modelVersion: string,
+      systemPrompt: string,
+      userInput: string,
+      streamResponse: boolean,
+      jsonResponseFormat: boolean,
+      temperature: number,
+      presencePenalty: number,
+      frequencePenalty: number,
+      maxTokens: number,
+    ): Promise<void> {
+      // Return early if OpenAI client creation failed
+      if (!OpenAIclient) return;
+  
+      const startTime = performance.now();
+      
+      // Message format for OpenAI API
+      // const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+      //   { role: "system", content: systemPrompt },
+      //   { role: "user", content: userInput },
+      // ];
+      
+      // Message for Contextual Chatbot 
+      type ChatMessage = {
+        role: Roles.system | Roles.user | Roles.assistant;
+        content: string;
+      };
 
-  /**
-   * Processes LLM requests through OpenAI API
-   */
-  private async openaiLLMService(
-    client: WebSocket,
-    OpenAIclient: OpenAI | null,
-    modelVersion: string,
-    systemPrompt: string,
-    userInput: string,
-    streamResponse: boolean,
-    jsonResponseFormat: boolean,
-    temperature: number,
-    presencePenalty: number,
-    frequencePenalty: number,
-    maxTokens: number,
-  ): Promise<void> {
-    // Return early if OpenAI client creation failed
-    if (!OpenAIclient) return;
+      let messages: ChatMessage[];
 
-    const startTime = performance.now();
+      if (modelVersion !== OpenAIModelVersion.GPT_o1_Mini) {
 
-    // Message format for OpenAI API
-    // const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
-    //   { role: "system", content: systemPrompt },
-    //   { role: "user", content: userInput },
-    // ];
 
-    // Message for Contextual Chatbot
-    type ChatMessage = {
-      role: Roles.system | Roles.user | Roles.assistant;
-      content: string;
-    };
-
-    let messages: ChatMessage[];
-
-    if (modelVersion !== OpenAIModelVersion.GPT_o1_Mini) {
-      if (typeof userInput === "string") {
-        try {
-          messages = JSON.parse(userInput) as ChatMessage[];
-        } catch (err) {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify({
+        if (typeof userInput === 'string') {
+          try {
+            messages = JSON.parse(userInput) as ChatMessage[];
+          } catch (err) {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
                 statusCode: 400,
                 event: "error",
-                message: "Invalid JSON format for userInput.",
-              }),
-            );
+                message: "Invalid JSON format for userInput."
+              }));
+            }
+            return;
           }
-          return;
+        } else {
+          messages = userInput as ChatMessage[];
         }
-      } else {
-        messages = userInput as ChatMessage[];
-      }
     }
 
     const o1miniMessage: { role: "system" | "user"; content: string }[] = [
