@@ -1119,7 +1119,7 @@ export class AiAssistantService {
             model: modelVersion,
             temperature: temperature,
             top_p: topP,
-            max_tokens: maxTokens > 0 ? maxTokens : 1024,
+            max_tokens: maxTokens > -1 ? maxTokens : 1024,
             stream: true
           });
           
@@ -1180,7 +1180,7 @@ export class AiAssistantService {
             messages: messages,
             temperature: temperature,
             top_p: topP,
-            max_tokens: maxTokens > 0 ? maxTokens : 1024
+            max_tokens: maxTokens > -1 ? maxTokens : 1024
 
           });
 
@@ -1294,8 +1294,8 @@ export class AiAssistantService {
             temperature: temperature,
             presence_penalty: presencePenalty,
             frequency_penalty: frequencePenalty,
-            ...(maxTokens > 1 && { max_tokens: maxTokens }),
-            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+            ...(maxTokens > -1 && { max_tokens: maxTokens }),
+            response_format: {type: jsonResponseFormat ? "json_object" : "text"},
             stream: true,
             stream_options: { include_usage: true }
           });
@@ -1353,8 +1353,8 @@ export class AiAssistantService {
             temperature: temperature,
             presence_penalty: presencePenalty,
             frequency_penalty: frequencePenalty,
-            ...(maxTokens > 1 && { max_tokens: maxTokens }),
-            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+            ...(maxTokens > -1 && { max_tokens: maxTokens }),
+            response_format: {type: jsonResponseFormat ? "json_object" : "text"},
           });
 
           // Signal stream start
@@ -1512,8 +1512,8 @@ export class AiAssistantService {
               presence_penalty: presencePenalty,
               frequency_penalty: frequencePenalty,
             }),
-            ...(maxTokens > 1 && { max_tokens: maxTokens }),
-            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+            ...(maxTokens > -1 && { max_tokens: maxTokens }),
+            response_format: {type: jsonResponseFormat ? "json_object" : "text"},
             stream: true,
             stream_options: { include_usage: true }
           });
@@ -1571,8 +1571,8 @@ export class AiAssistantService {
             temperature: temperature,
             presence_penalty: presencePenalty,
             frequency_penalty: frequencePenalty,
-            ...(maxTokens > 1 && { max_tokens: maxTokens }),
-            ...(jsonResponseFormat && { response_format: { type: "json_object" } }),
+            ...(maxTokens > -1 && { max_tokens: maxTokens }),
+            response_format: {type: jsonResponseFormat ? "json_object" : "text"},
           });
 
           // Signal stream start
