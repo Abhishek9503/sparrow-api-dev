@@ -118,7 +118,6 @@ export class collectionController {
   @ApiResponse({ status: 400, description: "Fetch Collection Request Failed" })
   async getCollection(
     @Param("workspaceId") workspaceId: string,
-    @Req() req: any,
     @Res() res: FastifyReply,
     @Req() request: ExtendedFastifyRequest,
   ) {
@@ -128,7 +127,7 @@ export class collectionController {
       user,
     );
     await this.userService.updateLastActive(
-      req.user ? req.user.toString() : "",
+      request.user._id ? request.user._id.toString() : "",
     );
     const responseData = new ApiResponseService(
       "Success",
