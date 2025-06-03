@@ -61,11 +61,10 @@ export class ChatbotStatsRepository {
     id: ObjectId,
     payload: UpdateChatbotDto,
     userId?: string,
-    currentUserId?: ObjectId,
   ): Promise<UpdateResult> {
     const defaultParams = {
       updatedAt: new Date(),
-      updatedBy: currentUserId.toString() ?? userId,
+      updatedBy: userId,
     };
     const data = await this.db
       .collection(Collections.CHATBOTSTATS)

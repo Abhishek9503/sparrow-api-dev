@@ -12,7 +12,7 @@ import {
   Team,
   TeamWithNewInviteTag,
 } from "@src/modules/common/models/team.model";
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
 import { ConfigService } from "@nestjs/config";
 import { UserRepository } from "../repositories/user.repository";

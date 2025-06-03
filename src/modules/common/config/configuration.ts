@@ -13,7 +13,6 @@ export default () => ({
     imageSizeLimit: 2097152, // value in byte
     deletedAPILimitInDays: 7,
     timeToDaysDivisor: 86400000,
-    kafkaHitTimeInterval: 3000,
     refreshTokenSecretKey: process.env.REFRESH_TOKEN_SECRET_KEY,
     emailValidationCodeExpirationTime: parseInt(
       process.env.EMAIL_VALIDATION_CODE_EXPIRY_TIME,
@@ -42,9 +41,6 @@ export default () => ({
       redirectUrl: process.env.LOGIN_REDIRECT_URL,
       accessType: process.env.GOOGLE_ACCESS_TYPE,
     },
-  },
-  kafka: {
-    broker: process.env.KAFKA_BROKER,
   },
   updater: {
     updateAvailable: process.env.APP_UPDATE_AVAILABLE,
@@ -96,7 +92,7 @@ export default () => ({
     deepseekEndpoint: process.env.DEEPSEEK_ENDPOINT,
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     deepseekApiVersion: process.env.DEEPSEEK_API_VERSION,
-    deepseekURL: "https://api.deepseek.com"
+    deepseekURL: "https://api.deepseek.com",
   },
   hubspot: {
     hubspotEnabled: process.env.HUBSPOT_INTEGRATION_ENABLED,

@@ -50,7 +50,7 @@ export class ChatbotStatsService {
    * @param payload - The data transfer object containing user ID and token count.
    * @returns A promise that resolves when the update is complete.
    */
-  async updateToken(payload: TokenDto, currentUserId: ObjectId): Promise<void> {
+  async updateToken(payload: TokenDto): Promise<void> {
     // Retrieve user stats by user ID
     const userStat = await this.chatbotStatsRepository.getStatsByUserID(
       payload.userId,
@@ -103,7 +103,7 @@ export class ChatbotStatsService {
           deepseek: payload.model === "deepseek" ? payload.tokenCount : 0,
         },
         createdAt: new Date(),
-        createdBy: currentUserId.toString() ?? payload.userId,
+        createdBy: payload.userId,
       };
       await this.chatbotStatsRepository.addStats(stat);
     }

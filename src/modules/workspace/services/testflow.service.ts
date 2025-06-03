@@ -10,7 +10,7 @@ import {
 import { DeleteResult, ObjectId, WithId } from "mongodb";
 
 // ---- Services
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 import { WorkspaceService } from "./workspace.service";
 
 // ---- Enum

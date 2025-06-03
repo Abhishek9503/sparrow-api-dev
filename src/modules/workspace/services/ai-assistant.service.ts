@@ -33,7 +33,6 @@ import {
 } from "../payloads/ai-assistant.payload";
 
 // ---- Services
-import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
 import { ChatbotStatsService } from "./chatbot-stats.service";
 import { UserService } from "../../identity/services/user.service";
 
@@ -50,6 +49,7 @@ import {
 // ---- Instructions
 import { instructions } from "@src/modules/common/instructions/prompt";
 import { DecodedUserObject } from "@src/types/fastify";
+import { ProducerService } from "@src/modules/common/services/event-producer.service";
 
 async function initializeGenAI(authKey: string) {
   const { GoogleGenAI } = await import("@google/genai");
@@ -274,12 +274,12 @@ export class AiAssistantService {
       await this.gptAssistantsClient.beta.threads.messages.list(
         currentThreadId,
       );
-    const kafkaMessage = {
+    const eventMessage = {
       userId: user._id,
       tokenCount: pollRunner.usage.total_tokens,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
-      value: JSON.stringify(kafkaMessage),
+      value: JSON.stringify(eventMessage),
     });
     for await (const message of messageList) {
       for (const item of message.content) {
@@ -389,12 +389,12 @@ export class AiAssistantService {
       }
     }
     // Save token details
-    const kafkaMessage = {
+    const eventMessage = {
       userId: user._id,
       tokenCount: total_tokens,
     };
     await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
-      value: JSON.stringify(kafkaMessage),
+      value: JSON.stringify(eventMessage),
     });
   }
 
@@ -517,7 +517,7 @@ export class AiAssistantService {
           if (latestRun?.usage) {
             const tokenUsage = latestRun.usage.total_tokens;
 
-            const kafkaMessage = {
+            const eventMessage = {
               userId: user._id.toString(),
               tokenCount: tokenUsage,
               model: model,
@@ -526,7 +526,7 @@ export class AiAssistantService {
             await this.producerService.produce(
               TOPIC.AI_RESPONSE_GENERATED_TOPIC,
               {
-                value: JSON.stringify(kafkaMessage),
+                value: JSON.stringify(eventMessage),
               },
             );
 
@@ -717,7 +717,7 @@ export class AiAssistantService {
           if (parsed?.usage) {
             const tokenUsage = parsed.usage.total_tokens;
 
-            const kafkaMessage = {
+            const eventMessage = {
               userId: user._id.toString(),
               tokenCount: tokenUsage,
               model: model,
@@ -726,7 +726,7 @@ export class AiAssistantService {
             await this.producerService.produce(
               TOPIC.AI_RESPONSE_GENERATED_TOPIC,
               {
-                value: JSON.stringify(kafkaMessage),
+                value: JSON.stringify(eventMessage),
               },
             );
 
