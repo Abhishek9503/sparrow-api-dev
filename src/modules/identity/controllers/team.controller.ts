@@ -32,6 +32,9 @@ import {
   UploadedFile,
 } from "@blazity/nest-file-fastify";
 import { UserService } from "../services/user.service";
+import { PlanService } from "../services/plan.service";
+import { CreateTeamGuard } from "@src/modules/identity/guards/create-team-guard";
+import { HubInviteGuard } from "@src/modules/identity/guards/hub-invite.guard";
 /**
  * Team Controller
  */
@@ -44,10 +47,11 @@ export class TeamController {
     private readonly teamService: TeamService,
     private readonly teamUserService: TeamUserService,
     private readonly userService: UserService,
+    private readonly planService: PlanService,
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CreateTeamGuard)
   @ApiOperation({
     summary: "Create a new  Team",
     description: "This will Create a  new Team",
@@ -209,7 +213,7 @@ export class TeamController {
   }
 
   @Post(":teamId/user")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, HubInviteGuard)
   @ApiOperation({
     summary: "Sends multiple invites to users within a team.",
     description: "This will add multiple users in your Team",
