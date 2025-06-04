@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { FastifyReply, FastifyRequest, HTTPMethods } from "fastify";
+import { FastifyRequest, HTTPMethods } from "fastify";
 import { CollectionRepository } from "../repositories/collection.repository";
 import { ObjectId } from "mongodb";
 import { ConfigService } from "@nestjs/config";
@@ -26,7 +26,6 @@ export class MockServerService {
 
   async handleMockRequests(
     req: FastifyRequest,
-    res?: FastifyReply,
   ): Promise<MockRequestResponseDto> {
     try {
       const startTime = Date.now();
@@ -69,7 +68,9 @@ export class MockServerService {
               ) {
                 const responseData = {
                   status:
-                    mock.responseStatus !== "" ? mock.responseStatus : 200,
+                    mock?.responseStatus && mock.responseStatus !== ""
+                      ? mock.responseStatus
+                      : 200,
                   body: mock.responseBody ?? "",
                   contentType: mock.selectedResponseBodyType,
                 };
@@ -95,7 +96,7 @@ export class MockServerService {
                   selectedRequestBodyType: mock.selectedRequestBodyType,
                   selectedResponseBodyType: mock.selectedResponseBodyType,
                   responseHeaders: mock.responseHeaders,
-                  responseBody: mock.responseBody,
+                  responseBody: mock?.responseBody ?? "",
                 };
 
                 await this.storeRequestHistory(collectionId, historyEntry);

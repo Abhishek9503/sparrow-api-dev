@@ -1165,4 +1165,44 @@ export class collectionController {
 
     return res.status(responseData.httpStatusCode).send(responseData);
   }
+
+  @Post(":collectionId/workspace/:workspaceId/create-mock")
+  @ApiOperation({
+    summary: "Create Mock Collection from Existing Collection",
+    description:
+      "This will create a mock collection based on an existing collection, converting all requests to mock requests with their most recent responses",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 201,
+    description: "Mock Collection Created Successfully",
+  })
+  @ApiResponse({ status: 400, description: "Failed to create mock collection" })
+  @ApiResponse({ status: 404, description: "Original collection not found" })
+  async createMockCollectionFromExisting(
+    @Param("collectionId") collectionId: string,
+    @Param("workspaceId") workspaceId: string,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const mockCollection =
+      await this.collectionService.createMockCollectionFromExisting(
+        collectionId,
+        workspaceId,
+        user,
+      );
+
+    const createdCollection = await this.collectionService.getCollection(
+      mockCollection.insertedId.toString(),
+    );
+
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.CREATED,
+      createdCollection,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
 }

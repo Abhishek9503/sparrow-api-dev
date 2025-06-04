@@ -48,4 +48,5 @@ export enum Roles {
   system = "system",
   user = "user",
   assistant = "assistant",
+  model = "model",
 }
