@@ -135,6 +135,7 @@ export class TeamService {
       name: teamData.name,
       role: TeamRole.OWNER,
       isNewInvite: false,
+      joinedAt: new Date(),
     });
     const updatedUserParams = {
       teams: updatedUserTeams,
@@ -163,12 +164,45 @@ export class TeamService {
    */
   async get(id: string): Promise<WithId<Team>> {
     const data = await this.teamRepository.get(id);
+    const validInvites = data?.invites?.filter((invite) => {
+      if (new Date(invite?.expiresAt) > new Date()) {
+        return true;
+      }
+      return false;
+    });
+    data.invites = validInvites || [];
     data?.invites?.forEach((invite) => {
       delete invite.inviteId;
       delete invite.isAccepted;
       delete invite.workspaces;
     });
     return data;
+  }
+
+   /**
+   * Fetches a public team from database by UUID
+   * @param {string} id
+   * @returns {Promise<Team>} queried team data
+   */
+  async getPublic(id: string): Promise<WithId<Team>> {
+    const data = await this.teamRepository.get(id);
+    const owner = data.users?.filter(user => user.role === "owner") || [];
+    return {
+      _id: data._id,
+      name: data.name,
+      description: data.description,
+      hubUrl: data.hubUrl,
+      linkedinUrl: data.linkedinUrl,
+      xUrl: data.xUrl,
+      githubUrl: data.githubUrl,
+      users: owner,
+      owner: data.owner, 
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      logo: data.logo,
+      createdBy: data.createdBy,
+      updatedBy: data.updatedBy,
+    };
   }
 
   /**
@@ -293,7 +327,7 @@ export class TeamService {
           name: teamData.name,
           hubUrl: teamData.hubUrl,
           workspaces: [],
-          description: senderData.name || "No creator found",
+          description: senderData?.name || "No creator found",
         };
         // Add the team object to the teams array
         teams.push(team);
