@@ -803,7 +803,7 @@ export class WorkspaceService {
         message: updateMessage,
         type: UpdatesType.WORKSPACE,
         workspaceId: payload.workspaceId,
-        currentUser,
+        user: currentUser,
       }),
     });
     return response;
@@ -833,7 +833,7 @@ export class WorkspaceService {
             message: updateMessage,
             type: UpdatesType.WORKSPACE,
             workspaceId: payload.workspaceId,
-            currentUser,
+            user: currentUser,
           }),
         });
         workspaceUsers[index].role = payload.role;
