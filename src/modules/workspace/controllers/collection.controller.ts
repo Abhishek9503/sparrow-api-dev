@@ -1078,7 +1078,7 @@ export class collectionController {
       user._id,
     );
     await this.collectionRequestService.checkPermission(workspaceId, user._id);
-    await this.collectionRequestService.updateMockRequest(
+    const result = await this.collectionRequestService.updateMockRequest(
       collectionId,
       requestId,
       requestDto,
@@ -1088,7 +1088,7 @@ export class collectionController {
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,
-      request,
+      result,
     );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
