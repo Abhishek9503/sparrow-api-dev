@@ -477,23 +477,23 @@ export class StripeController {
     description: "Webhook event processed successfully",
   })
   async handleWebhook(
-    @Body() payload: any,
-    @Headers("stripe-signature") signature: string,
     @Req() request: any,
+    @Headers("stripe-signature") signature: string,
   ): Promise<{ received: boolean }> {
     try {
-      this.checkStripeAvailability();
-
-      const event = await this.stripeService.constructEventFromPayload(
-        payload,
+      // Get the raw body from the request
+      const rawBody = request.rawBody;
+      const event = this.stripeService.constructEventFromPayload(
+        rawBody,
         signature,
       );
 
-      await this.stripeService.handleWebhookEvent(event);
+      await console.log("event", event);
       return { received: true };
     } catch (error) {
+      console.error("❌ Webhook error:", error.message);
       throw new HttpException(
-        "Webhook error: " + (error.message || "Unknown error"),
+        "Webhook error: " + error.message,
         HttpStatus.BAD_REQUEST,
       );
     }

@@ -33,7 +33,8 @@ export class BillingModule {
         StripeModule.register({
           secretKey: process.env.STRIPE_SECRET_KEY,
           publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
-          webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+          webhookSecret:
+            "whsec_0961eb7e7300c01196ff9e79f8a8ca8f6bfa62d6efc1f9c925ade89d157d389c",
           isGlobal: false,
           registerControllers: false,
         }),
