@@ -1,4 +1,5 @@
-import { Body, Controller, Post, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, Res, UseGuards, Get, Query } from "@nestjs/common";
+import { ApiQuery } from '@nestjs/swagger';
 import { AiAssistantService } from "../services/ai-assistant.service";
 import { FastifyReply } from "fastify";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
@@ -15,6 +16,8 @@ import {
   ErrorResponsePayload,
   ChatBotPayload
 } from "../payloads/ai-assistant.payload";
+import { LlmConversation } from "../payloads/llm-conversation.payload";
+import { LlmConversationService } from "../services/llm-conversation.service";
 
 @ApiBearerAuth()
 @ApiTags("AI Support")
@@ -24,8 +27,9 @@ export class AiAssistantController {
   /**
    * Constructor to initialize AiAssistantController with the required service.
    * @param aiAssistantService - Injected AiAssistantService to handle business logic.
+   * * @param llmConversationService - Injected LlmConversationService to handle LLM conversation logic.
    */
-  constructor(private readonly aiAssistantService: AiAssistantService) {}
+  constructor(private readonly aiAssistantService: AiAssistantService , private readonly llmConversationService: LlmConversationService) {}
 
   @ApiOperation({
     summary: "Get a respose for AI assistant",
@@ -62,17 +66,54 @@ export class AiAssistantController {
   }
 
   @Post("generate-prompt")
-  async GeneratePrompt(
-    @Body() payload: ChatBotPayload,
-    @Res() res: FastifyReply,
-  ) {
+  async GeneratePrompt(@Body() payload: ChatBotPayload, @Res() res: FastifyReply) {
     const data = await this.aiAssistantService.promptGeneration(payload);
     const response = new ApiResponseService(
-      "Prompt Generated",
+      "Prompt Generated Successfully",
       HttpStatusCode.CREATED,
       data,
     );
     return res.status(response.httpStatusCode).send(response);
   }
 
+  @Get("get-conversation")
+  @ApiQuery({ name: 'provider', required: true })
+  @ApiQuery({ name: 'apiKey', required: true })
+  @ApiQuery({ name: 'id', required: false })
+  async GetConversation(
+    @Query("provider") provider: string,
+    @Query("apiKey") apiKey: string,
+    @Query("id") id: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.llmConversationService.getConversation(provider, apiKey, id);
+    const response = new ApiResponseService(
+      "Conversation fetched successfully",
+      HttpStatusCode.OK,
+      data,
+    );
+    return res.status(response.httpStatusCode).send(response);
+  }
+
+  @Post("insert-conversation")
+  async InsertConversation(@Body() payload: LlmConversation, @Res() res: FastifyReply) {
+    const data = await this.llmConversationService.insertConversation(payload);
+    const response = new ApiResponseService(
+      "Conversation Inserted Successfully",
+      HttpStatusCode.CREATED,
+      data,
+    );
+    return res.status(response.httpStatusCode).send(response);
+  }
+
+  @Post("update-conversation")
+  async UpdateConversation(@Body() payload: LlmConversation, @Res() res: FastifyReply) {
+    const data = await this.llmConversationService.updateConversation(payload);
+    const response = new ApiResponseService(
+      "Conversation Updated Successfully",
+      HttpStatusCode.CREATED,
+      data,
+    );
+    return res.status(response.httpStatusCode).send(response);
+  }
 }
