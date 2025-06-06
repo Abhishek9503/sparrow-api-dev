@@ -9,6 +9,7 @@ import {
   Param,
   Delete,
   Put,
+  Req,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import {
@@ -34,6 +35,7 @@ import { TeamUserService } from "@src/modules/identity/services/team-user.servic
 import { TeamService } from "@src/modules/identity/services/team.service";
 import { AddTeamUserDto } from "@src/modules/identity/payloads/teamUser.payload";
 import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
+import { ExtendedFastifyRequest } from "@src/types/fastify";
 
 @Controller("api/admin")
 @ApiTags("admin hub members")
@@ -58,15 +60,18 @@ export class AdminMembersController {
     @Query("limit") limit: string = "10",
     @Query("search") search = "",
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
+    const currentUser = request.user;
 
     const data = await this.adminMembersService.getPaginatedHubMembers(
       hubId,
       parsedPage,
       parsedLimit,
       search,
+      currentUser,
     );
 
     const responseData = new ApiResponseService(
@@ -136,12 +141,17 @@ export class AdminMembersController {
     @Param("hubId") hubId: string,
     @Body() addTeamUserDto: AddTeamUserDto,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
     try {
-      await this.teamUserService.sendInvite({
-        teamId: hubId,
-        ...addTeamUserDto,
-      });
+      const user = request.user;
+      await this.teamUserService.sendInvite(
+        {
+          teamId: hubId,
+          ...addTeamUserDto,
+        },
+        user,
+      );
 
       const hub = await this.teamService.get(hubId);
 
@@ -186,9 +196,11 @@ export class AdminMembersController {
     @Param("hubId") hubId: string,
     @Param("email") email: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
     try {
-      await this.teamUserService.removeInviteByOwner(hubId, email);
+      const user = request.user;
+      await this.teamUserService.removeInviteByOwner(hubId, user._id, email);
 
       const hub = await this.teamService.get(hubId);
 
@@ -233,9 +245,11 @@ export class AdminMembersController {
     @Param("hubId") hubId: string,
     @Param("email") email: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
     try {
-      await this.teamUserService.resendInvite(hubId, email);
+      const user = request.user;
+      await this.teamUserService.resendInvite(hubId, email, user);
 
       const hub = await this.teamService.get(hubId);
 
@@ -266,8 +280,10 @@ export class AdminMembersController {
     @Query("userId") userId: string,
     @Query("teamId") teamId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.demoteTeamAdmin({ teamId, userId });
+    const currentUser = request.user;
+    await this.teamUserService.demoteTeamAdmin({ teamId, userId }, currentUser);
     const team = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "Admin Demoted",
@@ -284,8 +300,10 @@ export class AdminMembersController {
     @Query("userId") userId: string,
     @Query("teamId") teamId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.addAdmin({ teamId, userId });
+    const currentUser = request.user;
+    await this.teamUserService.addAdmin({ teamId, userId }, currentUser);
     const team = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "Admin added",
@@ -302,8 +320,10 @@ export class AdminMembersController {
     @Query("userId") userId: string,
     @Query("teamId") teamId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
-    await this.teamUserService.removeUser({ teamId, userId });
+    const currentUser = request.user;
+    await this.teamUserService.removeUser({ teamId, userId }, currentUser._id);
     const team = await this.teamService.get(teamId);
     const responseData = new ApiResponseService(
       "User Removed",
@@ -320,12 +340,14 @@ export class AdminMembersController {
     @Query("workspaceId") workspaceId: string,
     @Query("userId") userId: string,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const currentUser = request.user;
     const params = {
       userId: userId,
       workspaceId: workspaceId,
     };
-    await this.workspaceService.removeUserFromWorkspace(params);
+    await this.workspaceService.removeUserFromWorkspace(params, currentUser);
     const workspace = await this.workspaceService.get(workspaceId);
     const responseData = new ApiResponseService(
       "User Removed",

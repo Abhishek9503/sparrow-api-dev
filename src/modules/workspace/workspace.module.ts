@@ -58,7 +58,7 @@ import {
 } from "./controllers/ai-assistant.gateway";
 import { AiLogHandler } from "./handlers/ai-log.handler";
 import { AiLogService } from "./services/ai-log.service";
-import { ConsumerService } from "../common/services/kafka/consumer.service";
+import { ConsumerService } from "../common/services/event-consumer.service";
 import { AiLogRepository } from "./repositories/ai-log.repository";
 import { MockServerController } from "./controllers/mock-server.controller";
 import { MockServerService } from "./services/mock-server.service";

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res, UseGuards, Get, Query } from "@nestjs/common";
+import { Body, Controller, Post, Req, Res, UseGuards, Get, Query } from "@nestjs/common";
 import { ApiQuery } from '@nestjs/swagger';
 import { AiAssistantService } from "../services/ai-assistant.service";
 import { FastifyReply } from "fastify";
@@ -14,10 +14,11 @@ import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import {
   PromptPayload,
   ErrorResponsePayload,
-  ChatBotPayload
+  ChatBotPayload,
 } from "../payloads/ai-assistant.payload";
 import { LlmConversation } from "../payloads/llm-conversation.payload";
 import { LlmConversationService } from "../services/llm-conversation.service";
+import { ExtendedFastifyRequest } from "@src/types/fastify";
 
 @ApiBearerAuth()
 @ApiTags("AI Support")
@@ -41,8 +42,13 @@ export class AiAssistantController {
   })
   @ApiResponse({ status: 400, description: "Generate AI Response Failed" })
   @Post("prompt")
-  async generate(@Body() prompt: PromptPayload, @Res() res: FastifyReply) {
-    const data = await this.aiAssistantService.generateText(prompt);
+  async generate(
+    @Body() prompt: PromptPayload,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const data = await this.aiAssistantService.generateText(prompt, user);
     const response = new ApiResponseService(
       "AI Reposonse Generated",
       HttpStatusCode.CREATED,
@@ -105,7 +111,6 @@ export class AiAssistantController {
     );
     return res.status(response.httpStatusCode).send(response);
   }
-
   @Post("update-conversation")
   async UpdateConversation(@Body() payload: LlmConversation, @Res() res: FastifyReply) {
     const data = await this.llmConversationService.updateConversation(payload);

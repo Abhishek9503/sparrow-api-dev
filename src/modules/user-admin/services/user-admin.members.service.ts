@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { AdminHubsRepository } from "../repositories/user-admin.hubs.repository";
 import { AdminMembersRepository } from "../repositories/user-admin.members.repository";
 import { WorkspaceService } from "@src/modules/workspace/services/workspace.service";
+import { DecodedUserObject } from "@src/types/fastify";
 
 @Injectable()
 export class AdminMembersService {
@@ -16,6 +17,7 @@ export class AdminMembersService {
     page: number,
     limit: number,
     search: string,
+    currentUser: DecodedUserObject,
   ) {
     const hub = await this.adminHubsRepo.findHubById(hubId);
     if (!hub) {
@@ -52,6 +54,7 @@ export class AdminMembersService {
           );
         const memberWorkspaces = await this.workspaceService.getAllWorkSpaces(
           member.id,
+          currentUser,
         );
 
         const teamWorkspaces = memberWorkspaces.filter(
