@@ -153,7 +153,11 @@ export class ChatBotPayload {
    */
   @IsString()
   @IsOptional()
-  @ApiProperty({ required: true, example: '[{"role": "user", "content": "Hello!"}, {"role": "assistant", "content": "Hi there! How can I help you?"}]' })
+  @ApiProperty({
+    required: true,
+    example:
+      '[{"role": "user", "content": "Hello!"}, {"role": "assistant", "content": "Hi there! How can I help you?"}]',
+  })
   conversation?: string;
 
   /**
