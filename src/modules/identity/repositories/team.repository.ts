@@ -18,6 +18,7 @@ import { User } from "@src/modules/common/models/user.model";
 import { Team } from "@src/modules/common/models/team.model";
 import { WorkspaceDto } from "@src/modules/common/models/workspace.model";
 import { TeamRole } from "@src/modules/common/enum/roles.enum";
+import { PlanDto } from "../payloads/plan.payload";
 
 /**
  * Team Service
@@ -37,6 +38,7 @@ export class TeamRepository {
    */
   async create(
     teamData: CreateOrUpdateTeamDto,
+    plan: PlanDto,
   ): Promise<InsertOneResult<Team>> {
     const user = this.contextService.get("user");
 
@@ -63,6 +65,7 @@ export class TeamRepository {
       .insertOne({
         ...teamData,
         ...params,
+        plan,
       });
     return createdTeam;
   }

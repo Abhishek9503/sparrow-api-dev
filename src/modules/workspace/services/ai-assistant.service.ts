@@ -894,7 +894,7 @@ export class AiAssistantService {
               maxOutputTokens: maxTokens,
               temperature: temperature,
               topP: topP,
-              ...(jsonResponseFormat && { responseSchema: { type: "json_object" } })
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
             }
           };
 
@@ -945,7 +945,7 @@ export class AiAssistantService {
               maxOutputTokens: maxTokens,
               temperature: temperature,
               topP: topP,
-              ...(jsonResponseFormat && { responseSchema: { type: "json_object" } })
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
             },
             model: modelVersion,
             contents: conversation || userInput,
@@ -977,7 +977,7 @@ export class AiAssistantService {
               maxOutputTokens: maxTokens > 0 ? maxTokens : 1024,
               temperature: temperature,
               topP: topP,
-              ...(jsonResponseFormat && { responseSchema: { type: "json_object" } })
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
             }
           };
 
@@ -1003,7 +1003,7 @@ export class AiAssistantService {
               maxOutputTokens: maxTokens,
               temperature: temperature,
               topP: topP,
-              ...(jsonResponseFormat && { responseSchema: { type: "json_object" } })
+              ...(jsonResponseFormat && { responseMimeType: 'application/json' })
             },
             model: modelVersion,
             contents: conversation || userInput,
@@ -1431,7 +1431,7 @@ export class AiAssistantService {
       //   { role: "system", content: systemPrompt },
       //   { role: "user", content: userInput },
       // ];
-
+      
       // Message for Contextual Chatbot 
       type ChatMessage = {
         role: Roles.system | Roles.user | Roles.assistant;
@@ -1440,22 +1440,26 @@ export class AiAssistantService {
 
       let messages: ChatMessage[];
 
-      if (typeof userInput === 'string') {
-        try {
-          messages = JSON.parse(userInput) as ChatMessage[];
-        } catch (err) {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              statusCode: 400,
-              event: "error",
-              message: "Invalid JSON format for userInput."
-            }));
+      if (modelVersion !== OpenAIModelVersion.GPT_o1_Mini) {
+
+
+        if (typeof userInput === 'string') {
+          try {
+            messages = JSON.parse(userInput) as ChatMessage[];
+          } catch (err) {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                statusCode: 400,
+                event: "error",
+                message: "Invalid JSON format for userInput."
+              }));
+            }
+            return;
           }
-          return;
+        } else {
+          messages = userInput as ChatMessage[];
         }
-      } else {
-        messages = userInput as ChatMessage[];
-      }
+    }
 
       const o1miniMessage: { role: "system" | "user"; content: string } [] = [{ role: "user", content: userInput }]
       

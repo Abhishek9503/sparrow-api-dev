@@ -46,6 +46,8 @@ import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
 import { ObjectId } from "mongodb";
 import { FastifyRequest } from "fastify/types/request";
 import { BodyModeEnum } from "@src/modules/common/models/collection.model";
+import { WorkspaceInviteGuard } from "@src/modules/workspace/guards/plan-limits/workspace-invite.guard";
+import { CreateWorkspaceGuard } from "../guards/plan-limits/create-workspace-guard";
 
 /**
  * Workspace Controller
@@ -65,7 +67,7 @@ export class WorkSpaceController {
     summary: "Create a new User Workspace",
     description: "This will create a new Workspace for User",
   })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CreateWorkspaceGuard)
   @ApiResponse({ status: 201, description: "Workspace Created Successfully" })
   @ApiResponse({ status: 400, description: "Create Workspace Failed" })
   async createWorkspace(
@@ -237,7 +239,7 @@ export class WorkSpaceController {
     summary: "Add Users in Workspace",
     description: "You can add multiple users to your Workspace",
   })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceInviteGuard)
   @ApiResponse({ status: 201, description: "Users Added Successfully" })
   @ApiResponse({ status: 400, description: "Failed to Add Users" })
   async addUserWorkspace(
