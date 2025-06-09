@@ -221,7 +221,7 @@ export class AiAssistantService {
         stat.aiModel.gpt + stat.aiModel.deepseek >
           this.whiteListUserTokenLimit)
     ) {
-      return "Limit Reached. Please try again later.";
+      return "Limit reached";
     }
 
     const { text: prompt, model, instructions } = data;
