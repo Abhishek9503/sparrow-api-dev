@@ -24,6 +24,7 @@ import {
   CollectionRequestItem,
   CollectionSocketIODto,
   CollectionWebSocketDto,
+  UpdateCollectionMockRequestResponseDto,
   UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
@@ -1369,6 +1370,212 @@ export class CollectionRepository {
     return data;
   }
 
+  /**
+   * Adds a AI Request item to the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequest - The AI Request item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @returns A promise that resolves to the result of the update operation.
+   */
+  async addAiRequest(
+    collectionId: string,
+    aiRequest: CollectionItem,
+    noOfRequests: number,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const data = await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .updateOne(
+        { _id },
+        {
+          $push: {
+            items: aiRequest,
+          },
+          $set: {
+            totalRequests: noOfRequests + 1,
+          },
+        },
+      );
+    return data;
+  }
+
+  /**
+   * Adds a AI Request item to a specific folder within the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequest - The AI Request item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - The ID of the folder.
+   * @returns A promise that resolves to the result of the update operation.
+   * @throws BadRequestException if the folder does not exist.
+   */
+  async addAiRequestInFolder(
+    collectionId: string,
+    aiRequest: CollectionItem,
+    noOfRequests: number,
+    folderId: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const collection = await this.getCollection(collectionId);
+    const isFolderExists = collection.items.some((item) => {
+      return item.id === folderId;
+    });
+    if (isFolderExists) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.name": aiRequest.name },
+          {
+            $push: { "items.$.items": aiRequest.items[0] },
+            $set: {
+              totalRequests: noOfRequests + 1,
+            },
+          },
+        );
+    } else {
+      throw new BadRequestException("Folder Not Found.");
+    }
+  }
+
+  /**
+   * Updates a AI Request item in the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequestId - The ID of the AI Request item to be updated.
+   * @param aiRequest - The updated AI Request item.
+   * @returns A promise that resolves to the updated AI Request item.
+   */
+  async updateAiRequest(
+    collectionId: string,
+    aiRequestId: string,
+    aiRequest: Partial<CollectionSocketIODto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionRequestItem> {
+    const _id = new ObjectId(collectionId);
+    const defaultParams = {
+      updatedAt: new Date(),
+      updatedBy: user.name,
+    };
+    if (aiRequest.items.type === ItemTypeEnum.AI_REQUEST) {
+      aiRequest.items = { ...aiRequest.items, ...defaultParams };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.id": aiRequestId },
+          {
+            $set: {
+              "items.$": aiRequest.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+        );
+      return { ...data, ...aiRequest.items, id: aiRequestId };
+    } else {
+      aiRequest.items.items = {
+        ...aiRequest.items.items,
+        ...defaultParams,
+      };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": aiRequest.folderId,
+            "items.items.id": aiRequestId,
+          },
+          {
+            $set: {
+              "items.$[i].items.$[j]": aiRequest.items.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+          {
+            arrayFilters: [
+              { "i.id": aiRequest.folderId },
+              { "j.id": aiRequestId },
+            ],
+          },
+        );
+      return { ...data, ...aiRequest.items.items, id: aiRequestId };
+    }
+  }
+
+  /**
+   * Deletes a AI Request item from the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequestId - The ID of the A item to be deleted.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - (Optional) The ID of the folder containing the A item.
+   * @returns A promise that resolves to the result of the delete operation.
+   */
+  async deleteAiRequest(
+    collectionId: string,
+    aiRequestId: string,
+    noOfRequests: number,
+    user: DecodedUserObject,
+    folderId?: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    if (folderId) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+          },
+          {
+            $pull: {
+              "items.$[i].items": {
+                id: aiRequestId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+          {
+            arrayFilters: [{ "i.id": folderId }],
+          },
+        );
+    } else {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id },
+          {
+            $pull: {
+              items: {
+                id: aiRequestId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+        );
+    }
+  }
+
   async addMockRequestHistory(
     collectionId: string,
     historyEntry: any,
@@ -1380,4 +1587,255 @@ export class CollectionRepository {
         { $push: { mockRequestHistory: historyEntry } },
       );
   }
+
+  // ...existing code...
+
+  /**
+   * Adds a mock request response to a mock request inside a collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param mockRequestId - The ID of the mock request to which the response is added.
+   * @param mockRequestResponse - The mock request response data to add.
+   * @returns The result of the update operation.
+   */
+  async addMockRequestResponse(
+    collectionId: string,
+    mockRequestId: string,
+    mockRequestResponse: CollectionItem,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const data = await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .updateOne(
+        {
+          _id,
+          "items.id": mockRequestId, // Find the mock request inside items
+        },
+        {
+          $push: {
+            "items.$.items": mockRequestResponse, // Push inside the found mock request
+          },
+        },
+      );
+    return data;
+  }
+
+  /**
+   * Adds a mock request response inside a folder within a collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param mockRequestId - The ID of the mock request inside the folder.
+   * @param mockRequestResponse - The mock request response data to add.
+   * @param folderId - The ID of the folder containing the mock request.
+   * @returns The result of the update operation.
+   */
+  async addMockRequestResponseInFolder(
+    collectionId: string,
+    mockRequestId: string,
+    mockRequestResponse: CollectionItem,
+    folderId: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const collection = await this.getCollection(collectionId);
+    const isFolderExists = collection.items.some((item) => {
+      return item.id === folderId;
+    });
+    if (isFolderExists) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": folderId, // Find the folder
+            "items.items.id": mockRequestId, // Find the mock request inside the folder
+          },
+          {
+            $push: {
+              "items.$[i].items.$[j].items": mockRequestResponse, // Push inside the correct mock request
+            },
+          },
+          {
+            arrayFilters: [
+              { "i.id": folderId }, // Locate the folder
+              { "j.id": mockRequestId }, // Locate the mock request inside the folder
+            ],
+          },
+        );
+    } else {
+      throw new BadRequestException("Folder Not Found.");
+    }
+  }
+
+  /**
+   * Updates a mock request response inside a collection or folder.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param responseId - The ID of the mock response to update.
+   * @param mockRequestResponse - The updated mock response data.
+   */
+  async updateMockRequestResponse(
+    collectionId: string,
+    responseId: string, // The mockRequestResponse to update
+    mockRequestResponse: Partial<UpdateCollectionMockRequestResponseDto>, // New mockRequestResponse data
+    user: DecodedUserObject,
+  ): Promise<Partial<UpdateCollectionMockRequestResponseDto>> {
+    const _id = new ObjectId(collectionId);
+    const defaultParams = {
+      updatedAt: new Date(),
+      updatedBy: {
+        id: user._id.toString(),
+        name: user.name,
+      },
+    };
+
+    if (!mockRequestResponse?.folderId) {
+      // Case: No Folder (mock request exists inside `items`)
+      const updateObject: Record<string, any> = {
+        updatedAt: defaultParams.updatedAt,
+        updatedBy: defaultParams.updatedBy,
+      };
+
+      if (mockRequestResponse?.name !== undefined) {
+        updateObject["items.$[i].items.$[j].name"] = mockRequestResponse.name;
+      }
+      if (mockRequestResponse?.description !== undefined) {
+        updateObject["items.$[i].items.$[j].description"] =
+          mockRequestResponse.description;
+      }
+      if (mockRequestResponse?.isMockResponseActive !== undefined) {
+        updateObject[
+          "items.$[i].items.$[j].mockRequestResponse.isMockResponseActive"
+        ] = mockRequestResponse.isMockResponseActive;
+      }
+      await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
+        {
+          _id,
+          "items.id": mockRequestResponse.mockRequestId, // Find the mock request inside `items`
+          "items.items.id": responseId, // Find the mockRequestResponse inside the mock request
+        },
+        { $set: updateObject },
+        {
+          arrayFilters: [
+            { "i.id": mockRequestResponse.mockRequestId }, // Locate the mock request
+            { "j.id": responseId }, // Locate the mockRequestResponse
+          ],
+        },
+      );
+    } else {
+      // Case: Inside a Folder (mock request exists inside `items.items`)
+      const updateObject: Record<string, any> = {
+        updatedAt: defaultParams.updatedAt,
+        updatedBy: defaultParams.updatedBy,
+      };
+
+      if (mockRequestResponse?.name !== undefined) {
+        updateObject["items.$[i].items.$[j].items.$[k].name"] =
+          mockRequestResponse.name;
+      }
+      if (mockRequestResponse?.description !== undefined) {
+        updateObject["items.$[i].items.$[j].items.$[k].description"] =
+          mockRequestResponse.description;
+      }
+      if (mockRequestResponse?.isMockResponseActive !== undefined) {
+        updateObject[
+          "items.$[i].items.$[j].items.$[k].mockRequestResponse.isMockResponseActive"
+        ] = mockRequestResponse.isMockResponseActive;
+      }
+      await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
+        {
+          _id,
+          "items.id": mockRequestResponse.folderId, // Find the folder inside `items`
+          "items.items.id": mockRequestResponse.mockRequestId, // Find the mock request inside the folder
+          "items.items.items.id": responseId, // Find the mockRequestResponse inside the mock request
+        },
+        { $set: updateObject },
+        {
+          arrayFilters: [
+            { "i.id": mockRequestResponse.folderId }, // Locate the folder
+            { "j.id": mockRequestResponse.mockRequestId }, // Locate the mock request inside the folder
+            { "k.id": responseId }, // Locate the mockRequestResponse inside the mock request
+          ],
+        },
+      );
+    }
+
+    return { ...mockRequestResponse, mockResponseId: responseId };
+  }
+
+  /**
+   * Deletes a mock request response from a mock request inside a collection or folder.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param mockRequestId - The ID of the mock request that contains the response.
+   * @param responseId - The ID of the mock response to delete.
+   * @param folderId - Optional folder ID if the mock request is inside a folder.
+   */
+  async deleteMockRequestResponse(
+    collectionId: string,
+    mockRequestId: string, // The mock request where the mockRequestResponse exists
+    responseId: string, // The mockRequestResponse to delete
+    user: DecodedUserObject,
+    folderId?: string, // Optional folderId (if the mock request is inside a folder)
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    // const updatedBy = {
+    //   id: this.contextService.get("user")._id,
+    //   name: this.contextService.get("user").name,
+    // };
+
+    if (!folderId) {
+      // Case: No Folder (mock request exists inside `items`)
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": mockRequestId, // Find the mock request inside `items`
+          },
+          {
+            $pull: {
+              "items.$.items": { id: responseId }, // Remove the mockRequestResponse from `items.items`
+            },
+            $set: {
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+        );
+    } else {
+      // Case: Inside a Folder (mock request exists inside `items.items`)
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": folderId, // Find the folder inside `items`
+            "items.items.id": mockRequestId, // Find the mock request inside the folder
+          },
+          {
+            $pull: {
+              "items.$[i].items.$[j].items": { id: responseId }, // Remove the mockRequestResponse from `items.items.items`
+            },
+            $set: {
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+          {
+            arrayFilters: [
+              { "i.id": folderId }, // Locate the folder
+              { "j.id": mockRequestId }, // Locate the mock request inside the folder
+            ],
+          },
+        );
+    }
+  }
+
+  // ...existing code...
 }

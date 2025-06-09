@@ -8,13 +8,16 @@ import { WorkspaceRepository } from "../repositories/workspace.repository";
 import { ObjectId, UpdateResult } from "mongodb";
 import {
   CollectionGraphQLDto,
+  CollectionMockRequestResponseDto,
   CollectionRequestDto,
   CollectionRequestItem,
   CollectionRequestResponseDto,
   CollectionSocketIODto,
+  CollectionAiRequestDto,
   CollectionWebSocketDto,
   DeleteFolderDto,
   FolderDto,
+  UpdateCollectionMockRequestResponseDto,
   UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { v4 as uuidv4 } from "uuid";
@@ -1354,6 +1357,341 @@ export class CollectionRequestService {
         user,
         type: UpdatesType.MOCK_REQUEST,
         workspaceId: requestDto.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Adds a new AI Request to the collection.
+   * This method handles AI Request and folderAI Request.
+   *
+   * @param aiRequest AI Request details to be added.
+   * @returns AI Request item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async addAiRequest(
+    aiRequest: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      aiRequest.workspaceId,
+      user._id,
+    );
+    await this.checkPermission(aiRequest.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(aiRequest.collectionId);
+    const uuid = uuidv4();
+    const collection = await this.collectionReposistory.getCollection(
+      aiRequest.collectionId,
+    );
+    const aiRequestObj: CollectionItem = {
+      id: uuid,
+      name: aiRequest.items.name,
+      type: aiRequest.items.type,
+      description: aiRequest.items.description,
+      source: aiRequest.source ?? SourceTypeEnum.USER,
+      isDeleted: false,
+      createdBy: user?.name,
+      updatedBy: user?.name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateMessage = ``;
+    if (aiRequest.items.type === ItemTypeEnum.AI_REQUEST) {
+      aiRequestObj.aiRequest = aiRequest.items.aiRequest;
+      await this.collectionReposistory.addAiRequest(
+        aiRequest.collectionId,
+        aiRequestObj,
+        noOfRequests,
+      );
+      updateMessage = `New AI request "${aiRequest.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          user,
+          type: UpdatesType.AI_REQUEST,
+          workspaceId: aiRequest.workspaceId,
+        }),
+      });
+      return aiRequestObj;
+    } else {
+      aiRequestObj.items = [
+        {
+          id: uuidv4(),
+          name: aiRequest.items.items.name,
+          type: aiRequest.items.items.type,
+          description: aiRequest.items.items.description,
+          aiRequest: { ...aiRequest.items.items.aiRequest },
+          source: SourceTypeEnum.USER,
+          createdBy: user?.name,
+          updatedBy: user?.name,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      await this.collectionReposistory.addAiRequestInFolder(
+        aiRequest.collectionId,
+        aiRequestObj,
+        noOfRequests,
+        aiRequest?.folderId,
+      );
+      updateMessage = `New AI request "${aiRequest.items.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.AI_REQUEST,
+          workspaceId: aiRequest.workspaceId,
+        }),
+      });
+      return aiRequestObj.items[0];
+    }
+  }
+
+  /**
+   * Updates an existing AI Request in the collection.
+   *
+   * @param aiRequestId - The ID of the AI Request to be updated.
+   * @param aiRequest - The updated AI Request details.
+   * @returns The updated AI Request item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async updateAiRequest(
+    aiRequestId: string,
+    aiRequest: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionRequestItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      aiRequest.workspaceId,
+      user._id,
+    );
+    await this.checkPermission(aiRequest.workspaceId, user._id);
+    const collection = await this.collectionReposistory.updateAiRequest(
+      aiRequest.collectionId,
+      aiRequestId,
+      aiRequest,
+      user,
+    );
+    const collectionData = await this.collectionReposistory.getCollection(
+      aiRequest.collectionId,
+    );
+    const updateMessage = `AI Request "${
+      aiRequest?.items?.name ?? aiRequest?.items?.items?.name
+    }" is updated under "${collectionData.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        user,
+        type: UpdatesType.AI_REQUEST,
+        workspaceId: aiRequest.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Deletes an existing AI Request from the collection.
+   *
+   * @param aiRequestId - The ID of the AI Request to be deleted.
+   * @param aiRequestDto - The AI Request details including collection ID and folder ID (if applicable).
+   * @returns The result of the update operation.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async deleteAiRequest(
+    aiRequestId: string,
+    aiRequestDto: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
+  ): Promise<UpdateResult<Collection>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      aiRequestDto.workspaceId,
+      user._id,
+    );
+    await this.checkPermission(aiRequestDto.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(aiRequestDto.collectionId);
+    const collectionData = await this.collectionReposistory.getCollection(
+      aiRequestDto.collectionId,
+    );
+    const aiRequestData = await this.findItemById(
+      collectionData.items,
+      aiRequestId,
+    );
+    const collection = await this.collectionReposistory.deleteAiRequest(
+      aiRequestDto.collectionId,
+      aiRequestId,
+      noOfRequests,
+      user,
+      aiRequestDto?.folderId,
+    );
+    const updateMessage = `AI Request "${aiRequestData?.name}" is deleted from "${collectionData?.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        user,
+        type: UpdatesType.AI_REQUEST,
+        workspaceId: aiRequestDto.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Adds a new mock request response to a collection or folder.
+   * Ensures the user has the necessary permissions before performing the operation.
+   * Produces an update message after saving the response.
+   *
+   * @param mockRequestResponse - The mock request response data to add.
+   * @returns - The newly created mock request response object.
+   */
+  async addMockRequestResponse(
+    mockRequestResponse: Partial<CollectionMockRequestResponseDto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      mockRequestResponse.workspaceId,
+      user._id,
+    );
+    await this.checkPermission(mockRequestResponse.workspaceId, user._id);
+    const uuid = uuidv4();
+    const collection = await this.collectionReposistory.getCollection(
+      mockRequestResponse.collectionId,
+    );
+    const mockRequestResponseObj: CollectionItem = {
+      id: uuid,
+      name: mockRequestResponse.items.name,
+      type: mockRequestResponse.items.type,
+      description: mockRequestResponse.items.description,
+      mockRequestResponse: mockRequestResponse.items.mockRequestResponse,
+      source: mockRequestResponse.source ?? SourceTypeEnum.USER,
+      isDeleted: false,
+      createdBy: user?.name,
+      updatedBy: user?.name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateMessage = ``;
+    if (!mockRequestResponse?.folderId) {
+      await this.collectionReposistory.addMockRequestResponse(
+        mockRequestResponse.collectionId,
+        mockRequestResponse.mockRequestId,
+        mockRequestResponseObj,
+      );
+      updateMessage = `Mock response "${mockRequestResponse.items.name}" is saved under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          user,
+          type: UpdatesType.MOCK_REQUEST_RESPONSE,
+          workspaceId: mockRequestResponse.workspaceId,
+        }),
+      });
+      return mockRequestResponseObj;
+    } else {
+      await this.collectionReposistory.addMockRequestResponseInFolder(
+        mockRequestResponse.collectionId,
+        mockRequestResponse.mockRequestId,
+        mockRequestResponseObj,
+        mockRequestResponse?.folderId,
+      );
+      updateMessage = `Mock response "${mockRequestResponse.items.name}" is saved under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          user,
+          type: UpdatesType.MOCK_REQUEST_RESPONSE,
+          workspaceId: mockRequestResponse.workspaceId,
+        }),
+      });
+      return mockRequestResponseObj;
+    }
+  }
+
+  /**
+   * Updates an existing mock request response within a collection or folder.
+   * Ensures the user has the necessary permissions before updating.
+   * Produces an update message after modifying the response.
+   *
+   * @param responseId - The ID of the mock request response to update.
+   * @param mockRequestResponse - The updated mock request response data.
+   * @returns - The updated mock request response object.
+   */
+  async updateMockRequestResponse(
+    responseId: string,
+    mockRequestResponse: Partial<UpdateCollectionMockRequestResponseDto>,
+    user: DecodedUserObject,
+  ): Promise<Partial<UpdateCollectionMockRequestResponseDto>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      mockRequestResponse.workspaceId,
+      user._id,
+    );
+    await this.checkPermission(mockRequestResponse.workspaceId, user._id);
+    const collection =
+      await this.collectionReposistory.updateMockRequestResponse(
+        mockRequestResponse.collectionId,
+        responseId,
+        mockRequestResponse,
+        user,
+      );
+    const collectionData = await this.collectionReposistory.getCollection(
+      mockRequestResponse.collectionId,
+    );
+    const mockRequestResponseData = await this.findItemById(
+      collectionData.items,
+      responseId,
+    );
+    const updateMessage = `Mock response "${
+      mockRequestResponseData?.name
+    }" is updated under "${collectionData.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        user,
+        type: UpdatesType.MOCK_REQUEST_RESPONSE,
+        workspaceId: mockRequestResponse.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Deletes a mock request response from a collection or folder.
+   * Ensures the user has the necessary permissions before deletion.
+   * Produces an update message after deletion.
+   *
+   * @param responseId - The ID of the mock request response to delete.
+   * @param mockRequestResponseDto - Data containing collection and mock request details.
+   * @returns - The result of the delete operation.
+   */
+  async deleteMockRequestResponse(
+    responseId: string,
+    mockRequestResponseDto: Partial<CollectionMockRequestResponseDto>,
+    user: DecodedUserObject,
+  ): Promise<UpdateResult<Collection>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      mockRequestResponseDto.workspaceId,
+      user._id,
+    );
+    await this.checkPermission(mockRequestResponseDto.workspaceId, user._id);
+    const collectionData = await this.collectionReposistory.getCollection(
+      mockRequestResponseDto.collectionId,
+    );
+    const mockRequestResponseData = await this.findItemById(
+      collectionData.items,
+      responseId,
+    );
+    const collection =
+      await this.collectionReposistory.deleteMockRequestResponse(
+        mockRequestResponseDto.collectionId,
+        mockRequestResponseDto.mockRequestId,
+        responseId,
+        user,
+        mockRequestResponseDto?.folderId,
+      );
+    const updateMessage = `Mock response "${mockRequestResponseData?.name}" is deleted from "${collectionData?.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        user,
+        type: UpdatesType.MOCK_REQUEST_RESPONSE,
+        workspaceId: mockRequestResponseDto.workspaceId,
       }),
     });
     return collection;
