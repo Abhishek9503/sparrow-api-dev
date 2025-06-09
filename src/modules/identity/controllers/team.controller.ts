@@ -51,7 +51,7 @@ export class TeamController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, CreateTeamGuard)
+  @UseGuards(JwtAuthGuard ,CreateTeamGuard)
   @ApiOperation({
     summary: "Create a new  Team",
     description: "This will Create a  new Team",
@@ -119,7 +119,10 @@ export class TeamController {
   })
   @ApiResponse({ status: 200, description: "Fetch Team Request Received" })
   @ApiResponse({ status: 400, description: "Fetch Team Request Failed" })
-  async getPublicTeam(@Param("teamId") teamId: string, @Res() res: FastifyReply) {
+  async getPublicTeam(
+    @Param("teamId") teamId: string,
+    @Res() res: FastifyReply,
+  ) {
     const data = await this.teamService.getPublic(teamId);
     const responseData = new ApiResponseService(
       "Success",
