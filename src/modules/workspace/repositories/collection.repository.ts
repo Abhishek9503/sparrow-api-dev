@@ -24,6 +24,7 @@ import {
   CollectionRequestItem,
   CollectionSocketIODto,
   CollectionWebSocketDto,
+  UpdateCollectionMockRequestResponseDto,
   UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { ErrorMessages } from "@src/modules/common/enum/error-messages.enum";
@@ -1469,9 +1470,9 @@ export class CollectionRepository {
   async updateMockRequestResponse(
     collectionId: string,
     responseId: string, // The mockRequestResponse to update
-    mockRequestResponse: Partial<UpdateCollectionRequestResponseDto>, // New mockRequestResponse data
+    mockRequestResponse: Partial<UpdateCollectionMockRequestResponseDto>, // New mockRequestResponse data
     user: DecodedUserObject,
-  ): Promise<Partial<UpdateCollectionRequestResponseDto>> {
+  ): Promise<Partial<UpdateCollectionMockRequestResponseDto>> {
     const _id = new ObjectId(collectionId);
     const defaultParams = {
       updatedAt: new Date(),
@@ -1495,21 +1496,21 @@ export class CollectionRepository {
         updateObject["items.$[i].items.$[j].description"] =
           mockRequestResponse.description;
       }
-      if (mockRequestResponse?.selectedResponseBodyType !== undefined) {
+      if (mockRequestResponse?.isMockResponseActive !== undefined) {
         updateObject[
-          "items.$[i].items.$[j].mockRequestResponse.selectedResponseBodyType"
-        ] = mockRequestResponse.selectedResponseBodyType;
+          "items.$[i].items.$[j].mockRequestResponse.isMockResponseActive"
+        ] = mockRequestResponse.isMockResponseActive;
       }
       await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
         {
           _id,
-          "items.id": mockRequestResponse.requestId, // Find the mock request inside `items`
+          "items.id": mockRequestResponse.mockRequestId, // Find the mock request inside `items`
           "items.items.id": responseId, // Find the mockRequestResponse inside the mock request
         },
         { $set: updateObject },
         {
           arrayFilters: [
-            { "i.id": mockRequestResponse.requestId }, // Locate the mock request
+            { "i.id": mockRequestResponse.mockRequestId }, // Locate the mock request
             { "j.id": responseId }, // Locate the mockRequestResponse
           ],
         },
@@ -1529,30 +1530,30 @@ export class CollectionRepository {
         updateObject["items.$[i].items.$[j].items.$[k].description"] =
           mockRequestResponse.description;
       }
-      if (mockRequestResponse?.selectedResponseBodyType !== undefined) {
+      if (mockRequestResponse?.isMockResponseActive !== undefined) {
         updateObject[
-          "items.$[i].items.$[j].items.$[k].mockRequestResponse.selectedResponseBodyType"
-        ] = mockRequestResponse.selectedResponseBodyType;
+          "items.$[i].items.$[j].items.$[k].mockRequestResponse.isMockResponseActive"
+        ] = mockRequestResponse.isMockResponseActive;
       }
       await this.db.collection<Collection>(Collections.COLLECTION).updateOne(
         {
           _id,
           "items.id": mockRequestResponse.folderId, // Find the folder inside `items`
-          "items.items.id": mockRequestResponse.requestId, // Find the mock request inside the folder
+          "items.items.id": mockRequestResponse.mockRequestId, // Find the mock request inside the folder
           "items.items.items.id": responseId, // Find the mockRequestResponse inside the mock request
         },
         { $set: updateObject },
         {
           arrayFilters: [
             { "i.id": mockRequestResponse.folderId }, // Locate the folder
-            { "j.id": mockRequestResponse.requestId }, // Locate the mock request inside the folder
+            { "j.id": mockRequestResponse.mockRequestId }, // Locate the mock request inside the folder
             { "k.id": responseId }, // Locate the mockRequestResponse inside the mock request
           ],
         },
       );
     }
 
-    return { ...mockRequestResponse, responseId: responseId };
+    return { ...mockRequestResponse, mockResponseId: responseId };
   }
 
   /**

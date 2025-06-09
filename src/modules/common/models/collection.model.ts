@@ -30,6 +30,7 @@ export enum ItemTypeEnum {
   GRAPHQL = "GRAPHQL",
   REQUEST_RESPONSE = "REQUEST_RESPONSE",
   MOCK_REQUEST = "MOCK_REQUEST",
+  MOCK_REQUEST_RESPONSE = "MOCK_REQUEST_RESPONSE",
 }
 
 export enum BodyModeEnum {
@@ -425,7 +426,7 @@ export class MockRequestResponseMetaData {
   @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
-  isResponseActive?: boolean;
+  isMockResponseActive?: boolean;
 
   @ApiProperty({ example: "body" })
   @IsString()
