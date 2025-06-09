@@ -35,9 +35,6 @@ export class UserLimitService {
       currentMonth,
     );
 
-    console.log("Thi is the limit ", limit);
-    console.log("Thi is the this is usuage count  ", usageCount);
-
     if (usageCount >= limit) {
       return "LIMIT REACHED";
     }

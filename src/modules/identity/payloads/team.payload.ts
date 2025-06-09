@@ -14,23 +14,24 @@ import { Type } from "class-transformer";
 import { WorkspaceDto } from "@src/modules/common/models/workspace.model";
 import { UserDto } from "@src/modules/common/models/user.model";
 import { Invite } from "@src/modules/common/models/team.model";
+import {logoDto as TeamLogoDto} from "@src/modules/common/models/team.model";
 
 export class logoDto {
   @IsString()
-  @IsOptional()
-  bufferString?: string;
+  @IsNotEmpty()
+  bufferString: string;
 
   @IsString()
-  @IsOptional()
-  encoding?: string;
+  @IsNotEmpty()
+  encoding: string;
 
   @IsString()
-  @IsOptional()
-  mimetype?: string;
+  @IsNotEmpty()
+  mimetype: string;
 
   @IsNumber()
-  @IsOptional()
-  size?: number;
+  @IsNotEmpty()
+  size: number;
 }
 
 export class CreateOrUpdateTeamDto {
@@ -101,6 +102,9 @@ export class TeamDto {
   invites?: Invite[];
 }
 
+
+
+
 export class UpdateTeamDto {
   @ApiProperty({
     example: "team1",
@@ -141,6 +145,9 @@ export class UpdateTeamDto {
   logo?: logoDto;
 }
 
+
+
+
 export class ResponseTeam {
   @IsString()
   @IsNotEmpty()
@@ -149,6 +156,7 @@ export class ResponseTeam {
   @IsString()
   @IsOptional()
   description?: string;
+
 
   @IsString()
   @IsOptional()
@@ -168,13 +176,7 @@ export class ResponseTeam {
 
   @IsOptional()
   @IsObject()
-  logo?: logoDto;
-
-  @IsArray()
-  @Type(() => WorkspaceDto)
-  @ValidateNested({ each: true })
-  @IsOptional()
-  workspaces?: WorkspaceDto[];
+  logo?: TeamLogoDto;
 
   @IsArray()
   @Type(() => UserDto)
@@ -183,15 +185,7 @@ export class ResponseTeam {
 
   @IsArray()
   @IsNotEmpty()
-  owner: string;
-
-  @IsArray()
-  @IsOptional()
-  admins?: string[];
-
-  @IsArray()
-  @IsOptional()
-  invites?: Invite[];
+  owner: string; 
 
   @IsDateString()
   createdAt: Date;
