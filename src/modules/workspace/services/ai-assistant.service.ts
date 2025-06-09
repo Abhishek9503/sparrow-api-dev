@@ -203,7 +203,6 @@ export class AiAssistantService {
    * @throws BadRequestException if the assistant cannot be created.
    */
   public async generateText(data: PromptPayload): Promise<AIResponseDto> {
-    console.log("inside generaet text funcion ====================");
     const user = this.contextService.get("user");
     const stat = await this.chatbotStatsService.getIndividualStat(
       user?._id?.toString(),
@@ -1728,8 +1727,7 @@ export class AiAssistantService {
 
         const teamId = parsedData.teamId;
         const email = parsedData.emailId;
-
-        console.log("This is tema id ", teamId);
+     
 
         const teamData = await this.teamRepository.get(teamId);
         if (!teamData || !teamData.users) {
@@ -1754,9 +1752,7 @@ export class AiAssistantService {
         }
 
         const planName = teamData.plan?.name?.toLowerCase() || "community";
-
-        console.log("This is team data =============>", teamData);
-
+       
         const status = await this.userLimitService.checkLimitAndLogRequest(
           user.id,
           teamId,
@@ -1983,7 +1979,6 @@ export class AiAssistantService {
 
   public async promptGeneration(data: ChatBotPayload): Promise<string> {
     try {
-      console.log("Inside prompt generattion funciotn =========");
       const { userInput, authKey, model, modelVersion } = data;
 
       const promptInstruction =

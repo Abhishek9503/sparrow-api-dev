@@ -25,11 +25,9 @@ export class UserLimitService {
     plan: string,
   ): Promise<"OK" | "LIMIT REACHED"> {
     const currentMonth = new Date().toISOString().slice(0, 7);
-
-    console.log("This is plan=========================>", plan);
-
+   
     const limit =
-      plan === "standard" ? 17 : plan === "community" ? 6 : Infinity;
+      plan === "standard" ? 18 : plan === "community" ? 200 : Infinity;
 
     const usageCount = await this.userLimitRepository.countRequests(
       userId,
