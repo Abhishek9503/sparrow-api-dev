@@ -324,10 +324,13 @@ export class TeamService {
         if (specificInvite) {
           createdById = specificInvite.createdBy.toString();
         }
-        const senderData = await this.userRepository.getUserById(
-          createdById,
-          currentUser,
-        );
+        let senderData = null;
+        if (createdById) {
+          senderData = await this.userRepository.getUserById(
+            createdById,
+            currentUser,
+          );
+        }
         const team: any = {
           _id: teamId,
           logo: teamData.logo,
