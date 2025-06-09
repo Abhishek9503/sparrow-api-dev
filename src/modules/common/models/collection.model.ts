@@ -31,6 +31,7 @@ export enum ItemTypeEnum {
   REQUEST_RESPONSE = "REQUEST_RESPONSE",
   MOCK_REQUEST = "MOCK_REQUEST",
   MOCK_REQUEST_RESPONSE = "MOCK_REQUEST_RESPONSE",
+  AI_REQUEST = "AI_REQUEST",
 }
 
 export enum BodyModeEnum {
@@ -578,6 +579,34 @@ export class MockRequestMetaData {
   selectedResponseBodyType?: ResponseBodyModeEnum;
 }
 
+export class AiRequestMetaData {
+  @ApiProperty({ example: "openai" })
+  @IsNotEmpty()
+  aiModelProvider: "openai" | "anthropic" | "deepseek" | "gemini";
+
+  @ApiProperty({ example: "gpt-4o" })
+  @IsString()
+  @IsNotEmpty()
+  aiModelVariant: string; //ToDo: Add proper types (for type safety) for possible model versions
+
+  @ApiProperty({ example: "Answer the user queries." })
+  @IsString()
+  @IsNotEmpty()
+  systemPrompt: string;
+
+  @ApiProperty({
+    type: [Auth],
+    example: {
+      bearerToken: "Bearer xyz",
+    },
+  })
+  @IsArray()
+  @Type(() => Auth)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  auth?: Auth;
+}
+
 /**
  * Data Transfer Object representing the metadata for a WebSocket connection.
  */
@@ -820,6 +849,11 @@ export class CollectionItem {
   @IsOptional()
   @Type(() => GraphQLMetaData)
   graphql?: GraphQLMetaData;
+
+  @ApiProperty({ type: AiRequestMetaData })
+  @IsOptional()
+  @Type(() => AiRequestMetaData)
+  aiRequest?: AiRequestMetaData;
 
   @IsOptional()
   @IsBoolean()

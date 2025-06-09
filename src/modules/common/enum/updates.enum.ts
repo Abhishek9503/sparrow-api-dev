@@ -12,4 +12,5 @@ export enum UpdatesType {
   REQUEST_RESPONSE = "request_response",
   MOCK_REQUEST = "mock_request",
   MOCK_REQUEST_RESPONSE = "mock_request_response",
+  AI_REQUEST = "ai_request",
 }
