@@ -195,7 +195,7 @@ export class AiAssistantService {
   public async generateText(
     data: PromptPayload,
     user: DecodedUserObject,
-  ): Promise<AIResponseDto> {
+  ): Promise<string> {
     const stat = await this.chatbotStatsService.getIndividualStat(
       user?._id?.toString(),
     );
@@ -207,108 +207,148 @@ export class AiAssistantService {
     if (whitelistEmails) {
       parsedWhiteListEmails = parseWhitelistedEmailList(whitelistEmails) || [];
     }
+
+    // Check if user exceeded token limit
     if (
-      (stat?.tokenStats &&
-        stat.tokenStats?.yearMonth === currentYearMonth &&
-        stat.tokenStats.tokenUsage > (this.monthlyTokenLimit || 0) &&
+      (stat?.aiModel &&
+        stat.aiModel?.yearMonth === currentYearMonth &&
+        stat.aiModel.gpt + stat.aiModel.deepseek >
+          (this.monthlyTokenLimit || 0) &&
         !parsedWhiteListEmails.includes(user?.email)) ||
-      (stat?.tokenStats &&
-        stat.tokenStats?.yearMonth === currentYearMonth &&
+      (stat?.aiModel &&
+        stat.aiModel?.yearMonth === currentYearMonth &&
         parsedWhiteListEmails.includes(user?.email) &&
-        stat.tokenStats.tokenUsage > this.whiteListUserTokenLimit)
+        stat.aiModel.gpt + stat.aiModel.deepseek >
+          this.whiteListUserTokenLimit)
     ) {
-      throw new BadRequestException("Limit reached");
-    }
-    const { text: prompt, threadId, instructions } = data;
-    const assistantId = await this.createAssistant(instructions);
-    if (!assistantId) {
-      throw new BadRequestException("AI Assistant not created!");
+      return "Limit Reached. Please try again later.";
     }
 
-    const role = "user";
-    const message = prompt;
+    const { text: prompt, model, instructions } = data;
 
-    let currentThreadId = threadId;
+    const response = await this.deepseekClient
+        .path("/chat/completions")
+        .post({
+          body: {
+            messages: [
+              { role: "system", content: instructions },
+              { role: "user", content: prompt },
+            ],
+            model: DeepSeepModelVersion.DeepSeek_V3,
+          },
+        });
 
-    if (!currentThreadId) {
-      // Create an thread if it does not exist
-      const assistantThread: Thread =
-        await this.gptAssistantsClient.beta.threads.create({});
-      currentThreadId = assistantThread.id;
-    }
+      if (response.status !== "200") {
+        const data =
+          "Some Issue Occurred in Processing your Request. Please try again";
+        return data;
+      }
 
-    // Add a user question to the existing thread
-    await this.gptAssistantsClient.beta.threads.messages.create(
-      currentThreadId,
-      {
-        role,
-        content: message,
-      },
-    );
+    const body = response.body as any;
+    const tokens = body?.usage?.total_tokens;
 
-    // Run the thread and poll it until it is in a terminal state
+    const eventMessage = {
+          userId: user._id,
+          tokenCount: tokens,
+          model: model
+        };
 
-    const pollRunner =
-      await this.gptAssistantsClient.beta.threads.runs.createAndPoll(
-        currentThreadId,
-        {
-          assistant_id: assistantId,
-          max_completion_tokens: this.maxTokens || 0,
-        },
-        { pollIntervalMs: 500 },
-      );
+    await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
+          value: JSON.stringify(eventMessage),
+        });
 
-    /**
-     * Example implementation for getting data stream-wise in chunks
-     * Can be used in future iterations for real-time data streaming
-     */
-    // Run the thread and stream the responses
-    // const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
-    //   currentThreadId,
-    //   {
-    //     assistant_id: assistantId,
-    //   },
-    //   // { timeout: 10 },
-    // );
+    const result = (response.body as any).choices?.[0]?.message?.content;
+    return result;
 
-    // for await (const event of stream) {
-    //   if (event.event === "thread.message.delta") {
-    //     const data = event.data;
-    //     const delta = data.delta;
-    //     const content = delta.content;
-    //     const textBlock = content[0];
-    //     if (textBlock.type === "text") {
-    //       const messageValue = textBlock?.text?.value;
-    //     }
-
-    //     // await websocket.send(value);
-    //   }
+    // const assistantId = await this.createAssistant(instructions);
+    // if (!assistantId) {
+    //   throw new BadRequestException("AI Assistant not created!");
     // }
 
-    // Get the messages
-    const messageList: MessagesPage =
-      await this.gptAssistantsClient.beta.threads.messages.list(
-        currentThreadId,
-      );
-    const eventMessage = {
-      userId: user._id,
-      tokenCount: pollRunner.usage.total_tokens,
-    };
-    await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
-      value: JSON.stringify(eventMessage),
-    });
-    for await (const message of messageList) {
-      for (const item of message.content) {
-        if (item.type === "text") {
-          return {
-            result: item.text?.value || "",
-            threadId: currentThreadId,
-            messageId: message.id,
-          };
-        }
-      }
-    }
-    return { result: "", threadId: currentThreadId, messageId: "" };
+    // const role = "user";
+    // const message = prompt;
+
+    // let currentThreadId = threadId;
+
+    // if (!currentThreadId) {
+    //   // Create an thread if it does not exist
+    //   const assistantThread: Thread =
+    //     await this.gptAssistantsClient.beta.threads.create({});
+    //   currentThreadId = assistantThread.id;
+    // }
+
+    // // Add a user question to the existing thread
+    // await this.gptAssistantsClient.beta.threads.messages.create(
+    //   currentThreadId,
+    //   {
+    //     role,
+    //     content: message,
+    //   },
+    // );
+
+    // // Run the thread and poll it until it is in a terminal state
+
+    // const pollRunner =
+    //   await this.gptAssistantsClient.beta.threads.runs.createAndPoll(
+    //     currentThreadId,
+    //     {
+    //       assistant_id: assistantId,
+    //       max_completion_tokens: this.maxTokens || 0,
+    //     },
+    //     { pollIntervalMs: 500 },
+    //   );
+
+    // /**
+    //  * Example implementation for getting data stream-wise in chunks
+    //  * Can be used in future iterations for real-time data streaming
+    //  */
+    // // Run the thread and stream the responses
+    // // const stream = await this.gptAssistantsClient.beta.threads.runs.stream(
+    // //   currentThreadId,
+    // //   {
+    // //     assistant_id: assistantId,
+    // //   },
+    // //   // { timeout: 10 },
+    // // );
+
+    // // for await (const event of stream) {
+    // //   if (event.event === "thread.message.delta") {
+    // //     const data = event.data;
+    // //     const delta = data.delta;
+    // //     const content = delta.content;
+    // //     const textBlock = content[0];
+    // //     if (textBlock.type === "text") {
+    // //       const messageValue = textBlock?.text?.value;
+    // //     }
+
+    // //     // await websocket.send(value);
+    // //   }
+    // // }
+
+    // // Get the messages
+    // const messageList: MessagesPage =
+    //   await this.gptAssistantsClient.beta.threads.messages.list(
+    //     currentThreadId,
+    //   );
+    // const eventMessage = {
+    //   userId: user._id,
+    //   tokenCount: pollRunner.usage.total_tokens,
+    // };
+    // await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
+    //   value: JSON.stringify(eventMessage),
+    // });
+    // for await (const message of messageList) {
+    //   for (const item of message.content) {
+    //     if (item.type === "text") {
+    //       return {
+    //         result: item.text?.value || "",
+    //         threadId: currentThreadId,
+    //         messageId: message.id,
+    //       };
+    //     }
+    //   }
+    // }
+    // return { result: "", threadId: currentThreadId, messageId: "" };
   }
 
   /**
@@ -1981,6 +2021,19 @@ export class AiAssistantService {
           "Some Issue Occurred in Processing your Request. Please try again";
         return data;
       }
+
+      const body = response.body as any;
+      const tokens = body?.usage?.total_tokens;
+
+      const eventMessage = {
+            userId: user._id,
+            tokenCount: tokens,
+            model: "deepseek"
+          };
+
+      await this.producerService.produce(TOPIC.AI_RESPONSE_GENERATED_TOPIC, {
+            value: JSON.stringify(eventMessage),
+          });
 
       const result = (response.body as any).choices?.[0]?.message?.content;
       return result;

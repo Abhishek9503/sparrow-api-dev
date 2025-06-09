@@ -56,8 +56,8 @@ export class PromptPayload {
    */
   @IsString()
   @IsOptional()
-  @ApiProperty({ required: true, example: "thread id" })
-  threadId: string;
+  @ApiProperty({ required: true, example: "openai or deepseek" })
+  model: string;
 
   /**
    * Additional instructions for the assistant which will
