@@ -184,11 +184,11 @@ export class LlmConversation {
   apiKey?: string;
 
   /**
-   * Array of message entries in the conversation.
+   * Message entries in the conversation.
    */
   @IsOptional()
-  @ApiProperty({ type: [ConversationModel] })
+  @ApiProperty({ type: () => ConversationModel })
   @Type(() => ConversationModel)
-  data?: ConversationModel[];
+  data?: ConversationModel;
 
 }

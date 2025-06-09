@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res, UseGuards, Get, Query } from "@nestjs/common";
+import { Body, Controller, Post, Req, Res, UseGuards, Get, Query, Delete } from "@nestjs/common";
 import { ApiQuery } from '@nestjs/swagger';
 import { AiAssistantService } from "../services/ai-assistant.service";
 import { FastifyReply } from "fastify";
@@ -121,4 +121,24 @@ export class AiAssistantController {
     );
     return res.status(response.httpStatusCode).send(response);
   }
+
+  @Delete("delete-conversation")
+  @ApiQuery({ name: 'provider', required: true })
+  @ApiQuery({ name: 'apiKey', required: true })
+  @ApiQuery({ name: 'id', required: true })
+  async DeleteConversation(
+    @Query("provider") provider: string,
+    @Query("apiKey") apiKey: string,
+    @Query("id") id: string,
+    @Res() res: FastifyReply,
+  ) {
+    await this.llmConversationService.deleteConversation(provider, apiKey, id);
+    const response = new ApiResponseService(
+      "Conversation deleted successfully",
+      HttpStatusCode.OK,
+      null,
+    );
+    return res.status(response.httpStatusCode).send(response);
+  }
+
 }

@@ -23,12 +23,12 @@ export class LlmConversationService {
 
   // Function to Create a root structure of Conversation in DB
   async insertConversation(payload: LlmConversation): Promise<string> {
-    const ids = await this.llmConversationRepository.insertConversation(
+    const id = await this.llmConversationRepository.insertConversation(
       payload.provider,
       payload.apiKey,
-      payload.data ?? [],
+      payload.data,
     );
-    return ids[0];
+    return id;
   }
 
   async updateConversation(payload: LlmConversation): Promise<void> {
@@ -38,6 +38,9 @@ export class LlmConversationService {
       payload.id,
       payload.data,
     );
-    
+  }
+
+  async deleteConversation(provider: string, apiKey: string, id: string): Promise<void> {
+    await this.llmConversationRepository.deleteConversation(provider, apiKey, id);
   }
 }
