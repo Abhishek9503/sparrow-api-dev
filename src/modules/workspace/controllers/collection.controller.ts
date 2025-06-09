@@ -32,11 +32,13 @@ import {
   BranchChangeDto,
   CollectionAiRequestDto,
   CollectionGraphQLDto,
+  CollectionMockRequestResponseDto,
   CollectionRequestDto,
   CollectionRequestResponseDto,
   CollectionSocketIODto,
   CollectionWebSocketDto,
   FolderPayload,
+  UpdateCollectionMockRequestResponseDto,
   UpdateCollectionRequestResponseDto,
 } from "../payloads/collectionRequest.payload";
 import { CollectionRequestService } from "../services/collection-request.service";
@@ -1317,6 +1319,124 @@ export class collectionController {
       createdCollection,
     );
 
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to add a mock response to a mock request in the collection.
+   *
+   * @param mockRequestResponseDto The mock request response data.
+   * @param res The Fastify response object.
+   * @returns The response object with status and data.
+   */
+  @Post("mock-response")
+  @ApiOperation({
+    summary: "Add A Mock Response",
+    description:
+      "This will add a mock response inside mock request in collection",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "Mock Response Added Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to add a mock response" })
+  async addMockRequestResponse(
+    @Body() mockRequestResponseDto: Partial<CollectionMockRequestResponseDto>,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const mockRequestResponseObj =
+      await this.collectionRequestService.addMockRequestResponse(
+        mockRequestResponseDto,
+        user,
+      );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      mockRequestResponseObj,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to update a mock response inside a mock request in the collection.
+   *
+   * @param responseId The ID of the mock response to update.
+   * @param mockRequestResponseDto The updated mock request response data.
+   * @param res The Fastify response object.
+   * @returns The response object with status and data.
+   */
+  @Patch("mock-response/:responseId")
+  @ApiOperation({
+    summary: "Update a mock response",
+    description:
+      "This will update a mock response inside a mock request in collection",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "Mock Response saved Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to save mock response" })
+  async updateMockRequestResponse(
+    @Param("responseId") responseId: string,
+    @Body()
+    mockRequestResponseDto: Partial<UpdateCollectionMockRequestResponseDto>,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const mockRequestResponse =
+      await this.collectionRequestService.updateMockRequestResponse(
+        responseId,
+        mockRequestResponseDto,
+        user,
+      );
+
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      mockRequestResponse,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to delete a mock response inside a mock request in the collection.
+   *
+   * @param responseId The ID of the mock response to delete.
+   * @param mockRequestResponseDto The mock request response data, including collection ID.
+   * @param res The Fastify response object.
+   * @returns The response object with status and updated collection data.
+   */
+  @Delete("mock-response/:responseId")
+  @ApiOperation({
+    summary: "Delete a Mock Response",
+    description:
+      "This will delete a Mock Response inside a Mock Request in collection",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 200,
+    description: "Mock Response Deleted Successfully",
+  })
+  @ApiResponse({ status: 400, description: "Failed to delete Mock Response" })
+  async deleteMockRequestResponse(
+    @Param("responseId") responseId: string,
+    @Body() mockRequestResponseDto: Partial<CollectionMockRequestResponseDto>,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    await this.collectionRequestService.deleteMockRequestResponse(
+      responseId,
+      mockRequestResponseDto,
+      user,
+    );
+    const collection = await this.collectionService.getCollection(
+      mockRequestResponseDto.collectionId,
+    );
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
     return res.status(responseData.httpStatusCode).send(responseData);
   }
 }

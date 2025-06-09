@@ -30,6 +30,7 @@ export enum ItemTypeEnum {
   GRAPHQL = "GRAPHQL",
   REQUEST_RESPONSE = "REQUEST_RESPONSE",
   MOCK_REQUEST = "MOCK_REQUEST",
+  MOCK_REQUEST_RESPONSE = "MOCK_REQUEST_RESPONSE",
   AI_REQUEST = "AI_REQUEST",
 }
 
@@ -383,6 +384,50 @@ export class RequestResponseMetaData {
   @ValidateNested({ each: true })
   @IsOptional()
   auth?: Auth;
+
+  @ApiProperty({ example: "body" })
+  @IsString()
+  @IsOptional()
+  responseBody?: string;
+
+  @ApiProperty({
+    type: [KeyValue],
+    example: {
+      name: "Authorization",
+      description: "Bearer token for authentication",
+    },
+  })
+  @IsArray()
+  @Type(() => KeyValue)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  responseHeaders?: KeyValue[];
+
+  @ApiProperty({ example: "200 OK" })
+  @IsString()
+  @IsOptional()
+  responseStatus?: string;
+
+  @ApiProperty({
+    enum: [
+      "application/json",
+      "application/xml",
+      "application/javascript",
+      "text/plain",
+      "text/html",
+    ],
+  })
+  @IsEnum({ ResponseBodyModeEnum })
+  @IsString()
+  @IsOptional()
+  selectedResponseBodyType?: ResponseBodyModeEnum;
+}
+
+export class MockRequestResponseMetaData {
+  @ApiProperty({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  isMockResponseActive?: boolean;
 
   @ApiProperty({ example: "body" })
   @IsString()
@@ -784,6 +829,11 @@ export class CollectionItem {
   @IsOptional()
   @Type(() => MockRequestMetaData)
   mockRequest?: MockRequestMetaData;
+
+  @ApiProperty({ type: MockRequestResponseMetaData })
+  @IsOptional()
+  @Type(() => MockRequestResponseMetaData)
+  mockRequestResponse?: MockRequestResponseMetaData;
 
   @ApiProperty({ type: WebSocketMetaData })
   @IsOptional()
