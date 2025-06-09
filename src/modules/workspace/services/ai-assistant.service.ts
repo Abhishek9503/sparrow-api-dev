@@ -195,7 +195,7 @@ export class AiAssistantService {
   public async generateText(
     data: PromptPayload,
     user: DecodedUserObject,
-  ): Promise<string> {
+  ): Promise<AIResponseDto> {
     const stat = await this.chatbotStatsService.getIndividualStat(
       user?._id?.toString(),
     );
@@ -221,7 +221,7 @@ export class AiAssistantService {
         stat.aiModel.gpt + stat.aiModel.deepseek >
           this.whiteListUserTokenLimit)
     ) {
-      return "Limit reached";
+      return {result: "Limit reached"};
     }
 
     const { text: prompt, model, instructions } = data;
@@ -241,7 +241,7 @@ export class AiAssistantService {
       if (response.status !== "200") {
         const data =
           "Some Issue Occurred in Processing your Request. Please try again";
-        return data;
+        return {result: data};
       }
 
     const body = response.body as any;
@@ -257,8 +257,8 @@ export class AiAssistantService {
           value: JSON.stringify(eventMessage),
         });
 
-    const result = (response.body as any).choices?.[0]?.message?.content;
-    return result;
+    const output = (response.body as any).choices?.[0]?.message?.content;
+    return {result: output};
 
     // const assistantId = await this.createAssistant(instructions);
     // if (!assistantId) {

@@ -21,22 +21,22 @@ export class AIResponseDto {
    * @example "thread_34789"
    */
   @ApiProperty({
-    required: true,
+    required: false,
     example: "thread_34789",
   })
   @IsNotEmpty()
-  threadId: string;
+  threadId?: string;
 
   /**
    * The message ID associated with the response.
    * @example "msg_34789"
    */
   @ApiProperty({
-    required: true,
+    required: false,
     example: "msg_34789",
   })
   @IsNotEmpty()
-  messageId: string;
+  messageId?: string;
 }
 
 /**
