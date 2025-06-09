@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { FastifyReply, FastifyRequest, HTTPMethods } from "fastify";
+import { FastifyRequest, HTTPMethods } from "fastify";
 import { CollectionRepository } from "../repositories/collection.repository";
 import { ObjectId } from "mongodb";
 import { ConfigService } from "@nestjs/config";
@@ -26,7 +26,6 @@ export class MockServerService {
 
   async handleMockRequests(
     req: FastifyRequest,
-    res?: FastifyReply,
   ): Promise<MockRequestResponseDto> {
     try {
       const startTime = Date.now();
