@@ -196,7 +196,7 @@ export class TeamService {
     return data;
   }
 
-   /**
+  /**
    * Fetches a public team from database by UUID
    * @param {string} id
    * @returns {Promise<Team>} queried team data
@@ -213,12 +213,13 @@ export class TeamService {
       xUrl: data.xUrl,
       githubUrl: data.githubUrl,
       users: owner,
-      owner: data.owner, 
+      owner: data.owner,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       logo: data.logo,
       createdBy: data.createdBy,
       updatedBy: data.updatedBy,
+      plan: data?.plan,
     };
   }
 
