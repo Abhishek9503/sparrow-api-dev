@@ -1727,7 +1727,6 @@ export class AiAssistantService {
 
         const teamId = parsedData.teamId;
         const email = parsedData.emailId;
-     
 
         const teamData = await this.teamRepository.get(teamId);
         if (!teamData || !teamData.users) {
@@ -1737,7 +1736,7 @@ export class AiAssistantService {
               message: "Team not found or invalid.",
             }),
           );
-          return;
+          continue;
         }
 
         const user = teamData.users.find((u: any) => u.email === email);
@@ -1748,11 +1747,11 @@ export class AiAssistantService {
               message: "User not found in team.",
             }),
           );
-          return;
+          continue;
         }
 
         const planName = teamData.plan?.name?.toLowerCase() || "community";
-       
+
         const status = await this.userLimitService.checkLimitAndLogRequest(
           user.id,
           teamId,
