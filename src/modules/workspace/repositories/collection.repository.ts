@@ -1449,11 +1449,12 @@ export class CollectionRepository {
     collectionId: string,
     aiRequestId: string,
     aiRequest: Partial<CollectionSocketIODto>,
+    user: DecodedUserObject,
   ): Promise<CollectionRequestItem> {
     const _id = new ObjectId(collectionId);
     const defaultParams = {
       updatedAt: new Date(),
-      updatedBy: this.contextService.get("user").name,
+      updatedBy: user.name,
     };
     if (aiRequest.items.type === ItemTypeEnum.AI_REQUEST) {
       aiRequest.items = { ...aiRequest.items, ...defaultParams };
@@ -1466,8 +1467,8 @@ export class CollectionRepository {
               "items.$": aiRequest.items,
               updatedAt: new Date(),
               updatedBy: {
-                id: this.contextService.get("user")._id,
-                name: this.contextService.get("user").name,
+                id: user._id.toString(),
+                name: user.name,
               },
             },
           },
@@ -1491,8 +1492,8 @@ export class CollectionRepository {
               "items.$[i].items.$[j]": aiRequest.items.items,
               updatedAt: new Date(),
               updatedBy: {
-                id: this.contextService.get("user")._id,
-                name: this.contextService.get("user").name,
+                id: user._id.toString(),
+                name: user.name,
               },
             },
           },
@@ -1520,6 +1521,7 @@ export class CollectionRepository {
     collectionId: string,
     aiRequestId: string,
     noOfRequests: number,
+    user: DecodedUserObject,
     folderId?: string,
   ): Promise<UpdateResult<Collection>> {
     const _id = new ObjectId(collectionId);
@@ -1540,8 +1542,8 @@ export class CollectionRepository {
               totalRequests: noOfRequests - 1,
               updatedAt: new Date(),
               updatedBy: {
-                id: this.contextService.get("user")._id,
-                name: this.contextService.get("user").name,
+                id: user._id.toString(),
+                name: user.name,
               },
             },
           },
@@ -1564,8 +1566,8 @@ export class CollectionRepository {
               totalRequests: noOfRequests - 1,
               updatedAt: new Date(),
               updatedBy: {
-                id: this.contextService.get("user")._id,
-                name: this.contextService.get("user").name,
+                id: user._id.toString(),
+                name: user.name,
               },
             },
           },

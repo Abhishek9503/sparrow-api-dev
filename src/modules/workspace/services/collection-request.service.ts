@@ -1370,9 +1370,9 @@ export class CollectionRequestService {
    */
   async addAiRequest(
     aiRequest: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionItem> {
-    const user = await this.contextService.get("user");
-    await this.workspaceService.IsWorkspaceAdminOrEditor(aiRequest.workspaceId);
+    await this.workspaceService.IsWorkspaceAdminOrEditor(aiRequest.workspaceId, user._id);
     await this.checkPermission(aiRequest.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(aiRequest.collectionId);
     const uuid = uuidv4();
@@ -1403,6 +1403,7 @@ export class CollectionRequestService {
       await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
         value: JSON.stringify({
           message: updateMessage,
+          user,
           type: UpdatesType.AI_REQUEST,
           workspaceId: aiRequest.workspaceId,
         }),
@@ -1452,14 +1453,15 @@ export class CollectionRequestService {
   async updateAiRequest(
     aiRequestId: string,
     aiRequest: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
   ): Promise<CollectionRequestItem> {
-    await this.workspaceService.IsWorkspaceAdminOrEditor(aiRequest.workspaceId);
-    const user = await this.contextService.get("user");
+    await this.workspaceService.IsWorkspaceAdminOrEditor(aiRequest.workspaceId, user._id);
     await this.checkPermission(aiRequest.workspaceId, user._id);
     const collection = await this.collectionReposistory.updateAiRequest(
       aiRequest.collectionId,
       aiRequestId,
       aiRequest,
+      user
     );
     const collectionData = await this.collectionReposistory.getCollection(
       aiRequest.collectionId,
@@ -1470,6 +1472,7 @@ export class CollectionRequestService {
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.AI_REQUEST,
         workspaceId: aiRequest.workspaceId,
       }),
@@ -1488,11 +1491,12 @@ export class CollectionRequestService {
   async deleteAiRequest(
     aiRequestId: string,
     aiRequestDto: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
   ): Promise<UpdateResult<Collection>> {
     await this.workspaceService.IsWorkspaceAdminOrEditor(
       aiRequestDto.workspaceId,
+      user._id,
     );
-    const user = await this.contextService.get("user");
     await this.checkPermission(aiRequestDto.workspaceId, user._id);
     const noOfRequests = await this.getNoOfRequest(aiRequestDto.collectionId);
     const collectionData = await this.collectionReposistory.getCollection(
@@ -1506,12 +1510,14 @@ export class CollectionRequestService {
       aiRequestDto.collectionId,
       aiRequestId,
       noOfRequests,
+      user,
       aiRequestDto?.folderId,
     );
     const updateMessage = `AI Request "${aiRequestData?.name}" is deleted from "${collectionData?.name}" collection`;
     await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
       value: JSON.stringify({
         message: updateMessage,
+        user,
         type: UpdatesType.AI_REQUEST,
         workspaceId: aiRequestDto.workspaceId,
       }),

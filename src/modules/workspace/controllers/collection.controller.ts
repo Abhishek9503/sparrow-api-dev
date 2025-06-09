@@ -1159,9 +1159,11 @@ export class collectionController {
   async addAiRequest(
     @Body() aiRequestDto: Partial<CollectionAiRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const aiRequestObj =
-      await this.collectionRequestService.addAiRequest(aiRequestDto);
+      await this.collectionRequestService.addAiRequest(aiRequestDto, user);
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,
@@ -1192,10 +1194,13 @@ export class collectionController {
     @Param("aiRequestId") aiRequestId: string,
     @Body() aiRequestDto: Partial<CollectionAiRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     const aiRequest = await this.collectionRequestService.updateAiRequest(
       aiRequestId,
       aiRequestDto,
+      user
     );
 
     const responseData = new ApiResponseService(
@@ -1228,10 +1233,13 @@ export class collectionController {
     @Param("aiRequestId") aiRequestId: string,
     @Body() aiRequestDto: Partial<CollectionAiRequestDto>,
     @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
   ) {
+    const user = request.user;
     await this.collectionRequestService.deleteAiRequest(
       aiRequestId,
       aiRequestDto,
+      user
     );
     const collection = await this.collectionService.getCollection(
       aiRequestDto.collectionId,
