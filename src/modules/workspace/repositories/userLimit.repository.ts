@@ -8,7 +8,14 @@ import { UserLimitLog } from "@src/modules/common/models/user-limit.model";
 
 /**
  * UserLimitRepository - Handles DB operations related to user usage limits.
+ *
+ *  Current Mode:
+ *   - Logs and retrieves usage counts based on calendar months.
+ *
+ *  TODO Planned Refactor: 
+ *   - Migrate to flexible date-range-based tracking (billing period).
  */
+
 @Injectable()
 export class UserLimitRepository {
   /**
@@ -19,21 +26,20 @@ export class UserLimitRepository {
   constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
 
   /**
-   * Counts the number of requests made by a user in a specific team within a given month.
+   * Counts the number of requests made by a user in a specific team within a given date range.
    *
    * @param {string} userId - The user's ID.
    * @param {string} teamId - The team's ID.
-   * @param {string} month - The month in YYYY-MM format.
+   * @param {Date} start - The start date.
+   * @param {Date} end - The end date.
    * @returns {Promise<number>} - The count of requests.
    */
   async countRequests(
     userId: string,
     teamId: string,
-    month: string,
+    start: Date,
+    end: Date,
   ): Promise<number> {
-    const start = new Date(`${month}-01T00:00:00Z`);
-    const end = new Date(new Date(start).setMonth(start.getMonth() + 1));
-
     return await this.db
       .collection<UserLimitLog>(Collections.USERLIMITLOGS)
       .countDocuments({
