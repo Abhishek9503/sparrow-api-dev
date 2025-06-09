@@ -1369,6 +1369,212 @@ export class CollectionRepository {
     return data;
   }
 
+  /**
+   * Adds a AI Request item to the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequest - The AI Request item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @returns A promise that resolves to the result of the update operation.
+   */
+  async addAiRequest(
+    collectionId: string,
+    aiRequest: CollectionItem,
+    noOfRequests: number,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const data = await this.db
+      .collection<Collection>(Collections.COLLECTION)
+      .updateOne(
+        { _id },
+        {
+          $push: {
+            items: aiRequest,
+          },
+          $set: {
+            totalRequests: noOfRequests + 1,
+          },
+        },
+      );
+    return data;
+  }
+
+  /**
+   * Adds a AI Request item to a specific folder within the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequest - The AI Request item to be added.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - The ID of the folder.
+   * @returns A promise that resolves to the result of the update operation.
+   * @throws BadRequestException if the folder does not exist.
+   */
+  async addAiRequestInFolder(
+    collectionId: string,
+    aiRequest: CollectionItem,
+    noOfRequests: number,
+    folderId: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    const collection = await this.getCollection(collectionId);
+    const isFolderExists = collection.items.some((item) => {
+      return item.id === folderId;
+    });
+    if (isFolderExists) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.name": aiRequest.name },
+          {
+            $push: { "items.$.items": aiRequest.items[0] },
+            $set: {
+              totalRequests: noOfRequests + 1,
+            },
+          },
+        );
+    } else {
+      throw new BadRequestException("Folder Not Found.");
+    }
+  }
+
+  /**
+   * Updates a AI Request item in the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequestId - The ID of the AI Request item to be updated.
+   * @param aiRequest - The updated AI Request item.
+   * @returns A promise that resolves to the updated AI Request item.
+   */
+  async updateAiRequest(
+    collectionId: string,
+    aiRequestId: string,
+    aiRequest: Partial<CollectionSocketIODto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionRequestItem> {
+    const _id = new ObjectId(collectionId);
+    const defaultParams = {
+      updatedAt: new Date(),
+      updatedBy: user.name,
+    };
+    if (aiRequest.items.type === ItemTypeEnum.AI_REQUEST) {
+      aiRequest.items = { ...aiRequest.items, ...defaultParams };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id, "items.id": aiRequestId },
+          {
+            $set: {
+              "items.$": aiRequest.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+        );
+      return { ...data, ...aiRequest.items, id: aiRequestId };
+    } else {
+      aiRequest.items.items = {
+        ...aiRequest.items.items,
+        ...defaultParams,
+      };
+      const data = await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+            "items.id": aiRequest.folderId,
+            "items.items.id": aiRequestId,
+          },
+          {
+            $set: {
+              "items.$[i].items.$[j]": aiRequest.items.items,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+          {
+            arrayFilters: [
+              { "i.id": aiRequest.folderId },
+              { "j.id": aiRequestId },
+            ],
+          },
+        );
+      return { ...data, ...aiRequest.items.items, id: aiRequestId };
+    }
+  }
+
+  /**
+   * Deletes a AI Request item from the collection.
+   *
+   * @param collectionId - The ID of the collection.
+   * @param aiRequestId - The ID of the A item to be deleted.
+   * @param noOfRequests - The current number of requests.
+   * @param folderId - (Optional) The ID of the folder containing the A item.
+   * @returns A promise that resolves to the result of the delete operation.
+   */
+  async deleteAiRequest(
+    collectionId: string,
+    aiRequestId: string,
+    noOfRequests: number,
+    user: DecodedUserObject,
+    folderId?: string,
+  ): Promise<UpdateResult<Collection>> {
+    const _id = new ObjectId(collectionId);
+    if (folderId) {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          {
+            _id,
+          },
+          {
+            $pull: {
+              "items.$[i].items": {
+                id: aiRequestId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+          {
+            arrayFilters: [{ "i.id": folderId }],
+          },
+        );
+    } else {
+      return await this.db
+        .collection<Collection>(Collections.COLLECTION)
+        .updateOne(
+          { _id },
+          {
+            $pull: {
+              items: {
+                id: aiRequestId,
+              },
+            },
+            $set: {
+              totalRequests: noOfRequests - 1,
+              updatedAt: new Date(),
+              updatedBy: {
+                id: user._id.toString(),
+                name: user.name,
+              },
+            },
+          },
+        );
+    }
+  }
+
   async addMockRequestHistory(
     collectionId: string,
     historyEntry: any,

@@ -30,6 +30,7 @@ import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 import { WorkspaceService } from "../services/workspace.service";
 import {
   BranchChangeDto,
+  CollectionAiRequestDto,
   CollectionGraphQLDto,
   CollectionRequestDto,
   CollectionRequestResponseDto,
@@ -1130,6 +1131,119 @@ export class collectionController {
     );
     const collection = await this.collectionService.getCollection(collectionId);
 
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      collection,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to add a new AI request instance. This can be either an individual
+   * AI request instance or a folder-based AI request, and it will be stored in the collection.
+   *
+   * @param aiRequestDto The DTO containing the details of the AI request to be added.
+   * @param res The response object.
+   * @returns The response containing the status and the added aiRequest object.
+   */
+  @Post("ai-request")
+  @ApiOperation({
+    summary: "Add a AI request",
+    description:
+      "This will add a AI request which will be individual AI request or folder based AI request in collection",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "AI Request Updated Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to Update a AI request" })
+  async addAiRequest(
+    @Body() aiRequestDto: Partial<CollectionAiRequestDto>,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const aiRequestObj =
+      await this.collectionRequestService.addAiRequest(aiRequestDto, user);
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      aiRequestObj,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to update an existing AI request instance in the collection.
+   * This can be used for both individual and folder-based AI request instances.
+   *
+   * @param aiRequestId The ID of the AI request to be updated.
+   * @param aiRequestDto The DTO containing the updated details of the AI request.
+   * @param res The response object.
+   * @returns The response containing the status and the updated AI request object.
+   */
+  @Put("ai-request/:aiRequestId")
+  @ApiOperation({
+    summary: "Update a AI request",
+    description:
+      "This will update a AI request which will be individual AI request or folder based AI request in collection",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "AI request saved Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to save AI request" })
+  async updateAiRequest(
+    @Param("aiRequestId") aiRequestId: string,
+    @Body() aiRequestDto: Partial<CollectionAiRequestDto>,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    const aiRequest = await this.collectionRequestService.updateAiRequest(
+      aiRequestId,
+      aiRequestDto,
+      user
+    );
+
+    const responseData = new ApiResponseService(
+      "Success",
+      HttpStatusCode.OK,
+      aiRequest,
+    );
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  /**
+   * Endpoint to delete a specific AI request instance from a collection.
+   * Supports both individual and folder-based AI request deletions.
+   *
+   * @param aiRequestId The ID of the AI request to be deleted.
+   * @param aiRequestDto The DTO containing the details of the AI request to be deleted.
+   * @param res The response object.
+   * @returns The response containing the status and the updated collection.
+   */
+  @Delete("ai-request/:aiRequestId")
+  @ApiOperation({
+    summary: "Delete a AI request",
+    description:
+      "This will delete a AI request which will be individual AI request or folder based AI request in collection",
+  })
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "AI request Deleted Successfully" })
+  @ApiResponse({ status: 400, description: "Failed to delete AI request" })
+  async deleteAiRequest(
+    @Param("aiRequestId") aiRequestId: string,
+    @Body() aiRequestDto: Partial<CollectionAiRequestDto>,
+    @Res() res: FastifyReply,
+    @Req() request: ExtendedFastifyRequest,
+  ) {
+    const user = request.user;
+    await this.collectionRequestService.deleteAiRequest(
+      aiRequestId,
+      aiRequestDto,
+      user
+    );
+    const collection = await this.collectionService.getCollection(
+      aiRequestDto.collectionId,
+    );
     const responseData = new ApiResponseService(
       "Success",
       HttpStatusCode.OK,

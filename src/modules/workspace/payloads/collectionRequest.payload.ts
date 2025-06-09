@@ -22,6 +22,7 @@ import {
   RequestResponseMetaData,
   ResponseBodyModeEnum,
   SourceTypeEnum,
+  AiRequestMetaData,
 } from "@src/modules/common/models/collection.model";
 import {
   Auth,
@@ -377,6 +378,11 @@ export class CollectionRequestItem {
   @IsOptional()
   @Type(() => MockRequestMetaData)
   mockRequest?: MockRequestMetaData;
+
+  @ApiProperty({ type: AiRequestMetaData })
+  @IsOptional()
+  @Type(() => AiRequestMetaData)
+  aiRequest?: AiRequestMetaData;
 }
 
 export class CollectionRequest {
@@ -534,6 +540,42 @@ export class CollectionSocketIODto {
  * Data Transfer Object representing a GraphQL in a collection.
  */
 export class CollectionGraphQLDto {
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  collectionId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsNotEmpty()
+  workspaceId: string;
+
+  @ApiProperty({ example: "6538e910aa77d958912371f5" })
+  @IsString()
+  @IsOptional()
+  folderId?: string;
+
+  @ApiProperty({ enum: ["SPEC", "USER"] })
+  @IsEnum(SourceTypeEnum)
+  @IsOptional()
+  @IsString()
+  source?: SourceTypeEnum;
+
+  @ApiProperty()
+  @Type(() => CollectionRequestItem)
+  @ValidateNested({ each: true })
+  items?: CollectionRequestItem;
+
+  @ApiProperty({ example: "main" })
+  @IsString()
+  @IsOptional()
+  currentBranch?: string;
+}
+
+/**
+ * Data Transfer Object representing a AI Request in a collection.
+ */
+export class CollectionAiRequestDto {
   @ApiProperty({ example: "6538e910aa77d958912371f5" })
   @IsString()
   @IsNotEmpty()

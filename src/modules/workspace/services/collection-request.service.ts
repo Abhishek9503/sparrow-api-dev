@@ -12,6 +12,7 @@ import {
   CollectionRequestItem,
   CollectionRequestResponseDto,
   CollectionSocketIODto,
+  CollectionAiRequestDto,
   CollectionWebSocketDto,
   DeleteFolderDto,
   FolderDto,
@@ -1354,6 +1355,171 @@ export class CollectionRequestService {
         user,
         type: UpdatesType.MOCK_REQUEST,
         workspaceId: requestDto.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Adds a new AI Request to the collection.
+   * This method handles AI Request and folderAI Request.
+   *
+   * @param aiRequest AI Request details to be added.
+   * @returns AI Request item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async addAiRequest(
+    aiRequest: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(aiRequest.workspaceId, user._id);
+    await this.checkPermission(aiRequest.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(aiRequest.collectionId);
+    const uuid = uuidv4();
+    const collection = await this.collectionReposistory.getCollection(
+      aiRequest.collectionId,
+    );
+    const aiRequestObj: CollectionItem = {
+      id: uuid,
+      name: aiRequest.items.name,
+      type: aiRequest.items.type,
+      description: aiRequest.items.description,
+      source: aiRequest.source ?? SourceTypeEnum.USER,
+      isDeleted: false,
+      createdBy: user?.name,
+      updatedBy: user?.name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let updateMessage = ``;
+    if (aiRequest.items.type === ItemTypeEnum.AI_REQUEST) {
+      aiRequestObj.aiRequest = aiRequest.items.aiRequest;
+      await this.collectionReposistory.addAiRequest(
+        aiRequest.collectionId,
+        aiRequestObj,
+        noOfRequests,
+      );
+      updateMessage = `New AI request "${aiRequest.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          user,
+          type: UpdatesType.AI_REQUEST,
+          workspaceId: aiRequest.workspaceId,
+        }),
+      });
+      return aiRequestObj;
+    } else {
+      aiRequestObj.items = [
+        {
+          id: uuidv4(),
+          name: aiRequest.items.items.name,
+          type: aiRequest.items.items.type,
+          description: aiRequest.items.items.description,
+          aiRequest: { ...aiRequest.items.items.aiRequest },
+          source: SourceTypeEnum.USER,
+          createdBy: user?.name,
+          updatedBy: user?.name,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      await this.collectionReposistory.addAiRequestInFolder(
+        aiRequest.collectionId,
+        aiRequestObj,
+        noOfRequests,
+        aiRequest?.folderId,
+      );
+      updateMessage = `New AI request "${aiRequest.items.items.name}" is created under "${collection.name}" collection`;
+      await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+        value: JSON.stringify({
+          message: updateMessage,
+          type: UpdatesType.AI_REQUEST,
+          workspaceId: aiRequest.workspaceId,
+        }),
+      });
+      return aiRequestObj.items[0];
+    }
+  }
+
+  /**
+   * Updates an existing AI Request in the collection.
+   *
+   * @param aiRequestId - The ID of the AI Request to be updated.
+   * @param aiRequest - The updated AI Request details.
+   * @returns The updated AI Request item.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async updateAiRequest(
+    aiRequestId: string,
+    aiRequest: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
+  ): Promise<CollectionRequestItem> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(aiRequest.workspaceId, user._id);
+    await this.checkPermission(aiRequest.workspaceId, user._id);
+    const collection = await this.collectionReposistory.updateAiRequest(
+      aiRequest.collectionId,
+      aiRequestId,
+      aiRequest,
+      user
+    );
+    const collectionData = await this.collectionReposistory.getCollection(
+      aiRequest.collectionId,
+    );
+    const updateMessage = `AI Request "${
+      aiRequest?.items?.name ?? aiRequest?.items?.items?.name
+    }" is updated under "${collectionData.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        user,
+        type: UpdatesType.AI_REQUEST,
+        workspaceId: aiRequest.workspaceId,
+      }),
+    });
+    return collection;
+  }
+
+  /**
+   * Deletes an existing AI Request from the collection.
+   *
+   * @param aiRequestId - The ID of the AI Request to be deleted.
+   * @param aiRequestDto - The AI Request details including collection ID and folder ID (if applicable).
+   * @returns The result of the update operation.
+   * @throws UnauthorizedException if the user does not have the required permissions.
+   */
+  async deleteAiRequest(
+    aiRequestId: string,
+    aiRequestDto: Partial<CollectionAiRequestDto>,
+    user: DecodedUserObject,
+  ): Promise<UpdateResult<Collection>> {
+    await this.workspaceService.IsWorkspaceAdminOrEditor(
+      aiRequestDto.workspaceId,
+      user._id,
+    );
+    await this.checkPermission(aiRequestDto.workspaceId, user._id);
+    const noOfRequests = await this.getNoOfRequest(aiRequestDto.collectionId);
+    const collectionData = await this.collectionReposistory.getCollection(
+      aiRequestDto.collectionId,
+    );
+    const aiRequestData = await this.findItemById(
+      collectionData.items,
+      aiRequestId,
+    );
+    const collection = await this.collectionReposistory.deleteAiRequest(
+      aiRequestDto.collectionId,
+      aiRequestId,
+      noOfRequests,
+      user,
+      aiRequestDto?.folderId,
+    );
+    const updateMessage = `AI Request "${aiRequestData?.name}" is deleted from "${collectionData?.name}" collection`;
+    await this.producerService.produce(TOPIC.UPDATES_ADDED_TOPIC, {
+      value: JSON.stringify({
+        message: updateMessage,
+        user,
+        type: UpdatesType.AI_REQUEST,
+        workspaceId: aiRequestDto.workspaceId,
       }),
     });
     return collection;

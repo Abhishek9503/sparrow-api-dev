@@ -11,4 +11,5 @@ export enum UpdatesType {
   GRAPHQL = "graphql",
   REQUEST_RESPONSE = "request_response",
   MOCK_REQUEST = "mock_request",
+  AI_REQUEST = "ai_request",
 }
