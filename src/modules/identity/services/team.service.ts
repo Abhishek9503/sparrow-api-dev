@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { CreateOrUpdateTeamDto, UpdateTeamDto } from "../payloads/team.payload";
 import { TeamRepository } from "../repositories/team.repository";
 import {
@@ -196,14 +200,14 @@ export class TeamService {
     return data;
   }
 
-   /**
+  /**
    * Fetches a public team from database by UUID
    * @param {string} id
    * @returns {Promise<Team>} queried team data
    */
   async getPublic(id: string): Promise<WithId<Team>> {
     const data = await this.teamRepository.get(id);
-    const owner = data.users?.filter(user => user.role === "owner") || [];
+    const owner = data.users?.filter((user) => user.role === "owner") || [];
     return {
       _id: data._id,
       name: data.name,
@@ -213,12 +217,13 @@ export class TeamService {
       xUrl: data.xUrl,
       githubUrl: data.githubUrl,
       users: owner,
-      owner: data.owner, 
+      owner: data.owner,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       logo: data.logo,
       createdBy: data.createdBy,
       updatedBy: data.updatedBy,
+      plan: data?.plan,
     };
   }
 
@@ -294,6 +299,11 @@ export class TeamService {
     return data;
   }
 
+  public isInviteExpired(expiresAt: Date): boolean {
+    const now = new Date();
+    return new Date(expiresAt) < now;
+  }
+
   async getAllTeams(userId: string): Promise<WithId<Team>[]> {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
@@ -336,6 +346,10 @@ export class TeamService {
         let createdById = null;
         if (specificInvite) {
           createdById = specificInvite.createdBy.toString();
+        }
+        const hasExpired = this.isInviteExpired(specificInvite.expiresAt);
+        if (hasExpired) {
+          throw new NotFoundException("The invitation has expired");
         }
         const senderData = await this.userRepository.getUserById(createdById);
         const team: any = {
