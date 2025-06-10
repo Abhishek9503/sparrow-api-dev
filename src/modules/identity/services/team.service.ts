@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { CreateOrUpdateTeamDto, UpdateTeamDto } from "../payloads/team.payload";
+import {
+  CreateOrUpdateTeamDto,
+  GetTeamDto,
+  UpdateTeamDto,
+} from "../payloads/team.payload";
 import { TeamRepository } from "../repositories/team.repository";
 import {
   DeleteResult,
@@ -201,7 +205,7 @@ export class TeamService {
    * @param {string} id
    * @returns {Promise<Team>} queried team data
    */
-  async getPublic(id: string): Promise<WithId<Team>> {
+  async getPublic(id: string): Promise<WithId<GetTeamDto>> {
     const data = await this.teamRepository.get(id);
     const owner = data.users?.filter((user) => user.role === "owner") || [];
     return {
@@ -219,10 +223,6 @@ export class TeamService {
       logo: data.logo,
       createdBy: data.createdBy,
       updatedBy: data.updatedBy,
-      plan: {
-        id: new ObjectId(""),
-        name: "",
-      },
     };
   }
 
