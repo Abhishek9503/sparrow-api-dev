@@ -1,5 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { UserLimitRepository } from "../repositories/userLimit.repository";
+import {
+  LimitCheckResult,
+  SubscriptionPlan,
+} from "@src/modules/common/enum/user-limit-enum";
+import { PlanRepository } from "@src/modules/identity/repositories/plan.repository";
 
 /**
  * UserLimitService - Handles logic for user request limits and usage logging.
@@ -7,7 +12,7 @@ import { UserLimitRepository } from "../repositories/userLimit.repository";
  *  Current Mode:
  * - Request limits are tracked monthly using the calendar month (YYYY-MM).
  *
- *  TODO Future Upgrade Plan: 
+ *  TODO Future Upgrade Plan:
  * - Switch to billing-cycle-based tracking using billing.periodStart and billing.periodEnd
  *   once the billing module is fully implemented.
  */
@@ -15,6 +20,7 @@ import { UserLimitRepository } from "../repositories/userLimit.repository";
 export class UserLimitService {
   constructor(
     private readonly userLimitRepository: UserLimitRepository,
+    private readonly planRepository: PlanRepository,
     // optional
     // private readonly contextService: ContextService,
   ) {}
@@ -29,17 +35,20 @@ export class UserLimitService {
   async checkLimitAndLogRequest(
     userId: string,
     teamId: string,
-    plan: string,
-  ): Promise<"OK" | "LIMIT REACHED"> {
+    planId: string,
+  ): Promise<LimitCheckResult> {
     const currentMonth = new Date().toISOString().slice(0, 7);
-  
-
     const start = new Date(`${currentMonth}-01T00:00:00Z`);
     const end = new Date(new Date(start).setMonth(start.getMonth() + 1));
 
-    const limit =
-      plan === "standard" ? 50 : plan === "community" ? 200 : Infinity;
+    const plan = await this.planRepository.get(planId);
 
+    // fetch limit from the plan details
+    const limit = plan?.limits?.aiTokensPerMonth?.value;
+    if (typeof limit !== "number") {
+      throw new Error("AI token limit not defined in plan");
+    }
+    // const limit = 26;
     const usageCount = await this.userLimitRepository.countRequests(
       userId,
       teamId,
@@ -48,7 +57,7 @@ export class UserLimitService {
     );
 
     if (usageCount >= limit) {
-      return "LIMIT REACHED";
+      return LimitCheckResult.LIMIT_REACHED;
     }
 
     await this.userLimitRepository.logRequest({
@@ -57,6 +66,6 @@ export class UserLimitService {
       requestedAt: new Date(),
     });
 
-    return "OK";
+    return LimitCheckResult.OK;
   }
 }

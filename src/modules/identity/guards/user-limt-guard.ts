@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { TeamRepository } from "@src/modules/identity/repositories/team.repository";
 import { UserLimitService } from "@src/modules/workspace/services/userLimit.service";
+import { LimitCheckResult } from "@src/modules/common/enum/user-limit-enum";
 
 @Injectable()
 export class UserLimitGuard implements CanActivate {
@@ -17,13 +18,11 @@ export class UserLimitGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-  
 
     const RequestUser = req.user;
 
     const teamId = req.body?.teamId;
     const emailId = RequestUser.email;
-   
 
     if (!teamId || !emailId) {
       throw new ForbiddenException("Missing teamId or emailId.");
@@ -39,15 +38,15 @@ export class UserLimitGuard implements CanActivate {
       throw new ForbiddenException("User not found in team.");
     }
 
-    const planName = teamData.plan?.name?.toLowerCase() || "community";
+    const planId = teamData.plan.id?.toString();
 
     const status = await this.userLimitService.checkLimitAndLogRequest(
       user.id,
       teamId,
-      planName,
+      planId,
     );
 
-    if (status === "LIMIT REACHED") {
+    if (status === LimitCheckResult.LIMIT_REACHED) {
       throw new ForbiddenException("Limit reached. Please try again later.");
     }
 

@@ -58,6 +58,7 @@ import { Role } from "nest-access-control";
 import { TeamService } from "@src/modules/identity/services/team.service";
 import { TeamRepository } from "@src/modules/identity/repositories/team.repository";
 import { UserLimitService } from "./userLimit.service";
+import { LimitCheckResult } from "@src/modules/common/enum/user-limit-enum";
 // import { GoogleGenAI } from "@google/genai";
 
 async function initializeGenAI(authKey: string, client?: WebSocket) {
@@ -1750,15 +1751,14 @@ export class AiAssistantService {
           continue;
         }
 
-        const planName = teamData.plan?.name?.toLowerCase() || "community";
+        const planId = teamData.plan.id?.toString();
 
         const status = await this.userLimitService.checkLimitAndLogRequest(
           user.id,
           teamId,
-          planName,
+          planId,
         );
-
-        if (status === "LIMIT REACHED") {
+        if (status === LimitCheckResult.LIMIT_REACHED) {
           client.send(
             JSON.stringify({
               event: "error",

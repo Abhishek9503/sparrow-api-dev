@@ -58,12 +58,21 @@ export class SelectiveTestflowRun {
   active: boolean;
 }
 
+export class AiTokensPerMonth {
+  area: LimitArea.AI;
+
+  @IsNumber()
+  @IsNotEmpty()
+  value: number;
+}
+
 export class Limits {
   workspacesPerHub: WorkspaceLimit;
   testflowPerWorkspace: TestflowLimit;
   blocksPerTestflow: BlocksPerTestflow;
   usersPerHub: UsersPerHub;
   selectiveTestflowRun: SelectiveTestflowRun;
+  aiTokensPerMonth: AiTokensPerMonth;
 }
 
 export class Plan {
