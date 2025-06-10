@@ -207,10 +207,6 @@ export class GetTeamDto {
   @IsOptional()
   admins?: string[];
 
-  @IsArray()
-  @IsOptional()
-  invites?: Invite[];
-
   @IsDateString()
   createdAt: Date;
 
