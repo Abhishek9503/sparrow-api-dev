@@ -14,6 +14,7 @@ import { Type } from "class-transformer";
 import { WorkspaceDto } from "@src/modules/common/models/workspace.model";
 import { UserDto } from "@src/modules/common/models/user.model";
 import { Invite } from "@src/modules/common/models/team.model";
+import { logoDto as TeamLogoDto } from "@src/modules/common/models/team.model";
 
 export class logoDto {
   @IsString()
@@ -31,24 +32,6 @@ export class logoDto {
   @IsNumber()
   @IsNotEmpty()
   size: number;
-}
-
-export class TeamlogoDto {
-  @IsString()
-  @IsNotEmpty()
-  bufferString?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  encoding?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  mimetype?: string;
-
-  @IsNumber()
-  @IsNotEmpty()
-  size?: number;
 }
 
 export class CreateOrUpdateTeamDto {
@@ -186,7 +169,7 @@ export class GetTeamDto {
 
   @IsOptional()
   @IsObject()
-  logo?: TeamlogoDto;
+  logo?: TeamLogoDto;
 
   @IsArray()
   @Type(() => WorkspaceDto)
