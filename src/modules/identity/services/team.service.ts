@@ -225,7 +225,7 @@ export class TeamService {
       updatedBy: data.updatedBy,
       plan: {
         id: new ObjectId(""),
-        name: data?.plan?.name,
+        name: "",
       },
     };
   }
