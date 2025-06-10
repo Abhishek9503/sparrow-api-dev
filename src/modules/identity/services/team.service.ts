@@ -203,7 +203,7 @@ export class TeamService {
    */
   async getPublic(id: string): Promise<WithId<Team>> {
     const data = await this.teamRepository.get(id);
-    const owner = data.users?.filter(user => user.role === "owner") || [];
+    const owner = data.users?.filter((user) => user.role === "owner") || [];
     return {
       _id: data._id,
       name: data.name,
@@ -219,7 +219,10 @@ export class TeamService {
       logo: data.logo,
       createdBy: data.createdBy,
       updatedBy: data.updatedBy,
-      plan: data?.plan,
+      plan: {
+        id: new ObjectId(""),
+        name: "",
+      },
     };
   }
 
