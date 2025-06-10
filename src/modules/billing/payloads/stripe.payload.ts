@@ -84,7 +84,7 @@ export class CreateSubscriptionDto {
     example: "pm_12345",
   })
   @IsString()
-  paymentMethodId: string;
+  paymentMethodId?: string;
 
   @ApiPropertyOptional({
     description: "Additional metadata for the subscription",
@@ -116,6 +116,9 @@ export class UpdateSubscriptionDto {
   })
   @IsString()
   priceId: string;
+
+  @IsString()
+  paymentMethodId: string;
 
   @ApiPropertyOptional({
     description: "Additional metadata to update on the subscription",

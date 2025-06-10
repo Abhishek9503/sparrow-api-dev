@@ -115,6 +115,73 @@ export class Team {
   updatedBy?: string;
 }
 
+export class TeamWithoutPlan {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  hubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  githubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  xUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  linkedinUrl?: string;
+
+  @IsOptional()
+  @IsObject()
+  logo?: logoDto;
+
+  @IsArray()
+  @Type(() => WorkspaceDto)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  workspaces?: WorkspaceDto[];
+
+  @IsArray()
+  @Type(() => UserDto)
+  @ValidateNested({ each: true })
+  users: UserDto[];
+
+  @IsArray()
+  @IsNotEmpty()
+  owner: string;
+
+  @IsArray()
+  @IsOptional()
+  admins?: string[];
+
+  @IsArray()
+  @IsOptional()
+  invites?: Invite[];
+
+  @IsDateString()
+  createdAt: Date;
+
+  @IsDateString()
+  updatedAt: Date;
+
+  @IsString()
+  @IsOptional()
+  createdBy?: string;
+
+  @IsString()
+  @IsOptional()
+  updatedBy?: string;
+}
+
 export class TeamWithNewInviteTag extends Team {
   @IsBoolean()
   @IsOptional()

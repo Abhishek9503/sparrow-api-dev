@@ -37,6 +37,12 @@ import {
   CancelSubscriptionDto,
   ReactivateSubscriptionDto,
 } from "../payloads/stripe.payload";
+import { StripeSubscriptionService } from "../services/stripe-subscription.service";
+import {
+  StripeWebhookGateway,
+  PaymentEventType,
+} from "../gateways/stripe-webhook.gateway";
+import { StripeSubscriptionRepository } from "../repositories/stripe-subscription.repository";
 
 // Dynamically import Stripe services
 let StripeService: any;
@@ -54,6 +60,9 @@ export class StripeController {
 
   constructor(
     @Optional() @Inject(StripeService) private readonly stripeService: any,
+    private readonly stripeSubscriptionService: StripeSubscriptionService,
+    private readonly stripeWebhookGateway: StripeWebhookGateway,
+    private readonly stripeSubscriptionRepo: StripeSubscriptionRepository,
   ) {
     this.isStripeAvailable = !!this.stripeService;
 
@@ -215,7 +224,7 @@ export class StripeController {
         createSubscriptionDto.metadata,
       );
 
-      return { subscription };
+      return subscription;
     } catch (error) {
       throw new HttpException(
         error.message || "Failed to create subscription",
@@ -318,9 +327,10 @@ export class StripeController {
         subscriptionId,
         updateSubscriptionDto.priceId,
         updateSubscriptionDto.metadata,
+        updateSubscriptionDto.paymentMethodId,
       );
 
-      return { subscription };
+      return subscription;
     } catch (error) {
       throw new HttpException(
         error.message || "Failed to update subscription",
@@ -481,17 +491,96 @@ export class StripeController {
     @Headers("stripe-signature") signature: string,
   ): Promise<{ received: boolean }> {
     try {
-      // Get the raw body from the request
       const rawBody = request.rawBody;
-      const event = this.stripeService.constructEventFromPayload(
+      const event = await this.stripeService.constructEventFromPayload(
         rawBody,
         signature,
       );
 
-      await console.log("event", event);
+      // Handle different types of events
+      switch (event.type) {
+        case "customer.subscription.created":
+          await this.stripeSubscriptionService.handleSubscriptionCreated(
+            event.data.object,
+          );
+          // Get the updated team data to send to client
+          const teamCreated = await this.stripeSubscriptionRepo.findTeamById(
+            event.data.object.metadata?.hubId,
+          );
+
+          this.stripeWebhookGateway.emitPaymentEvent(
+            PaymentEventType.SUBSCRIPTION_CREATED,
+            {
+              subscription: event.data.object,
+              team: teamCreated,
+            },
+          );
+          break;
+          break;
+
+        case "customer.subscription.updated":
+          await this.stripeSubscriptionService.handleSubscriptionUpdated(
+            event.data.object,
+          );
+          // Get the updated team data
+          const teamUpdated = await this.stripeSubscriptionRepo.findTeamById(
+            event.data.object.metadata?.hubId,
+          );
+
+          this.stripeWebhookGateway.emitPaymentEvent(
+            PaymentEventType.SUBSCRIPTION_UPDATED,
+            {
+              subscription: event.data.object,
+              team: teamUpdated,
+            },
+          );
+          break;
+
+        case "invoice.payment_failed":
+          await this.stripeSubscriptionService.handleInvoicePaymentFailed(
+            event.data.object,
+          );
+          // Get team data for the failed payment
+          const teamWithFailedPayment =
+            await this.stripeSubscriptionRepo.findTeamById(
+              event.data.object.lines?.data?.[0]?.metadata?.hubId,
+            );
+
+          this.stripeWebhookGateway.emitPaymentEvent(
+            PaymentEventType.PAYMENT_FAILED,
+            {
+              invoice: event.data.object,
+              team: teamWithFailedPayment,
+            },
+          );
+          break;
+
+        case "invoice.payment_succeeded":
+          await this.stripeSubscriptionService.handleInvoicePaymentSucceeded(
+            event.data.object,
+          );
+          // Get team data for the successful payment
+          const teamWithSuccessfulPayment =
+            await this.stripeSubscriptionRepo.findTeamById(
+              event.data.object.lines?.data?.[0]?.metadata?.hubId,
+            );
+
+          this.stripeWebhookGateway.emitPaymentEvent(
+            PaymentEventType.PAYMENT_SUCCESS,
+            {
+              invoice: event.data.object,
+              team: teamWithSuccessfulPayment,
+            },
+          );
+          break;
+
+        default:
+          console.log(`Unhandled webhook event type: ${event.type}`);
+      }
+
       return { received: true };
     } catch (error) {
-      console.error("❌ Webhook error:", error.message);
+      console.error("Webhook error:", error);
       throw new HttpException(
         "Webhook error: " + error.message,
         HttpStatus.BAD_REQUEST,

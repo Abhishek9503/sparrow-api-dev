@@ -11,6 +11,7 @@ import {
 import {
   Team,
   TeamWithNewInviteTag,
+  TeamWithoutPlan,
 } from "@src/modules/common/models/team.model";
 import { ProducerService } from "@src/modules/common/services/kafka/producer.service";
 import { TOPIC } from "@src/modules/common/enum/topic.enum";
@@ -196,14 +197,14 @@ export class TeamService {
     return data;
   }
 
-   /**
+  /**
    * Fetches a public team from database by UUID
    * @param {string} id
    * @returns {Promise<Team>} queried team data
    */
-  async getPublic(id: string): Promise<WithId<Team>> {
+  async getPublic(id: string): Promise<WithId<TeamWithoutPlan>> {
     const data = await this.teamRepository.get(id);
-    const owner = data.users?.filter(user => user.role === "owner") || [];
+    const owner = data.users?.filter((user) => user.role === "owner") || [];
     return {
       _id: data._id,
       name: data.name,
@@ -213,7 +214,7 @@ export class TeamService {
       xUrl: data.xUrl,
       githubUrl: data.githubUrl,
       users: owner,
-      owner: data.owner, 
+      owner: data.owner,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       logo: data.logo,
