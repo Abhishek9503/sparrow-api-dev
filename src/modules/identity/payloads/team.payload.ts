@@ -7,6 +7,8 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  ValidateNested,
+  IsDateString,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { WorkspaceDto } from "@src/modules/common/models/workspace.model";
@@ -16,19 +18,19 @@ import { Invite } from "@src/modules/common/models/team.model";
 export class logoDto {
   @IsString()
   @IsNotEmpty()
-  bufferString: string;
+  bufferString?: string;
 
   @IsString()
   @IsNotEmpty()
-  encoding: string;
+  encoding?: string;
 
   @IsString()
   @IsNotEmpty()
-  mimetype: string;
+  mimetype?: string;
 
   @IsNumber()
   @IsNotEmpty()
-  size: number;
+  size?: number;
 }
 
 export class CreateOrUpdateTeamDto {
@@ -137,4 +139,71 @@ export class UpdateTeamDto {
   @IsOptional()
   @IsObject()
   logo?: logoDto;
+}
+
+export class GetTeamDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  hubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  githubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  xUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  linkedinUrl?: string;
+
+  @IsOptional()
+  @IsObject()
+  logo?: logoDto;
+
+  @IsArray()
+  @Type(() => WorkspaceDto)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  workspaces?: WorkspaceDto[];
+
+  @IsArray()
+  @Type(() => UserDto)
+  @ValidateNested({ each: true })
+  users: UserDto[];
+
+  @IsArray()
+  @IsNotEmpty()
+  owner: string;
+
+  @IsArray()
+  @IsOptional()
+  admins?: string[];
+
+  @IsArray()
+  @IsOptional()
+  invites?: Invite[];
+
+  @IsDateString()
+  createdAt: Date;
+
+  @IsDateString()
+  updatedAt: Date;
+
+  @IsString()
+  @IsOptional()
+  createdBy?: string;
+
+  @IsString()
+  @IsOptional()
+  updatedBy?: string;
 }
