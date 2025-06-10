@@ -223,7 +223,10 @@ export class TeamService {
       logo: data.logo,
       createdBy: data.createdBy,
       updatedBy: data.updatedBy,
-      plan: data?.plan,
+      plan: {
+        id: new ObjectId(""),
+        name: data?.plan?.name,
+      },
     };
   }
 
