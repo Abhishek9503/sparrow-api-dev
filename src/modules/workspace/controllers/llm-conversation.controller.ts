@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res, UseGuards, Get, Query, Delete } from "@nestjs/common";
+import { Body, Controller, Post, Req, Res, UseGuards, Get, Query, Delete, Put, Param } from "@nestjs/common";
 import { ApiQuery } from '@nestjs/swagger';
 import { FastifyReply } from "fastify";
 import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
@@ -13,7 +13,7 @@ import { LlmConversationService } from "../services/llm-conversation.service";
 
 @ApiBearerAuth()
 @ApiTags("AI Support")
-@Controller("api/assistant")
+@Controller("api/conversation")
 @UseGuards(JwtAuthGuard)
 export class LlmConversationController {
   /**
@@ -53,7 +53,7 @@ export class LlmConversationController {
     return res.status(response.httpStatusCode).send(response);
   }
 
-  @Post("update-conversation")
+  @Put("update-conversation")
   async UpdateConversation(@Body() payload: LlmConversation, @Res() res: FastifyReply) {
     const data = await this.llmConversationService.updateConversation(payload);
     const response = new ApiResponseService(
@@ -64,14 +64,13 @@ export class LlmConversationController {
     return res.status(response.httpStatusCode).send(response);
   }
 
-  @Delete("delete-conversation")
+  @Delete("delete-conversation/:id")
   @ApiQuery({ name: 'provider', required: true })
   @ApiQuery({ name: 'apiKey', required: true })
-  @ApiQuery({ name: 'id', required: true })
   async DeleteConversation(
+    @Param("id") id: string,
     @Query("provider") provider: string,
     @Query("apiKey") apiKey: string,
-    @Query("id") id: string,
     @Res() res: FastifyReply,
   ) {
     await this.llmConversationService.deleteConversation(provider, apiKey, id);
