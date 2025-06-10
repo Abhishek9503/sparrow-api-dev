@@ -18,6 +18,24 @@ import { Invite } from "@src/modules/common/models/team.model";
 export class logoDto {
   @IsString()
   @IsNotEmpty()
+  bufferString: string;
+
+  @IsString()
+  @IsNotEmpty()
+  encoding: string;
+
+  @IsString()
+  @IsNotEmpty()
+  mimetype: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  size: number;
+}
+
+export class TeamlogoDto {
+  @IsString()
+  @IsNotEmpty()
   bufferString?: string;
 
   @IsString()
@@ -168,7 +186,7 @@ export class GetTeamDto {
 
   @IsOptional()
   @IsObject()
-  logo?: logoDto;
+  logo?: TeamlogoDto;
 
   @IsArray()
   @Type(() => WorkspaceDto)
