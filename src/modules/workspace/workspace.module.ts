@@ -64,6 +64,7 @@ import { MockServerController } from "./controllers/mock-server.controller";
 import { MockServerService } from "./services/mock-server.service";
 import { LlmConversationService } from "./services/llm-conversation.service";
 import { LlmConversationRepository } from "./repositories/llm-conversation.repository";
+import { LlmConversationController } from "./controllers/llm-conversation.controller";
 
 /**
  * Workspace Module provides all necessary services, handlers, repositories,
@@ -140,6 +141,7 @@ import { LlmConversationRepository } from "./repositories/llm-conversation.repos
     FeedbackController,
     UpdatesController,
     AiAssistantController,
+    LlmConversationController,
     ChatbotStatsController,
     TestflowController,
     MockServerController,
