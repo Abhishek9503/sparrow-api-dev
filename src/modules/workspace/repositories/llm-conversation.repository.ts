@@ -12,9 +12,8 @@ export class LlmConversationRepository {
 
   async getConversations(
     provider: string,
-    apiKey: string,
-    id?: string
-  ): Promise<ConversationModel[] | ConversationModel | null> {
+    apiKey: string
+  ): Promise<any[] | null> {
     const collection = this.db.collection(Collections.LLMCONVERSATION);
     const providerField = provider.toLowerCase();
 
@@ -27,26 +26,14 @@ export class LlmConversationRepository {
     });
 
     if (!document || !document[providerField]) {
-      return id ? null : [];
+      return null;
     }
 
     const providerEntry = document[providerField].find(
       (entry: { value: string }) => entry.value === apiKey
     );
 
-    if (!providerEntry) {
-      return id ? null : [];
-    }
-
-    const conversations = providerEntry.conversations ?? [];
-
-    // If ID is provided, return that specific conversation
-    if (id) {
-      const conversation = conversations.find((conv: any) => conv.id === id);
-      return conversation || null;
-    }
-
-    return conversations;
+    return providerEntry?.conversations ?? null;
   }
 
 
@@ -64,42 +51,43 @@ export class LlmConversationRepository {
       conversation: conversation.conversation ?? [],
     };
 
-    const filter = {
-      [providerField]: {
-        $elemMatch: {
-          value: apiKey,
-        },
-      },
-    };
-
-    const updateExisting = {
-      $push: {
-        [`${providerField}.$.conversations`]: conversationWithId,
-      },
-    };
-
-    const result = await collection.updateOne(filter, updateExisting);
-
-    if (result.matchedCount > 0) {
-      return conversationWithId.id;
-    }
-
-    const providerDoc = await collection.findOne({ [providerField]: { $exists: true } });
+    // Step 1: Try to find a doc that has this API key or the provider field
+    const providerDoc = await collection.findOne({
+      [providerField]: { $exists: true },
+    });
 
     if (providerDoc) {
-      const addNewApiKey = {
-        $push: {
-          [providerField]: {
-            value: apiKey,
-            conversations: [conversationWithId],
-          },
-        },
-      };
+      // Look for matching API key
+      const apiKeyEntryIndex = providerDoc[providerField].findIndex(
+        (entry: any) => entry.value === apiKey
+      );
 
-      await collection.updateOne({ _id: providerDoc._id }, addNewApiKey);
+      let updateQuery;
+
+      if (apiKeyEntryIndex !== -1) {
+        // API key exists — push conversation to the right index
+        updateQuery = {
+          $push: {
+            [`${providerField}.${apiKeyEntryIndex}.conversations`]: conversationWithId,
+          },
+        };
+      } else {
+        // API key doesn't exist — add new entry
+        updateQuery = {
+          $push: {
+            [providerField]: {
+              value: apiKey,
+              conversations: [conversationWithId],
+            },
+          },
+        };
+      }
+
+      await collection.updateOne({ _id: providerDoc._id }, updateQuery);
       return conversationWithId.id;
     }
 
+    // Step 2: No document found for this provider — insert a new one
     const newProviderEntry = {
       [providerField]: [
         {
@@ -120,58 +108,39 @@ export class LlmConversationRepository {
    * @param apiKey e.g. "sk-openai-abc-123"
    * @param conversation conversation object to insert
    */
-  async addConversation(
+  async updateConversationData(
     provider: string,
     apiKey: string,
     conversationId: string,
-    data: Record<string, any>,
+    updateOps: Record<string, any>
   ): Promise<void> {
-    const collection = this.db.collection(Collections.LLMCONVERSATION);
-    const providerField = provider.toLowerCase();
+    try {
+      const collection = this.db.collection(Collections.LLMCONVERSATION);
+      const providerField = provider.toLowerCase();
 
-    if (!data) {
-      throw new Error("No conversation data provided");
-    }
+      if (!updateOps || Object.keys(updateOps).length === 0) return;
 
-    const messagesToAppend = data.conversation ?? [];
-    const { conversation, id, ...metaUpdates } = data;
-
-    const updateOps: any = {};
-
-    // Set only explicitly defined fields (e.g. title, tokens)
-    for (const key in metaUpdates) {
-      const value = metaUpdates[key];
-      if (value !== undefined) {
-        updateOps.$set = updateOps.$set || {};
-        updateOps.$set[`${providerField}.$[apiKeyElem].conversations.$[convElem].${key}`] = value;
-      }
-    }
-
-    // Append messages to existing conversation
-    if (messagesToAppend.length > 0) {
-      updateOps.$push = {
-        [`${providerField}.$[apiKeyElem].conversations.$[convElem].conversation`]: {
-          $each: messagesToAppend,
+      const result = await collection.updateOne(
+        {
+          [`${providerField}.value`]: apiKey,
+          [`${providerField}.conversations.id`]: conversationId,
         },
-      };
-    }
+        updateOps,
+        {
+          arrayFilters: [
+            { "apiKeyElem.value": apiKey },
+            { "convElem.id": conversationId },
+          ],
+        }
+      );
 
-    // Skip if there's nothing to update
-    if (!updateOps.$set && !updateOps.$push) return;
-
-    await collection.updateOne(
-      {
-        [`${providerField}.value`]: apiKey,
-        [`${providerField}.conversations.id`]: conversationId,
-      },
-      updateOps,
-      {
-        arrayFilters: [
-          { "apiKeyElem.value": apiKey },
-          { "convElem.id": conversationId },
-        ],
+      if (result.matchedCount === 0) {
+        throw new Error("Conversation not found to update.");
       }
-    );
+    } catch (error) {
+      console.error("Error in updateConversationData:", error);
+      throw new Error("Failed to update conversation in DB.");
+    }
   }
 
   async deleteConversation(provider: string, apiKey: string, conversationId: string): Promise<void> {
