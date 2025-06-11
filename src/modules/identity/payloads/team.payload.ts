@@ -14,7 +14,7 @@ import { Type } from "class-transformer";
 import { WorkspaceDto } from "@src/modules/common/models/workspace.model";
 import { UserDto } from "@src/modules/common/models/user.model";
 import { Invite } from "@src/modules/common/models/team.model";
-import {logoDto as TeamLogoDto} from "@src/modules/common/models/team.model";
+import { logoDto as TeamLogoDto } from "@src/modules/common/models/team.model";
 
 export class logoDto {
   @IsString()
@@ -102,9 +102,6 @@ export class TeamDto {
   invites?: Invite[];
 }
 
-
-
-
 export class UpdateTeamDto {
   @ApiProperty({
     example: "team1",
@@ -145,9 +142,6 @@ export class UpdateTeamDto {
   logo?: logoDto;
 }
 
-
-
-
 export class ResponseTeam {
   @IsString()
   @IsNotEmpty()
@@ -156,7 +150,6 @@ export class ResponseTeam {
   @IsString()
   @IsOptional()
   description?: string;
-
 
   @IsString()
   @IsOptional()
@@ -185,7 +178,70 @@ export class ResponseTeam {
 
   @IsArray()
   @IsNotEmpty()
-  owner: string; 
+  owner: string;
+
+  @IsDateString()
+  createdAt: Date;
+
+  @IsDateString()
+  updatedAt: Date;
+
+  @IsString()
+  @IsOptional()
+  createdBy?: string;
+
+  @IsString()
+  @IsOptional()
+  updatedBy?: string;
+}
+
+export class GetTeamDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  hubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  githubUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  xUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  linkedinUrl?: string;
+
+  @IsOptional()
+  @IsObject()
+  logo?: TeamLogoDto;
+
+  @IsArray()
+  @Type(() => WorkspaceDto)
+  @ValidateNested({ each: true })
+  @IsOptional()
+  workspaces?: WorkspaceDto[];
+
+  @IsArray()
+  @Type(() => UserDto)
+  @ValidateNested({ each: true })
+  users: UserDto[];
+
+  @IsArray()
+  @IsNotEmpty()
+  owner: string;
+
+  @IsArray()
+  @IsOptional()
+  admins?: string[];
 
   @IsDateString()
   createdAt: Date;

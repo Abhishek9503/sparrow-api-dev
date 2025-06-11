@@ -213,7 +213,7 @@ export class TeamService {
       xUrl: data.xUrl,
       githubUrl: data.githubUrl,
       users: owner,
-      owner: data.owner, 
+      owner: data.owner,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       logo: data.logo,
@@ -294,6 +294,11 @@ export class TeamService {
     return data;
   }
 
+  public isInviteExpired(expiresAt: Date): boolean {
+    const now = new Date();
+    return new Date(expiresAt) < now;
+  }
+
   async getAllTeams(userId: string): Promise<WithId<Team>[]> {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
@@ -310,13 +315,9 @@ export class TeamService {
       const teamData: WithId<TeamWithNewInviteTag> = await this.get(
         id.toString(),
       );
-
-      teamData.workspaces = teamData.workspaces.filter((_workspace) => {
-        if (userWorkspaceIds.includes(_workspace.id.toString())) {
-          return true;
-        }
-        return false;
-      });
+      teamData.workspaces = teamData.workspaces.filter((_workspace) =>
+        userWorkspaceIds.includes(_workspace.id.toString()),
+      );
 
       teamData.isNewInvite = isNewInvite;
 
@@ -326,17 +327,15 @@ export class TeamService {
       user.email,
     );
     const teamIds = existingTeams?.teamIds || [];
-    if (teamIds) {
-      for (const teamId of teamIds) {
-        const teamData: WithId<TeamWithNewInviteTag> = await this.get(teamId);
-        // Find the invite that matches the user's email (or another criterion)
-        const specificInvite = teamData.invites.find(
-          (invite) => invite.email === user.email,
-        );
-        let createdById = null;
-        if (specificInvite) {
-          createdById = specificInvite.createdBy.toString();
-        }
+    for (const teamId of teamIds) {
+      const teamData: WithId<TeamWithNewInviteTag> = await this.get(teamId);
+      const specificInvite = teamData.invites.find(
+        (invite) => invite.email === user.email,
+      );
+      const isValidInvite =
+        specificInvite && !this.isInviteExpired(specificInvite.expiresAt);
+      if (isValidInvite) {
+        const createdById = specificInvite.createdBy.toString();
         const senderData = await this.userRepository.getUserById(createdById);
         const team: any = {
           _id: teamId,
