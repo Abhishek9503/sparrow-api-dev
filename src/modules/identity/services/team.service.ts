@@ -457,7 +457,7 @@ export class TeamService {
       };
 
       const promise = [this.emailService.sendEmail(transporter, mailOptions)];
-      await Promise.all(promise);
+      Promise.all(promise);
     }
   }
 }
