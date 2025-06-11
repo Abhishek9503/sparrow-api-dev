@@ -132,6 +132,6 @@
   },
   "packageManager": "pnpm@10.11.0",
   "optionalDependencies": {
-    "@sparrowapp-dev/stripe-billing": "^0.0.91"
+    "@sparrowapp-dev/stripe-billing": "^0.0.95"
   }
 }

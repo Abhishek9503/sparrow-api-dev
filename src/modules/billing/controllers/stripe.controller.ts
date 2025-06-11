@@ -13,6 +13,7 @@ import {
   Delete,
   Headers,
   Req,
+  Res,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -43,6 +44,9 @@ import {
   PaymentEventType,
 } from "../gateways/stripe-webhook.gateway";
 import { StripeSubscriptionRepository } from "../repositories/stripe-subscription.repository";
+import { FastifyReply } from "fastify";
+import { ApiResponseService } from "@src/modules/common/services/api-response.service";
+import { HttpStatusCode } from "@src/modules/common/enum/httpStatusCode.enum";
 
 // Dynamically import Stripe services
 let StripeService: any;
@@ -462,12 +466,20 @@ export class StripeController {
   })
   async getCustomerInvoices(
     @Param("customerId") customerId: string,
+    @Res() res: FastifyReply,
   ): Promise<{ invoices: any[] }> {
     try {
       this.checkStripeAvailability();
 
-      const invoices = await this.stripeService.getCustomerInvoices(customerId);
-      return { invoices };
+      const invoices =
+        await this.stripeService.getCustomerInvoicesDetailed(customerId);
+
+      const responseData = new ApiResponseService(
+        "Invoice's Fetched",
+        HttpStatusCode.OK,
+        invoices,
+      );
+      return res.status(HttpStatusCode.OK).send(responseData);
     } catch (error) {
       throw new HttpException(
         error.message || "Failed to get customer invoices",
@@ -516,7 +528,6 @@ export class StripeController {
             },
           );
           break;
-          break;
 
         case "customer.subscription.updated":
           await this.stripeSubscriptionService.handleSubscriptionUpdated(
@@ -562,7 +573,8 @@ export class StripeController {
           // Get team data for the successful payment
           const teamWithSuccessfulPayment =
             await this.stripeSubscriptionRepo.findTeamById(
-              event.data.object.lines?.data?.[0]?.metadata?.hubId,
+              event.data.object.parent?.subscription_details.data?.metadata
+                ?.hubId,
             );
 
           this.stripeWebhookGateway.emitPaymentEvent(
