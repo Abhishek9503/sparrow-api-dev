@@ -10,6 +10,7 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Post,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@src/modules/common/guards/jwt-auth.guard";
@@ -21,6 +22,7 @@ import {
   PaymentMethodResponseDto,
   DeletePaymentMethodResponseDto,
   PaymentMethodDto,
+  SetDefaultPaymentMethodDto,
 } from "../payloads/payment-methods.payload";
 
 // Dynamically import Stripe services
@@ -159,6 +161,35 @@ export class PaymentMethodsController {
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Post("default")
+  @ApiOperation({
+    summary: "Set a payment method as default",
+    description:
+      "Sets the specified payment method as the default for a customer",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Default payment method set successfully",
+    type: PaymentMethodResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Customer or payment method not found",
+  })
+  async setDefaultPaymentMethod(
+    @Body() setDefaultDto: SetDefaultPaymentMethodDto,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.paymentMethodsService.setDefaultPaymentMethod(
+      setDefaultDto.customerId,
+      setDefaultDto.paymentMethodId,
+    );
+
+    return {
+      success: true,
+      message: "Default payment method set successfully",
+    };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

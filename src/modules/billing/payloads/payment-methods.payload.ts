@@ -144,3 +144,19 @@ export class DeletePaymentMethodResponseDto {
   @ApiProperty({ example: "Payment method detached successfully" })
   message: string;
 }
+
+export class SetDefaultPaymentMethodDto {
+  @ApiProperty({
+    description: "Customer ID",
+    example: "cus_12345",
+  })
+  @IsString()
+  customerId: string;
+
+  @ApiProperty({
+    description: "Payment method ID to set as default",
+    example: "pm_12345",
+  })
+  @IsString()
+  paymentMethodId: string;
+}
