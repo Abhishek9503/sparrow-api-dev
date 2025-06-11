@@ -479,6 +479,7 @@ export class StripeController {
         HttpStatusCode.OK,
         invoices,
       );
+      
       return res.status(HttpStatusCode.OK).send(responseData);
     } catch (error) {
       throw new HttpException(

@@ -87,12 +87,24 @@ export class PaymentMethodsController {
       const paymentMethods =
         await this.paymentMethodsService.getPaymentMethods(customerId);
 
+      const customer = await this.paymentMethodsService.getCustomer(customerId);
+
+      // Handle the default payment method which could be a string or an object
+      let defaultPaymentMethodId: string | null = null;
+      if (customer?.invoice_settings?.default_payment_method) {
+        defaultPaymentMethodId =
+          typeof customer.invoice_settings.default_payment_method === "string"
+            ? customer.invoice_settings.default_payment_method
+            : customer.invoice_settings.default_payment_method.id;
+      }
+
       // Format the response to match the original controller format
       const formattedPaymentMethods = paymentMethods.map((pm: any) => {
         const formattedMethod: PaymentMethodDto = {
           id: pm.id,
           type: pm.type,
           billing_details: pm.billing_details,
+          isDefault: pm.id === defaultPaymentMethodId,
         };
 
         // Only add card details if they exist
