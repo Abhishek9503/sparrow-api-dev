@@ -22,6 +22,7 @@ import { TeamRole } from "@src/modules/common/enum/roles.enum";
 import { User } from "@src/modules/common/models/user.model";
 import { UserInvitesRepository } from "../repositories/userInvites.repository";
 import { PlanRepository } from "../repositories/plan.repository";
+import { EmailService } from "@src/modules/common/services/email.service";
 
 /**
  * Team Service
@@ -36,6 +37,7 @@ export class TeamService {
     private readonly userRepository: UserRepository,
     private readonly contextService: ContextService,
     private readonly planRepository: PlanRepository,
+    private readonly emailService: EmailService,
   ) {}
 
   async isImageSizeValid(size: number) {
@@ -181,13 +183,13 @@ export class TeamService {
    */
   async get(id: string): Promise<WithId<Team>> {
     const data = await this.teamRepository.get(id);
-    const validInvites = data?.invites?.filter((invite) => {
-      if (new Date(invite?.expiresAt) > new Date()) {
-        return true;
-      }
-      return false;
-    });
-    data.invites = validInvites || [];
+    // const validInvites = data?.invites?.filter((invite) => {
+    //   if (new Date(invite?.expiresAt) > new Date()) {
+    //     return true;
+    //   }
+    //   return false;
+    // });
+    // data.invites = validInvites || [];
     data?.invites?.forEach((invite) => {
       delete invite.inviteId;
       delete invite.isAccepted;
@@ -424,5 +426,33 @@ export class TeamService {
       return false;
     });
     return teamDetails;
+  }
+
+  async teamPlanUpgradeOwner(teamId: string) {
+    const teamDetails = await this.teamRepository.get(teamId);
+    const isTeamOwnerId = teamDetails?.owner;
+    if (isTeamOwnerId) {
+      const userDetails = await this.userRepository.getUserById(isTeamOwnerId);
+      const transporter = this.emailService.createTransporter();
+      const mailOptions = {
+        from: this.configService.get("app.senderEmail"),
+        to: userDetails?.email,
+        text: "Rquest for Plan Upgrade",
+        template: "planUpgradeOwnerEmail",
+        context: {
+          teamName: teamDetails?.name,
+          userName: userDetails?.name || userDetails?.email,
+          sparrowEmail: this.configService.get("support.sparrowEmail"),
+          sparrowWebsite: this.configService.get("support.sparrowWebsite"),
+          sparrowWebsiteName: this.configService.get(
+            "support.sparrowWebsiteName",
+          ),
+        },
+        subject: `Request to Upgrade Plan`,
+      };
+
+      const promise = [this.emailService.sendEmail(transporter, mailOptions)];
+      Promise.all(promise);
+    }
   }
 }
