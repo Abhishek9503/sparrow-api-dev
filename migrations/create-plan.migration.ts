@@ -18,6 +18,9 @@ export class CreatePlanMigration implements OnModuleInit {
         this.configService.get<string>("app.defaultHubPlan");
       const planCollection = this.db.collection(Collections.PLAN);
 
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
       const existingPlan = await planCollection.findOne({
         name: defaultHubPlan,
       });
@@ -57,9 +60,60 @@ export class CreatePlanMigration implements OnModuleInit {
 
         await planCollection.insertOne(plan);
         console.log("\x1b[36mCommunity Plan created successfully.\x1b[0m");
+        
       } else {
         console.log("\x1b[33mCommunity Plan already exists. Skipping.\x1b[0m");
       }
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+
+      const existingStandardPlan = await planCollection.findOne({
+        name: "Standard",
+      });
+
+      if (!existingStandardPlan) {
+        const plan = {
+          name: "Standard",
+          description: "Standard tier with limited access",
+          active: true,
+          limits: { 
+            workspacesPerHub: {
+              area: LimitArea.WORKSPACE,
+              value: 5,
+            },
+            testflowPerWorkspace: {
+              area: LimitArea.TESTFLOW,
+              value: 10,
+            },
+            blocksPerTestflow: {
+              area: LimitArea.BLOCK,
+              value: 30,
+            },
+            usersPerHub:{
+              area: LimitArea.BLOCK,
+              value: 100000,
+            },
+            selectiveTestflowRun:{
+              area: LimitArea.TESTFLOW,
+              active: true
+            }
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: "system",
+          updatedBy: "system",
+        };
+
+        await planCollection.insertOne(plan);
+        console.log("\x1b[36mStandard Plan created successfully.\x1b[0m");
+        
+      } else {
+        console.log("\x1b[33mStandard Plan already exists. Skipping.\x1b[0m");
+      }
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
     } catch (error) {
       console.error("Error during migration:", error);
     }
