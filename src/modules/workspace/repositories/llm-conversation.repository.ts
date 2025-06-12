@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Db } from "mongodb";
 import { v4 as uuidv4 } from "uuid";
+import { ConfigService } from "@nestjs/config";
 
 // Enum
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
@@ -8,7 +9,16 @@ import { LlmConversation , ConversationModel , UserConversationModel } from "../
 
 @Injectable()
 export class LlmConversationRepository {
-  constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
+
+  private conversationLimit: number;
+
+  constructor(
+    @Inject("DATABASE_CONNECTION") private db: Db,
+    private readonly configService: ConfigService
+  ) {
+   this.conversationLimit = this.configService.get("ai.conversationLimit");
+  }
+
 
   async getConversations(
     provider: string,
@@ -51,7 +61,7 @@ export class LlmConversationRepository {
       conversation: conversation.conversation ?? [],
     };
 
-    // Step 1: Try to find a doc that has this API key or the provider field
+    // Step 1: Try to find a doc that has this provider
     const providerDoc = await collection.findOne({
       [providerField]: { $exists: true },
     });
@@ -62,18 +72,26 @@ export class LlmConversationRepository {
         (entry: any) => entry.value === apiKey
       );
 
-      let updateQuery;
-
       if (apiKeyEntryIndex !== -1) {
-        // API key exists — push conversation to the right index
-        updateQuery = {
-          $push: {
-            [`${providerField}.${apiKeyEntryIndex}.conversations`]: conversationWithId,
+        // Get existing conversations
+        const existingConversations = providerDoc[providerField][apiKeyEntryIndex].conversations || [];
+
+        // Keep only the last 29 to make room for the new one
+        const updatedConversations = [
+          ...existingConversations.slice(-(this.conversationLimit - 1)),
+          conversationWithId,
+        ];
+
+        const updateQuery = {
+          $set: {
+            [`${providerField}.${apiKeyEntryIndex}.conversations`]: updatedConversations,
           },
         };
+
+        await collection.updateOne({ _id: providerDoc._id }, updateQuery);
       } else {
         // API key doesn't exist — add new entry
-        updateQuery = {
+        const updateQuery = {
           $push: {
             [providerField]: {
               value: apiKey,
@@ -81,9 +99,9 @@ export class LlmConversationRepository {
             },
           },
         };
+        await collection.updateOne({ _id: providerDoc._id }, updateQuery);
       }
 
-      await collection.updateOne({ _id: providerDoc._id }, updateQuery);
       return conversationWithId.id;
     }
 
