@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Db } from "mongodb";
 import { v4 as uuidv4 } from "uuid";
+import { ConfigService } from "@nestjs/config";
 
 // Enum
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
@@ -8,7 +9,16 @@ import { LlmConversation , ConversationModel , UserConversationModel } from "../
 
 @Injectable()
 export class LlmConversationRepository {
-  constructor(@Inject("DATABASE_CONNECTION") private db: Db) {}
+
+  private conversationLimit: number;
+
+  constructor(
+    @Inject("DATABASE_CONNECTION") private db: Db,
+    private readonly configService: ConfigService
+  ) {
+   this.conversationLimit = this.configService.get("ai.conversationLimit");
+  }
+
 
   async getConversations(
     provider: string,
@@ -68,7 +78,7 @@ export class LlmConversationRepository {
 
         // Keep only the last 29 to make room for the new one
         const updatedConversations = [
-          ...existingConversations.slice(-2),
+          ...existingConversations.slice(-(this.conversationLimit - 1)),
           conversationWithId,
         ];
 
