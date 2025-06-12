@@ -51,7 +51,7 @@ export class TeamController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, CreateTeamGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: "Create a new  Team",
     description: "This will Create a  new Team",
@@ -119,7 +119,10 @@ export class TeamController {
   })
   @ApiResponse({ status: 200, description: "Fetch Team Request Received" })
   @ApiResponse({ status: 400, description: "Fetch Team Request Failed" })
-  async getPublicTeam(@Param("teamId") teamId: string, @Res() res: FastifyReply) {
+  async getPublicTeam(
+    @Param("teamId") teamId: string,
+    @Res() res: FastifyReply,
+  ) {
     const data = await this.teamService.getPublic(teamId);
     const responseData = new ApiResponseService(
       "Success",
@@ -545,6 +548,31 @@ export class TeamController {
     );
     const responseData = new ApiResponseService(
       "Resend Invite to the hub",
+      HttpStatusCode.OK,
+      data,
+    );
+
+    return res.status(responseData.httpStatusCode).send(responseData);
+  }
+
+  @Post(":teamId/requestPlan")
+  @ApiOperation({
+    summary: "Requesting Plan Upgrade.",
+    description: "",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Successfully sent request to upgrade the plan",
+  })
+  @ApiResponse({ status: 400, description: "Failed to Accept Invite." })
+  @ApiResponse({ status: 404, description: "Team or Request not Found." })
+  async requestPlanUpgrade(
+    @Param("teamId") teamId: string,
+    @Res() res: FastifyReply,
+  ) {
+    const data = await this.teamService.teamPlanUpgradeOwner(teamId);
+    const responseData = new ApiResponseService(
+      "request send to Owner requesting for a Upgrade plan.",
       HttpStatusCode.OK,
       data,
     );

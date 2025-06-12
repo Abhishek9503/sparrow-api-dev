@@ -20,13 +20,13 @@ export class HubInviteGuard implements CanActivate {
     const teamId = request?.body?.teamId;
     const teamUserEmails = new Set();
     const userTeam = await this.teamService.get(teamId);
-    userTeam.users.forEach((user) => {
+    userTeam?.users?.forEach((user) => {
       teamUserEmails.add(user.email.toLowerCase());
     });
-    userTeam.invites.forEach((invites) => {
+    userTeam?.invites?.forEach((invites) => {
       teamUserEmails.add(invites.email.toLowerCase());
     });
-    requestUsers.forEach((email: string) => {
+    requestUsers?.forEach((email: string) => {
       teamUserEmails.add(email.toLowerCase());
     });
 
