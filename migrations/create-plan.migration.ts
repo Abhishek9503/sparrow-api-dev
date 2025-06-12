@@ -35,7 +35,7 @@ export class CreatePlanMigration implements OnModuleInit {
           name: defaultHubPlan,
           description: "Free tier with limited access",
           active: true,
-          limits: { 
+          limits: {
             workspacesPerHub: {
               area: LimitArea.WORKSPACE,
               value: 3,
@@ -48,14 +48,18 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.BLOCK,
               value: 5,
             },
-            usersPerHub:{
+            usersPerHub: {
               area: LimitArea.BLOCK,
               value: 3,
             },
-            selectiveTestflowRun:{
+            selectiveTestflowRun: {
               area: LimitArea.TESTFLOW,
-              active: false
-            }
+              active: false,
+            },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 5,
+            },
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -65,7 +69,6 @@ export class CreatePlanMigration implements OnModuleInit {
 
         await planCollection.insertOne(plan);
         console.log("\x1b[36mCommunity Plan created successfully.\x1b[0m");
-        
       } else {
         console.log("\x1b[33mCommunity Plan already exists. Skipping.\x1b[0m");
       }
@@ -82,7 +85,7 @@ export class CreatePlanMigration implements OnModuleInit {
           name: "Standard",
           description: "Standard tier with limited access",
           active: true,
-          limits: { 
+          limits: {
             workspacesPerHub: {
               area: LimitArea.WORKSPACE,
               value: 5,
@@ -95,14 +98,18 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.BLOCK,
               value: 30,
             },
-            usersPerHub:{
+            usersPerHub: {
               area: LimitArea.BLOCK,
               value: 100000,
             },
-            selectiveTestflowRun:{
+            selectiveTestflowRun: {
               area: LimitArea.TESTFLOW,
-              active: true
-            }
+              active: true,
+            },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 10,
+            },
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -112,7 +119,6 @@ export class CreatePlanMigration implements OnModuleInit {
 
         await planCollection.insertOne(plan);
         console.log("\x1b[36mStandard Plan created successfully.\x1b[0m");
-        
       } else {
         console.log("\x1b[33mStandard Plan already exists. Skipping.\x1b[0m");
       }
@@ -129,7 +135,7 @@ export class CreatePlanMigration implements OnModuleInit {
           name: "Professional",
           description: "Standard tier with limited access",
           active: true,
-          limits: { 
+          limits: {
             workspacesPerHub: {
               area: LimitArea.WORKSPACE,
               value: 10,
@@ -142,14 +148,18 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.BLOCK,
               value: 30,
             },
-            usersPerHub:{
+            usersPerHub: {
               area: LimitArea.BLOCK,
               value: 100000,
             },
-            selectiveTestflowRun:{
+            selectiveTestflowRun: {
               area: LimitArea.TESTFLOW,
-              active: true
-            }
+              active: true,
+            },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 25,
+            },
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -159,9 +169,10 @@ export class CreatePlanMigration implements OnModuleInit {
 
         await planCollection.insertOne(plan);
         console.log("\x1b[36mProfessional Plan created successfully.\x1b[0m");
-        
       } else {
-        console.log("\x1b[33mProfessional Plan already exists. Skipping.\x1b[0m");
+        console.log(
+          "\x1b[33mProfessional Plan already exists. Skipping.\x1b[0m",
+        );
       }
       this.hasRun = true; // Set flag after successful execution
     } catch (error) {
