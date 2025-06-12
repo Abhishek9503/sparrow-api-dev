@@ -2,9 +2,10 @@ import { Injectable, OnModuleInit, Inject } from "@nestjs/common";
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 import { Db, ObjectId } from "mongodb";
 
-const planId = "684a812f17de8200c6d5c242"; // Replace with the actual plan ID
-const planName = "Standard"; // Replace with the actual plan name
-const teamId = "684aa187d09a7c084e31c744"; // Replace with the actual team ID
+const planId = "68"; 
+const planName = "Standard"; 
+const teamId = "6y";
+
 
 @Injectable()
 export class UpgradePlanMigration implements OnModuleInit {
