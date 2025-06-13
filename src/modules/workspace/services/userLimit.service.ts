@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { UserLimitRepository } from "../repositories/userLimit.repository";
 import {
   LimitCheckResult,
-  SubscriptionPlan,
 } from "@src/modules/common/enum/user-limit-enum";
 import { PlanRepository } from "@src/modules/identity/repositories/plan.repository";
 
@@ -44,7 +43,7 @@ export class UserLimitService {
     const plan = await this.planRepository.get(planId);
 
     // fetch limit from the plan details
-    const limit = plan?.limits?.aiTokensPerMonth?.value;
+    const limit = plan?.limits?.aiRequestsPerMonth?.value;
     if (typeof limit !== "number") {
       throw new Error("AI token limit not defined in plan");
     }

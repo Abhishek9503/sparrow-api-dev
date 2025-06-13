@@ -4,7 +4,7 @@ import { Db, InsertOneResult } from "mongodb";
 
 import { Collections } from "@src/modules/common/enum/database.collection.enum";
 
-import { UserLimitLog } from "@src/modules/common/models/user-limit.model";
+import { UserLimitLog } from "@src/modules/common/models/ai-limit.model";
 
 /**
  * UserLimitRepository - Handles DB operations related to user usage limits.

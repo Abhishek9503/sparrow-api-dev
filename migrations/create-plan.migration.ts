@@ -60,7 +60,7 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.TESTFLOW_RUNHISTORY,
               value: 5,
             },
-             aiTokensPerMonth: {
+            aiRequestsPerMonth: {
               area: LimitArea.AI,
               value: 50,
             },
@@ -114,7 +114,7 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.TESTFLOW_RUNHISTORY,
               value: 10,
             },
-             aiTokensPerMonth: {
+            aiRequestsPerMonth: {
               area: LimitArea.AI,
               value: 200,
             },
@@ -168,7 +168,7 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.TESTFLOW_RUNHISTORY,
               value: 25,
             },
-             aiTokensPerMonth: {
+            aiRequestsPerMonth: {
               area: LimitArea.AI,
               value: Infinity,
             },
