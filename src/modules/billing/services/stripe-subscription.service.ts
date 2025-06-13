@@ -151,6 +151,7 @@ export class StripeSubscriptionService {
     try {
       // Extract subscription details from invoice
       const subscription =
+        invoice.parent?.subscription_details?.subscription ||
         invoice.lines?.data?.[0]?.parent?.subscription_item_details
           ?.subscription;
 
@@ -159,22 +160,35 @@ export class StripeSubscriptionService {
         return;
       }
 
-      // Get metadata from the invoice line items
-      const metadata = invoice.lines?.data?.[0]?.metadata || {};
+      // Get metadata properly checking both sources
+      // We need to check if they have hubId property since empty objects are truthy
+      let metadata: { hubId?: string; planName?: string } = {};
 
+      // First check line items metadata
+      const lineItemMetadata = invoice.lines?.data?.[0]?.metadata;
+      if (lineItemMetadata && lineItemMetadata.hubId) {
+        metadata = lineItemMetadata as { hubId: string; planName?: string };
+      }
+      // If not found or no hubId, check subscription details metadata
+      else {
+        const subscriptionMetadata =
+          invoice?.parent?.subscription_details?.metadata;
+        if (subscriptionMetadata && subscriptionMetadata.hubId) {
+          metadata = subscriptionMetadata as {
+            hubId: string;
+            planName?: string;
+          };
+        }
+      }
+
+      // Check if hubId exists in metadata
       if (!metadata.hubId) {
         this.logger.warn("No hubId found in failed invoice metadata");
         return;
       }
 
-      // Find the community plan
-      const communityPlan =
-        await this.stripeSubscriptionRepo.findPlanByName("Community");
-
-      if (!communityPlan) {
-        this.logger.error("Community plan not found in database");
-        return;
-      }
+      // Check if this is a payment failure during a plan upgrade
+      const isUpgradeFailure = invoice.billing_reason === "subscription_update";
 
       // Create billing details object with failed payment status
       const billingDetails = {
@@ -191,26 +205,70 @@ export class StripeSubscriptionService {
         updatedBy: "system-stripe-webhook",
       };
 
-      // Update the team to Community plan with failed payment status
-      const updateResult = await this.stripeSubscriptionRepo.updateTeamPlan(
-        metadata.hubId,
-        {
-          id: communityPlan._id,
-          name: communityPlan.name,
-        },
-        {
-          billing: billingDetails,
-        },
-      );
+      if (isUpgradeFailure) {
+        // For upgrade failures, keep the current plan but update the billing status
+        // Find the team to get current plan info
+        const team = await this.stripeSubscriptionRepo.findTeamById(
+          metadata.hubId,
+        );
 
-      if (updateResult.matchedCount === 0) {
-        this.logger.error(`Team not found with ID: ${metadata.hubId}`);
-        return;
+        if (!team) {
+          this.logger.error(`Team not found with ID: ${metadata.hubId}`);
+          return;
+        }
+
+        // Update only the billing details, keeping the current plan
+        const updateResult = await this.stripeSubscriptionRepo.updateTeamPlan(
+          metadata.hubId,
+          {
+            id: team.plan.id,
+            name: team.plan.name,
+          },
+          {
+            billing: billingDetails,
+          },
+        );
+
+        if (updateResult.matchedCount === 0) {
+          this.logger.error(`Team not found with ID: ${metadata.hubId}`);
+          return;
+        }
+
+        this.logger.log(
+          `Updated billing status for team ${metadata.hubId} due to payment failure during plan upgrade`,
+        );
+      } else {
+        // For regular subscription payment failures, downgrade to Community plan
+        // Find the community plan
+        const communityPlan =
+          await this.stripeSubscriptionRepo.findPlanByName("Community");
+
+        if (!communityPlan) {
+          this.logger.error("Community plan not found in database");
+          return;
+        }
+
+        // Update the team to Community plan with failed payment status
+        const updateResult = await this.stripeSubscriptionRepo.updateTeamPlan(
+          metadata.hubId,
+          {
+            id: communityPlan._id,
+            name: communityPlan.name,
+          },
+          {
+            billing: billingDetails,
+          },
+        );
+
+        if (updateResult.matchedCount === 0) {
+          this.logger.error(`Team not found with ID: ${metadata.hubId}`);
+          return;
+        }
+
+        this.logger.log(
+          `Successfully downgraded team ${metadata.hubId} to Community plan due to payment failure`,
+        );
       }
-
-      this.logger.log(
-        `Successfully downgraded team ${metadata.hubId} to Community plan due to payment failure`,
-      );
     } catch (error) {
       this.logger.error(
         `Error handling invoice.payment_failed event: ${error.message}`,
@@ -237,7 +295,10 @@ export class StripeSubscriptionService {
       }
 
       // Get metadata from invoice
-      const metadata = invoice.lines?.data?.[0]?.metadata || {};
+      const metadata =
+        invoice.lines?.data?.[0]?.metadata ||
+        invoice?.parent?.subscription_details?.metadata ||
+        {};
 
       if (!metadata.planName || !metadata.hubId) {
         this.logger.warn(
