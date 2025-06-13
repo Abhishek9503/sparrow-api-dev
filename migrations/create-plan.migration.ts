@@ -55,6 +55,10 @@ export class CreatePlanMigration implements OnModuleInit {
             selectiveTestflowRun:{
               area: LimitArea.TESTFLOW,
               active: false
+            },
+            activeSync:{
+              area: LimitArea.COLLECTION,
+              active: false
             }
           },
           createdAt: new Date(),
@@ -102,6 +106,10 @@ export class CreatePlanMigration implements OnModuleInit {
             selectiveTestflowRun:{
               area: LimitArea.TESTFLOW,
               active: true
+            },
+            activeSync:{
+              area: LimitArea.COLLECTION,
+              active: false
             }
           },
           createdAt: new Date(),
@@ -148,6 +156,10 @@ export class CreatePlanMigration implements OnModuleInit {
             },
             selectiveTestflowRun:{
               area: LimitArea.TESTFLOW,
+              active: true
+            },
+            activeSync:{
+              area: LimitArea.COLLECTION,
               active: true
             }
           },

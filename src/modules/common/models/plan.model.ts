@@ -58,12 +58,20 @@ export class SelectiveTestflowRun {
   active: boolean;
 }
 
+export class ActiveSync {
+  area: LimitArea.COLLECTION;
+
+  @IsBoolean()
+  active: boolean;
+}
+
 export class Limits {
   workspacesPerHub: WorkspaceLimit;
   testflowPerWorkspace: TestflowLimit;
   blocksPerTestflow: BlocksPerTestflow;
   usersPerHub: UsersPerHub;
   selectiveTestflowRun: SelectiveTestflowRun;
+  activeSync: ActiveSync
 }
 
 export class Plan {
