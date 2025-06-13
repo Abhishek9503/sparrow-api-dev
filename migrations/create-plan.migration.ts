@@ -7,6 +7,7 @@ import { Db } from "mongodb";
 
 @Injectable()
 export class CreatePlanMigration implements OnModuleInit {
+  private hasRun = false;
   constructor(
     @Inject("DATABASE_CONNECTION") private readonly db: Db, // Inject the MongoDB connection
     private readonly configService: ConfigService,
@@ -14,17 +15,23 @@ export class CreatePlanMigration implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
+      if (this.hasRun) {
+        // Check if migration has already run
+        return;
+      }
       const defaultHubPlan =
         this.configService.get<string>("app.defaultHubPlan");
       const planCollection = this.db.collection(Collections.PLAN);
 
-      // Check and create Community Plan
-      const existingCommunityPlan = await planCollection.findOne({
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      const existingPlan = await planCollection.findOne({
         name: defaultHubPlan,
       });
 
-      if (!existingCommunityPlan) {
-        const communityPlan = {
+      if (!existingPlan) {
+        const plan = {
           name: defaultHubPlan,
           description: "Free tier with limited access",
           active: true,
@@ -49,6 +56,10 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.TESTFLOW,
               active: false,
             },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 5,
+            },
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -56,42 +67,48 @@ export class CreatePlanMigration implements OnModuleInit {
           updatedBy: "system",
         };
 
-        await planCollection.insertOne(communityPlan);
+        await planCollection.insertOne(plan);
         console.log("\x1b[36mCommunity Plan created successfully.\x1b[0m");
       } else {
         console.log("\x1b[33mCommunity Plan already exists. Skipping.\x1b[0m");
       }
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
 
-      // Check and create Standard Plan
       const existingStandardPlan = await planCollection.findOne({
         name: "Standard",
       });
 
       if (!existingStandardPlan) {
-        const standardPlan = {
+        const plan = {
           name: "Standard",
-          description: "Standard tier with same access as Community",
+          description: "Standard tier with limited access",
           active: true,
           limits: {
             workspacesPerHub: {
               area: LimitArea.WORKSPACE,
-              value: 3,
+              value: 5,
             },
             testflowPerWorkspace: {
               area: LimitArea.TESTFLOW,
-              value: 3,
+              value: 10,
             },
             blocksPerTestflow: {
               area: LimitArea.BLOCK,
-              value: 5,
+              value: 30,
             },
             usersPerHub: {
               area: LimitArea.BLOCK,
-              value: 3,
+              value: 100000,
             },
             selectiveTestflowRun: {
               area: LimitArea.TESTFLOW,
-              active: false,
+              active: true,
+            },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 10,
             },
           },
           createdAt: new Date(),
@@ -100,42 +117,48 @@ export class CreatePlanMigration implements OnModuleInit {
           updatedBy: "system",
         };
 
-        await planCollection.insertOne(standardPlan);
+        await planCollection.insertOne(plan);
         console.log("\x1b[36mStandard Plan created successfully.\x1b[0m");
       } else {
         console.log("\x1b[33mStandard Plan already exists. Skipping.\x1b[0m");
       }
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
 
-      // Check and create Professional Plan
       const existingProfessionalPlan = await planCollection.findOne({
         name: "Professional",
       });
 
       if (!existingProfessionalPlan) {
-        const professionalPlan = {
+        const plan = {
           name: "Professional",
-          description: "Professional tier with same access as Community",
+          description: "Standard tier with limited access",
           active: true,
           limits: {
             workspacesPerHub: {
               area: LimitArea.WORKSPACE,
-              value: 3,
+              value: 10,
             },
             testflowPerWorkspace: {
               area: LimitArea.TESTFLOW,
-              value: 3,
+              value: 25,
             },
             blocksPerTestflow: {
               area: LimitArea.BLOCK,
-              value: 5,
+              value: 30,
             },
             usersPerHub: {
               area: LimitArea.BLOCK,
-              value: 3,
+              value: 100000,
             },
             selectiveTestflowRun: {
               area: LimitArea.TESTFLOW,
-              active: false,
+              active: true,
+            },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 25,
             },
           },
           createdAt: new Date(),
@@ -144,13 +167,14 @@ export class CreatePlanMigration implements OnModuleInit {
           updatedBy: "system",
         };
 
-        await planCollection.insertOne(professionalPlan);
+        await planCollection.insertOne(plan);
         console.log("\x1b[36mProfessional Plan created successfully.\x1b[0m");
       } else {
         console.log(
           "\x1b[33mProfessional Plan already exists. Skipping.\x1b[0m",
         );
       }
+      this.hasRun = true; // Set flag after successful execution
     } catch (error) {
       console.error("Error during migration:", error);
     }
