@@ -479,7 +479,7 @@ export class StripeController {
         HttpStatusCode.OK,
         invoices,
       );
-      
+
       return res.status(HttpStatusCode.OK).send(responseData);
     } catch (error) {
       throw new HttpException(
@@ -555,7 +555,7 @@ export class StripeController {
           // Get team data for the failed payment
           const teamWithFailedPayment =
             await this.stripeSubscriptionRepo.findTeamById(
-              event.data.object.lines?.data?.[0]?.metadata?.hubId,
+              event.data.object.parent?.subscription_details?.metadata?.hubId,
             );
 
           this.stripeWebhookGateway.emitPaymentEvent(
@@ -574,8 +574,7 @@ export class StripeController {
           // Get team data for the successful payment
           const teamWithSuccessfulPayment =
             await this.stripeSubscriptionRepo.findTeamById(
-              event.data.object.parent?.subscription_details.data?.metadata
-                ?.hubId,
+              event.data.object.parent?.subscription_details?.metadata?.hubId,
             );
 
           this.stripeWebhookGateway.emitPaymentEvent(
