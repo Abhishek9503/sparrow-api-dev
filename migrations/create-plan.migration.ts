@@ -7,6 +7,7 @@ import { Db } from "mongodb";
 
 @Injectable()
 export class CreatePlanMigration implements OnModuleInit {
+  private hasRun = false;
   constructor(
     @Inject("DATABASE_CONNECTION") private readonly db: Db, // Inject the MongoDB connection
     private readonly configService: ConfigService,
@@ -14,10 +15,17 @@ export class CreatePlanMigration implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
+      if (this.hasRun) {
+        // Check if migration has already run
+        return;
+      }
       const defaultHubPlan =
         this.configService.get<string>("app.defaultHubPlan");
       const planCollection = this.db.collection(Collections.PLAN);
 
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
       const existingPlan = await planCollection.findOne({
         name: defaultHubPlan,
       });
@@ -48,7 +56,11 @@ export class CreatePlanMigration implements OnModuleInit {
               area: LimitArea.TESTFLOW,
               active: false,
             },
-            aiTokensPerMonth: {
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 5,
+            },
+             aiTokensPerMonth: {
               area: LimitArea.AI,
               value: 50,
             },
@@ -64,6 +76,117 @@ export class CreatePlanMigration implements OnModuleInit {
       } else {
         console.log("\x1b[33mCommunity Plan already exists. Skipping.\x1b[0m");
       }
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+
+      const existingStandardPlan = await planCollection.findOne({
+        name: "Standard",
+      });
+
+      if (!existingStandardPlan) {
+        const plan = {
+          name: "Standard",
+          description: "Standard tier with limited access",
+          active: true,
+          limits: {
+            workspacesPerHub: {
+              area: LimitArea.WORKSPACE,
+              value: 5,
+            },
+            testflowPerWorkspace: {
+              area: LimitArea.TESTFLOW,
+              value: 10,
+            },
+            blocksPerTestflow: {
+              area: LimitArea.BLOCK,
+              value: 30,
+            },
+            usersPerHub: {
+              area: LimitArea.BLOCK,
+              value: 100000,
+            },
+            selectiveTestflowRun: {
+              area: LimitArea.TESTFLOW,
+              active: true,
+            },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 10,
+            },
+             aiTokensPerMonth: {
+              area: LimitArea.AI,
+              value: 200,
+            },
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: "system",
+          updatedBy: "system",
+        };
+
+        await planCollection.insertOne(plan);
+        console.log("\x1b[36mStandard Plan created successfully.\x1b[0m");
+      } else {
+        console.log("\x1b[33mStandard Plan already exists. Skipping.\x1b[0m");
+      }
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////
+
+      const existingProfessionalPlan = await planCollection.findOne({
+        name: "Professional",
+      });
+
+      if (!existingProfessionalPlan) {
+        const plan = {
+          name: "Professional",
+          description: "Standard tier with limited access",
+          active: true,
+          limits: {
+            workspacesPerHub: {
+              area: LimitArea.WORKSPACE,
+              value: 10,
+            },
+            testflowPerWorkspace: {
+              area: LimitArea.TESTFLOW,
+              value: 25,
+            },
+            blocksPerTestflow: {
+              area: LimitArea.BLOCK,
+              value: 30,
+            },
+            usersPerHub: {
+              area: LimitArea.BLOCK,
+              value: 100000,
+            },
+            selectiveTestflowRun: {
+              area: LimitArea.TESTFLOW,
+              active: true,
+            },
+            testflowRunHistory: {
+              area: LimitArea.TESTFLOW_RUNHISTORY,
+              value: 25,
+            },
+             aiTokensPerMonth: {
+              area: LimitArea.AI,
+              value: Infinity,
+            },
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: "system",
+          updatedBy: "system",
+        };
+
+        await planCollection.insertOne(plan);
+        console.log("\x1b[36mProfessional Plan created successfully.\x1b[0m");
+      } else {
+        console.log(
+          "\x1b[33mProfessional Plan already exists. Skipping.\x1b[0m",
+        );
+      }
+      this.hasRun = true; // Set flag after successful execution
     } catch (error) {
       console.error("Error during migration:", error);
     }
