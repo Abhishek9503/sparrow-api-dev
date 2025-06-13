@@ -92,4 +92,38 @@ export class StripeSubscriptionRepository {
       throw error;
     }
   }
+
+  /**
+   * Updates all workspaces associated with a team to have the same plan
+   * @param teamId The team/hub ID
+   * @param planData The plan data to update (id and name)
+   * @returns The update result
+   */
+  async updateWorkspacePlans(
+    teamId: string,
+    planData: {
+      id: ObjectId;
+      name: string;
+    },
+  ): Promise<UpdateResult> {
+    try {
+      return await this.db
+        .collection(Collections.WORKSPACE)
+        .updateMany(
+          { "team.id": teamId },
+          {
+            $set: {
+              "plan.id": planData.id,
+              "plan.name": planData.name,
+            },
+          },
+        );
+    } catch (error) {
+      this.logger.error(
+        `Error updating workspace plans for team ${teamId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 }

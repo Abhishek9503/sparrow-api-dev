@@ -69,6 +69,17 @@ export class StripeSubscriptionService {
           `Team not found with ID: ${metadata.hubId}`,
         );
       }
+
+      // Also update all workspaces associated with this team
+      const workspaceUpdateResult =
+        await this.stripeSubscriptionRepo.updateWorkspacePlans(metadata.hubId, {
+          id: plan._id,
+          name: plan.name,
+        });
+
+      this.logger.log(
+        `Updated ${workspaceUpdateResult.modifiedCount} workspaces for team ${metadata.hubId} with plan ${plan.name}`,
+      );
     } catch (error) {
       this.logger.error(
         `Error handling customer.subscription.created event: ${error.message}`,
@@ -134,6 +145,17 @@ export class StripeSubscriptionService {
           `Team not found with ID: ${metadata.hubId}`,
         );
       }
+
+      // Also update all workspaces associated with this team
+      const workspaceUpdateResult =
+        await this.stripeSubscriptionRepo.updateWorkspacePlans(metadata.hubId, {
+          id: plan._id,
+          name: plan.name,
+        });
+
+      this.logger.log(
+        `Updated ${workspaceUpdateResult.modifiedCount} workspaces for team ${metadata.hubId} with plan ${plan.name}`,
+      );
     } catch (error) {
       this.logger.error(
         `Error handling customer.subscription.updated event: ${error.message}`,
@@ -265,8 +287,18 @@ export class StripeSubscriptionService {
           return;
         }
 
+        // Also update all workspaces associated with this team to Community plan
+        const workspaceUpdateResult =
+          await this.stripeSubscriptionRepo.updateWorkspacePlans(
+            metadata.hubId,
+            {
+              id: communityPlan._id,
+              name: communityPlan.name,
+            },
+          );
+
         this.logger.log(
-          `Successfully downgraded team ${metadata.hubId} to Community plan due to payment failure`,
+          `Successfully downgraded team ${metadata.hubId} and ${workspaceUpdateResult.modifiedCount} workspaces to Community plan due to payment failure`,
         );
       }
     } catch (error) {
@@ -369,8 +401,15 @@ export class StripeSubscriptionService {
         return;
       }
 
+      // Also update all workspaces associated with this team
+      const workspaceUpdateResult =
+        await this.stripeSubscriptionRepo.updateWorkspacePlans(metadata.hubId, {
+          id: plan._id,
+          name: plan.name,
+        });
+
       this.logger.log(
-        `Successfully processed payment for team ${metadata.hubId} on plan ${metadata.planName}`,
+        `Successfully processed payment for team ${metadata.hubId} on plan ${metadata.planName} and updated ${workspaceUpdateResult.modifiedCount} workspaces`,
       );
     } catch (error) {
       this.logger.error(
