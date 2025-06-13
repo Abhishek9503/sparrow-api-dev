@@ -3,7 +3,9 @@ import { Module, Provider } from "@nestjs/common";
 import { MongoClient, Db } from "mongodb";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import configuration from "./modules/common/config/configuration";
+
 import { UpgradePlanMigration } from "migrations/upgrade-plan.migration";
+import { UpdateTestflowHistoryPlanMigration } from "migrations/update-plan-testflow-history.migration";
 
 const databaseProvider: Provider = {
   provide: "DATABASE_CONNECTION",
@@ -29,14 +31,23 @@ const databaseProvider: Provider = {
       load: [configuration],
     }),
   ],
-  providers: [databaseProvider, UpgradePlanMigration],
+  providers: [
+    databaseProvider,
+    UpgradePlanMigration,
+    UpdateTestflowHistoryPlanMigration,
+  ],
 })
 class MigrationModule {}
 
 async function run() {
   const app = await NestFactory.createApplicationContext(MigrationModule);
-  const migration = app.get(UpgradePlanMigration);
-  await migration.onModuleInit();
+
+  const upgradeMigration = app.get(UpgradePlanMigration);
+  await upgradeMigration.onModuleInit();
+
+  const runHistoryMigration = app.get(UpdateTestflowHistoryPlanMigration);
+  await runHistoryMigration.onModuleInit();
+
   await app.close();
 }
 
