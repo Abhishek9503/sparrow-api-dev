@@ -4,8 +4,10 @@ WORKDIR /app
 # Add build argument for GitHub token
 ARG GITHUB_TOKEN
 
-# Configure npm to use GitHub token
+# Configure npm and pnpm to use GitHub token
 RUN echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > .npmrc
+RUN echo "@sparrowapp-dev:registry=https://npm.pkg.github.com" >> .npmrc
+RUN echo "always-auth=true" >> .npmrc
 
 # Copy only the files needed to install dependencies
 COPY package.json pnpm-lock.yaml* ./
