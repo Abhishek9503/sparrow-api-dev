@@ -310,6 +310,21 @@ spec:
                 secretKeyRef:
                   name: release-api-v2-secret
                   key: DEEPSEEK_API_VERSION
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: release-api-v2-secret
+                  key: STRIPE_SECRET_KEY
+            - name: STRIPE_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: release-api-v2-secret
+                  key: STRIPE_PUBLISHABLE_KEY
+            - name: STRIPE_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: release-api-v2-secret
+                  key: STRIPE_WEBHOOK
 
 ---
 apiVersion: v1
